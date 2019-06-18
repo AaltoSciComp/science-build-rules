@@ -1,5 +1,4 @@
 compilers: []
 packages:
-  - name: hdf5
-    version: 1.10.2
-    variants: +mpi
+  - name: libtool
+    version: 2.4.6
