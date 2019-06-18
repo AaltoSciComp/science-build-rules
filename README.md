@@ -5,7 +5,7 @@
 Quick installation can be done by running the following commands:
 
 ```sh
-git clone --recurse-submodules git@version.aalto.fi:AaltoScienceIT/science-build-rules.git
+git clone --recurse-submodules https://github.com/AaltoScienceIT/science-build-rules.git
 cd science-build-rules
 ./install.sh
 ```
