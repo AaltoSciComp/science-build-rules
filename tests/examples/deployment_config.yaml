@@ -1,0 +1,5 @@
+# DON'T CHANGE, tests rely on this
+method: 'rsync'
+delete: False
+set_sbit: True
+target_host: 'host.example.com'

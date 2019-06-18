@@ -1,0 +1,12 @@
+config:
+  install_tree: $spack/opt/spack/software
+  install_path_scheme: '${PACKAGE}/${VERSION}/${HASH:7}'
+  module_roots:
+    tcl: $spack/share/spack/modules
+    lmod: $spack/share/spack/lmod
+    dotkit: $spack/share/spack/dotkit
+  source_cache: $spack/var/spack/cache
+  misc_cache: /tmp/spack_misc_cache
+  build_stage:
+    - $spack/var/spack/stage
+  locks: false

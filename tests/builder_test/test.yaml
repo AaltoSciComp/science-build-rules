@@ -1,0 +1,5 @@
+# DON'T CHANGE, tests rely on this
+boolean_test: True
+string_test: "test"
+number_test: 1
+filename: "test.yaml"
