@@ -4,6 +4,7 @@
 import os
 import logging
 import tempfile
+from jinja2 import Template
 
 from buildrules.common.builder import Builder
 from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule
@@ -60,7 +61,7 @@ class CIBuilder(Builder):
         Returns:
             str: Filled template.
         """
-        pass
+        return Template(template).render(self._confreader['build_config'])
 
 
     def _get_rules(self):
