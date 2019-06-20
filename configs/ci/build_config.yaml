@@ -18,3 +18,8 @@ builds:
     enabled: False
   registry_clone:
     enabled: False
+target_workers:
+  - name: centos-test
+    image: registry.cs.aalto.fi/aaltoscienceit/scibuilder-worker:centos-test
+  - name: centos-test-dev
+    image: registry.cs.aalto.fi/aaltoscienceit/scibuilder-worker:centos-test-dev
