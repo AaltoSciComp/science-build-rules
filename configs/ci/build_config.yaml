@@ -1,3 +1,5 @@
 build_environment_repository: git@version.aalto.fi:AaltoScienceIT/science-build-environment.git
 build_folder: /tmp/science-build-environment
 skip_rules: ['clone_environment_repository']
+buildbot_master:
+  image: registry.cs.aalto.fi/aaltoscienceit/scibuilder-master:latest
