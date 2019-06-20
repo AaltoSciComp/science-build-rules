@@ -14,6 +14,15 @@ class CIBuilder(Builder):
     CONF_FILES = ['build_config.yaml']
     SCHEMAS = [{}]
 
+    def _fill_template(self, template):
+        """Fills a jinja2-template based on build_config.
+        
+        Args:
+            template (str): jinja2-template as a string.
+        Returns:
+            str: Filled template.
+        """
+        pass
 
     def _get_rules(self):
         return []
