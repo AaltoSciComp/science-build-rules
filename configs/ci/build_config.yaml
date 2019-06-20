@@ -3,3 +3,18 @@ build_folder: /tmp/science-build-environment
 skip_rules: ['clone_environment_repository']
 buildbot_master:
   image: registry.cs.aalto.fi/aaltoscienceit/scibuilder-master:latest
+  gitlab_hook_secret: 'hook_secret'
+  worker_password: 'workerpass'
+  worker_port: 9989
+  web_url: 'http://localhost:8010/'
+  web_port: 8010
+  timeout: 7200
+buildbot_db: {}
+builds:
+  singularity:
+    enabled: False
+    enable_portus_hook: False
+  spack:
+    enabled: False
+  registry_clone:
+    enabled: False
