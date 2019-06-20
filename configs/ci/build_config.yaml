@@ -1,4 +1,5 @@
 build_environment_repository: git@version.aalto.fi:AaltoScienceIT/science-build-environment.git
+science_build_rules_repository: git@github.com:AaltoScienceIT/science-build-rules.git
 build_folder: /tmp/science-build-environment
 skip_rules: ['clone_environment_repository']
 buildbot_master:
@@ -9,7 +10,9 @@ buildbot_master:
   web_url: 'http://localhost:8010/'
   web_port: 8010
   timeout: 7200
-buildbot_db: {}
+  worker_uid: 123123
+buildbot_db: 
+  postgres_password: postgrespass
 builds:
   singularity:
     enabled: False
@@ -18,6 +21,7 @@ builds:
     enabled: False
   registry_clone:
     enabled: False
+compose_project_name: triton-ci
 target_workers:
   - name: centos-test
     image: registry.cs.aalto.fi/aaltoscienceit/scibuilder-worker:centos-test
