@@ -13,9 +13,9 @@ buildbot_db: {}
 builds:
   singularity:
     enabled: False
-    enable_portus_hook: False
+    enable_portus_hook: True
   spack:
-    enabled: False
+    enabled: True
   registry_clone:
     enabled: False
 target_workers:
