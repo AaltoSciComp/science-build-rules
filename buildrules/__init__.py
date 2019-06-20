@@ -2,8 +2,10 @@
 """buildrules contains various build setups.
 """
 from buildrules.spack import SpackBuilder
+from buildrules.ci import CIBuilder
 
 
 BUILDERS = {
-    'spack': SpackBuilder
+    'spack': SpackBuilder,
+    'ci': CIBuilder
 }
