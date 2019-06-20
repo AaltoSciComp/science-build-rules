@@ -55,35 +55,35 @@ class TestRule(unittest.TestCase):
 
         capture.check(
             (
-                'root',
+                'PythonRule',
                 'INFO',
                 'Running PythonRule: { function: '
                 'example_function, args: [], '
                 'kwargs: {} }'
             ),
             (
-                'root',
+                'PythonRule',
                 'INFO',
                 'Running PythonRule: { function: '
                 'example_function, args: [3, '
                 '4], kwargs: {} }'
             ),
             (
-                'root',
+                'PythonRule',
                 'INFO',
                 'Running PythonRule: { function: '
                 'example_function, args: [5], '
                 "kwargs: {'val2': 6} }"
             ),
             (
-                'root',
+                'PythonRule',
                 'INFO',
                 'Running PythonRule: { function: '
                 'example_function, args: [], '
                 "kwargs: {'val1': 7, 'val2': 8} }"
             ),
             (
-                'root',
+                'PythonRule',
                 'INFO',
                 'Running PythonRule: { function: '
                 'example_function, args: [], '
@@ -112,7 +112,7 @@ class TestRule(unittest.TestCase):
 
         capture.check(
             (
-                'root',
+                'SubprocessRule',
                 'INFO',
                 'Running SubprocessRule: { sp_function: '
                 "echo, "
@@ -120,7 +120,7 @@ class TestRule(unittest.TestCase):
                 'shell: False }'
             ),
             (
-                'root',
+                'SubprocessRule',
                 'INFO',
                 'Running SubprocessRule: { sp_function: '
                 "echo a b, "
@@ -133,7 +133,7 @@ class TestRule(unittest.TestCase):
                 "a b"
             ),
             (
-                'root',
+                'SubprocessRule',
                 'INFO',
                 'Running SubprocessRule: { sp_function: '
                 "echo $TEST, "
@@ -172,7 +172,7 @@ class TestRule(unittest.TestCase):
                 stderr_writer=logging.warning)(dry_run=True)
         capture.check(
             (
-                'root',
+                'PythonRule',
                 'INFO',
                 'Running PythonRule: { function: example_function, args: [], kwargs: {} }'
             ),
@@ -187,7 +187,7 @@ class TestRule(unittest.TestCase):
                 stderr_writer=logging.warning)(dry_run=True)
         capture.check(
             (
-                'root',
+                'SubprocessRule',
                 'INFO',
                 'Running SubprocessRule: { sp_function: echo test, env: None, shell: False '
                 '}'
@@ -201,7 +201,7 @@ class TestRule(unittest.TestCase):
 
         capture.check(
             (
-                'root',
+                'LoggingRule',
                 'INFO',
                 'test'
             )

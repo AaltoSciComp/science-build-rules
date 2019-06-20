@@ -74,24 +74,6 @@ class TestBuilder(unittest.TestCase):
         # Check that there are only two info calls (third rule is not called)
         self.assertEqual(event_counts['INFO'], 2)
 
-        capture.check_present(
-            (
-                'root',
-                'INFO',
-                'Running PythonRule: { function: '
-                'TestBuilder.test_builder_error.<locals>.TestBuilderError.good_function, '
-                'args: [], kwargs: {} }'
-            ),
-            (
-                'root',
-                'INFO',
-                'Running SubprocessRule: { sp_function: '
-                "false, "
-                'env: None, shell: False }'
-            )
-        )
-
-
     @ignore_deprecationwarning
     @log_capture(level=logging.INFO)
     def test_builder_one_rule(self, capture):
@@ -122,7 +104,7 @@ class TestBuilder(unittest.TestCase):
 
         capture.check(
             (
-                'root',
+                'PythonRule',
                 'INFO',
                 'Running PythonRule: { function: '
                 'TestBuilder.test_builder_one_rule.<locals>.TestBuilderOneRule.run_rule, '
@@ -211,15 +193,15 @@ class TestBuilder(unittest.TestCase):
 
         capture.check(
             (
-                'root',
+                'PythonRule',
                 'INFO',
                 'Running PythonRule: { function: print_keys, '
                 "args: [{'title': 'The Egyptian', 'author': {'last_name': 'Waltari', "
                 "'first_name': 'Mika'}, 'isbn': '1-55652-441-2'}], kwargs: {} }"
             ),
-            ('root', 'INFO', 'title'),
-            ('root', 'INFO', 'author'),
-            ('root', 'INFO', 'isbn')
+            ('PythonRule', 'INFO', 'title'),
+            ('PythonRule', 'INFO', 'author'),
+            ('PythonRule', 'INFO', 'isbn')
         )
 
     @ignore_deprecationwarning
@@ -265,15 +247,15 @@ class TestBuilder(unittest.TestCase):
 
         capture.check(
             (
-                'root',
+                'PythonRule',
                 'INFO',
                 'Running PythonRule: { function: print_keys, '
                 "args: [{'title': 'The Egyptian', 'author': {'last_name': 'Waltari', "
                 "'first_name': 'Mika'}, 'isbn': '1-55652-441-2'}], kwargs: {} }"
             ),
-            ('root', 'INFO', 'title'),
-            ('root', 'INFO', 'author'),
-            ('root', 'INFO', 'isbn')
+            ('PythonRule', 'INFO', 'title'),
+            ('PythonRule', 'INFO', 'author'),
+            ('PythonRule', 'INFO', 'isbn')
         )
 
     def test_builder_additional_conf_file_schema_invalid(self):
@@ -347,26 +329,26 @@ class TestBuilder(unittest.TestCase):
 
         capture.check(
             (
-                'root',
+                'PythonRule',
                 'INFO',
                 "Running PythonRule: { function: print_keys, args: [{'title': 'The "
                 "Egyptian', 'author': {'last_name': 'Waltari', 'first_name': 'Mika'}, "
                 "'isbn': '1-55652-441-2'}], kwargs: {} }"
             ),
-            ('root', 'INFO', 'title'),
-            ('root', 'INFO', 'author'),
-            ('root', 'INFO', 'isbn'),
+            ('PythonRule', 'INFO', 'title'),
+            ('PythonRule', 'INFO', 'author'),
+            ('PythonRule', 'INFO', 'isbn'),
             (
-                'root',
+                'PythonRule',
                 'INFO',
                 "Running PythonRule: { function: print_keys, args: [{'boolean_test': True, "
                 "'string_test': 'test', 'number_test': 1, 'filename': 'test.yaml'}], kwargs: "
                 '{} }'
             ),
-            ('root', 'INFO', 'boolean_test'),
-            ('root', 'INFO', 'string_test'),
-            ('root', 'INFO', 'number_test'),
-            ('root', 'INFO', 'filename')
+            ('PythonRule', 'INFO', 'boolean_test'),
+            ('PythonRule', 'INFO', 'string_test'),
+            ('PythonRule', 'INFO', 'number_test'),
+            ('PythonRule', 'INFO', 'filename')
         )
 
     @ignore_deprecationwarning
@@ -427,26 +409,26 @@ class TestBuilder(unittest.TestCase):
 
         capture.check(
             (
-                'root',
+                'PythonRule',
                 'INFO',
                 "Running PythonRule: { function: print_keys, args: [{'title': 'The "
                 "Egyptian', 'author': {'last_name': 'Waltari', 'first_name': 'Mika'}, "
                 "'isbn': '1-55652-441-2'}], kwargs: {} }"
             ),
-            ('root', 'INFO', 'title'),
-            ('root', 'INFO', 'author'),
-            ('root', 'INFO', 'isbn'),
+            ('PythonRule', 'INFO', 'title'),
+            ('PythonRule', 'INFO', 'author'),
+            ('PythonRule', 'INFO', 'isbn'),
             (
-                'root',
+                'PythonRule',
                 'INFO',
                 "Running PythonRule: { function: print_keys, args: [{'boolean_test': True, "
                 "'string_test': 'test', 'number_test': 1, 'filename': 'test.yaml'}], kwargs: "
                 '{} }'
             ),
-            ('root', 'INFO', 'boolean_test'),
-            ('root', 'INFO', 'string_test'),
-            ('root', 'INFO', 'number_test'),
-            ('root', 'INFO', 'filename')
+            ('PythonRule', 'INFO', 'boolean_test'),
+            ('PythonRule', 'INFO', 'string_test'),
+            ('PythonRule', 'INFO', 'number_test'),
+            ('PythonRule', 'INFO', 'filename')
         )
 
     def test_builder_two_addit_conf_files_two_schemas_one_invalid(self):
@@ -518,7 +500,7 @@ class TestBuilder(unittest.TestCase):
 
         capture.check(
             (
-                'root',
+                'PythonRule',
                 'INFO',
                 'Running PythonRule: { function: '
                 'TestBuilder.test_builder_dry_run.<locals>.TestBuilderDryRun.run_rule, '
