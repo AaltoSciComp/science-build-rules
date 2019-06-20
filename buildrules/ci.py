@@ -5,6 +5,7 @@ import os
 import logging
 
 from buildrules.common.builder import Builder
+from jinja2 import Template
 
 class CIBuilder(Builder):
 
@@ -22,7 +23,7 @@ class CIBuilder(Builder):
         Returns:
             str: Filled template.
         """
-        pass
+        return Template(template).render(self._confreader['build_config'])
 
     def _get_rules(self):
         return []
