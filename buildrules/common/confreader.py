@@ -31,16 +31,20 @@ class ConfReader(Mapping):
             # Validate configuration
             self.validate(conf_key, schema)
 
-    def __getitem__(self, confname):
+    def __getitem__(self, confname, default=None):
         """Get a configuration.
 
         Args:
             confname (str): Configuration name to return.
+            default (object): Optional default argument.
 
         Returns:
             object: Returned configuration.
         """
-        return self._configs[confname]
+        if confname in self._configs:
+            return self._configs[confname]
+        else:
+            return default
 
     def __iter__(self):
         """Get an iterator that goes over different configuration

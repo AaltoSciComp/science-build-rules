@@ -44,6 +44,9 @@ class Builder:
         self._schemas = self.SCHEMAS + [DEPLOYMENTCONFIG_SCHEMA]
         self._confreader = ConfReader(self._conf_files, self._schemas)
         self._deployers = deployer_factory(self._confreader)
+    
+    def _skip_rule(self, step):
+        return step in self._confreader.get('build_config',{}).get('skip_rules',[])
 
     def __call__(self, dry_run=False):
         """This function will execute all _build_rules."""

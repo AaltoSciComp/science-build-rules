@@ -3,8 +3,10 @@
 """
 import os
 import logging
+import tempfile
 
 from buildrules.common.builder import Builder
+from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule
 
 class CIBuilder(Builder):
 
@@ -19,17 +21,32 @@ class CIBuilder(Builder):
         'additionalProperties': False,
         'patternProperties': {
             'build_environment_repository': {'type': 'string'},
+            'build_folder': {'type': 'string'},
+            'skip_rules': {
+                'type': 'array',
+                'default': [],
+                'items': {
+                    'type': 'string'
+                },
+            },
         },
-        'required': ['build_environment_repository']
+        'required': ['build_environment_repository','build_folder']
     }]
 
-    def __init__(self, conf_folder):
-        self._build_folder = None
-        super().__init__(conf_folder)
-
-    def _clone_build_environment(self):
+    def _clone_build_environment_repo(self):
         """Clones build environment into a temporary directory"""
-        git_url = self._confreader['build_config']['build_environment_repository']
+        if not self._skip_rule('clone_environment_repository'):
+            src = self._confreader['build_config']['build_environment_repository']
+            dest = self._confreader['build_config']['build_folder']
+            return [SubprocessRule(
+                ['git',
+                 'clone',
+                 '--depth=1',
+                 src,
+                 dest,
+                '2>&1'],
+                shell=True)]
+        return []
 
     def _create_nfs_directories(self):
         """Creates directories for nfs"""
@@ -47,7 +64,9 @@ class CIBuilder(Builder):
 
 
     def _get_rules(self):
-        return []
+        rules = []
+        rules.extend(self._clone_build_environment_repo())
+        return rules
 
 if __name__ == "__main__":
     import sys
