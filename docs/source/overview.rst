@@ -22,6 +22,6 @@ Typical build will do the following steps:
    ``Deployer``-class.
 
 The basic idea of the buildrules is that a series of operations - defined
-by a ``Builder``-class - are done in a specific way defined by the configuration
-files. Before doing the build, configuration files are loaded in and
+by a ``Builder``-class - are done in a specific way that is defined by the configuration
+files. Before doing a build, configuration files are loaded in and
 validated. The build and deployment commands, which are based on the configuration files, are then predefined and wrapped in subclasses of the ``Rule``-class. Each subclass of ``Builder`` and ``Deployer`` can have their own configuration yaml-files and corresponding schemas.
