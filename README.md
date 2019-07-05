@@ -2,6 +2,8 @@
 
 ## Quick installation
 
+![](docs/images/install.gif)
+
 Quick installation can be done by running the following commands:
 
 ```sh
