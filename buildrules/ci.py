@@ -22,7 +22,72 @@ class CIBuilder(Builder):
         'additionalProperties': False,
         'patternProperties': {
             'build_environment_repository': {'type': 'string'},
+            'science_build_rules_repository': {'type': 'string'},
             'build_folder': {'type': 'string'},
+            'compose_project_name': {'type': 'string'},
+            'buildbot_master': {
+                'type': 'object',
+                'properties': {
+                    'image': {'type': 'string'},
+                    'gitlab_hook_secret': {'type': 'string'},
+                    'worker_password': {'type': 'string'},
+                    'worker_port': {'type': 'integer'},
+                    'web_url': {'type': 'string'},
+                    'web_port': {'type': 'integer'},
+                    'timeout': {'type': 'integer'},
+                    'worker_uid': {'type': 'integer'},
+                },
+                'required': [
+                    'image',
+                    'worker_password',
+                    'web_url',
+                    'worker_uid'
+                ],
+            },
+            'buildbot_db': {
+                'type': 'object',
+                'properties': {
+                    'postgres_password': {'type': 'string'},
+                },
+            },
+            'builds': {
+                'type': 'object',
+                'properties': {
+                    'spack': {
+                        'type': 'object',
+                        'properties': {
+                            'enabled': {'type': 'boolean'},
+                        },
+                        'required': ['enabled'],
+                    },
+                    'singularity': {
+                        'type': 'object',
+                        'properties': {
+                            'enabled': {'type': 'boolean'},
+                            'enable_portus_hook': {'type': 'boolean'},
+                        },
+                        'required': ['enabled'],
+                    },
+                    'registry_clone': {
+                        'type': 'object',
+                        'properties': {
+                            'enabled': {'type': 'boolean'},
+                        },
+                        'required': ['enabled'],
+                    },
+                },
+            },
+            'target_workers': {
+                'type': 'array',
+                'items': {
+                    'type': 'object',
+                    'properties': {
+                        'name': {'type': 'string'},
+                        'image:': {'type': 'string'},
+                    },
+                    'required': ['name', 'image'],
+                },
+            },
             'skip_rules': {
                 'type': 'array',
                 'default': [],
@@ -31,7 +96,12 @@ class CIBuilder(Builder):
                 },
             },
         },
-        'required': ['build_environment_repository','build_folder']
+        'required': [
+            'build_environment_repository',
+            'build_folder',
+            'buildbot_master',
+            'buildbot_db',
+        ],
     }]
 
     def _clone_build_environment_repo(self):

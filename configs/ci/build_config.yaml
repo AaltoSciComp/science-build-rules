@@ -1,7 +1,6 @@
 build_environment_repository: git@version.aalto.fi:AaltoScienceIT/science-build-environment.git
 science_build_rules_repository: git@github.com:AaltoScienceIT/science-build-rules.git
 build_folder: /tmp/science-build-environment
-skip_rules: ['clone_environment_repository']
 buildbot_master:
   image: registry.cs.aalto.fi/aaltoscienceit/scibuilder-master:latest
   gitlab_hook_secret: 'hook_secret'
@@ -27,3 +26,4 @@ target_workers:
     image: registry.cs.aalto.fi/aaltoscienceit/scibuilder-worker:centos-test
   - name: centos-test-dev
     image: registry.cs.aalto.fi/aaltoscienceit/scibuilder-worker:centos-test-dev
+skip_rules: ['clone_environment_repository']
