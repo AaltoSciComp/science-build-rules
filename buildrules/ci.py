@@ -29,18 +29,18 @@ class CIBuilder(Builder):
                 'type': 'object',
                 'properties': {
                     'image': {'type': 'string'},
+                    'fqdn': {'type': 'string'},
+                    'web_port': {'type': 'integer'},
                     'gitlab_hook_secret': {'type': 'string'},
                     'worker_password': {'type': 'string'},
                     'worker_port': {'type': 'integer'},
-                    'web_url': {'type': 'string'},
-                    'web_port': {'type': 'integer'},
                     'timeout': {'type': 'integer'},
                     'worker_uid': {'type': 'integer'},
                 },
                 'required': [
                     'image',
+                    'fqdn',
                     'worker_password',
-                    'web_url',
                     'worker_uid'
                 ],
             },

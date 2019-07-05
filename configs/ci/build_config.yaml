@@ -4,10 +4,10 @@ build_folder: /tmp/science-build-environment
 compose_project_name: triton-ci
 buildbot_master:
   image: registry.cs.aalto.fi/aaltoscienceit/scibuilder-master:latest
+  fqdn: 'localhost'
   gitlab_hook_secret: 'hook_secret'
   worker_password: 'workerpass'
   worker_port: 9989
-  web_url: 'http://localhost:8010/'
   web_port: 8010
   timeout: 7200
   worker_uid: 123123
