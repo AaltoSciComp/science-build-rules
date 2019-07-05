@@ -1,6 +1,7 @@
 build_environment_repository: git@version.aalto.fi:AaltoScienceIT/science-build-environment.git
 science_build_rules_repository: git@github.com:AaltoScienceIT/science-build-rules.git
 build_folder: /tmp/science-build-environment
+compose_project_name: triton-ci
 buildbot_master:
   image: registry.cs.aalto.fi/aaltoscienceit/scibuilder-master:latest
   gitlab_hook_secret: 'hook_secret'
@@ -20,7 +21,6 @@ builds:
     enabled: True
   registry_clone:
     enabled: False
-compose_project_name: triton-ci
 target_workers:
   - name: centos-test
     image: registry.cs.aalto.fi/aaltoscienceit/scibuilder-worker:centos-test
