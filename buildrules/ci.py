@@ -104,28 +104,84 @@ class CIBuilder(Builder):
         ],
     }]
 
-    def _clone_build_environment_repo(self):
+    def __init__(self, conf_folder):
+
+        super().__init__(conf_folder)
+        self._build_folder = self._confreader['build_config']['build_folder']
+        self._conf_folder = os.path.join(
+            self._confreader['build_config']['build_folder'],
+            'configs')
+        self._templates_folder = os.path.join(
+            self._confreader['build_config']['build_folder'],
+            'templates')
+
+    def _get_clone_build_environment_rule(self):
         """Clones build environment into a temporary directory"""
         if not self._skip_rule('clone_environment_repository'):
             src = self._confreader['build_config']['build_environment_repository']
-            dest = self._confreader['build_config']['build_folder']
-            return [SubprocessRule(
-                ['git',
-                 'clone',
-                 '--depth=1',
-                 src,
-                 dest,
-                '2>&1'],
-                shell=True)]
+            dest = self._build_folder
+            return [
+                LoggingRule('Cloning build environment repository'),
+                SubprocessRule(
+                    ['git',
+                     'clone',
+                     '--depth=1',
+                     src,
+                     dest,
+                     '2>&1'],
+                    shell=True
+                )
+            ]
         return []
+
+    def _get_config_creation_rules(self):
+        return [
+            LoggingRule('Creating buildbot_master.cfg'),
+            PythonRule(
+                self._write_template,
+                args=[
+                    os.path.join(
+                        self._conf_folder,
+                        'buildbot',
+                        'buildbot_master.cfg'
+                    ),
+                    os.path.join(
+                        self._templates_folder,
+                        'buildbot_master.cfg.j2'
+                    ),
+                ],
+            ),
+            LoggingRule('Creating docker-compose.yml'),
+            PythonRule(
+                self._write_template,
+                args=[
+                    os.path.join(
+                        self._build_folder,
+                        'docker-compose.yml'
+                    ),
+                    os.path.join(
+                        self._templates_folder,
+                        'docker-compose.yml.j2'
+                    ),
+                ],
+            ),
+        ]
+
 
     def _create_nfs_directories(self):
         """Creates directories for nfs"""
 
+    def _write_template(self, config_path, template_path):
+        """Fills buildbot configuration"""
+        with open(template_path, 'r') as template_file:
+            template = ''.join(template_file.readlines())
+        filled_template = self._fill_template(template)
+        with open(config_path, 'w') as configuration_file:
+            configuration_file.write(filled_template)
 
     def _fill_template(self, template):
         """Fills a jinja2-template based on build_config.
-        
+
         Args:
             template (str): jinja2-template as a string.
         Returns:
@@ -133,10 +189,10 @@ class CIBuilder(Builder):
         """
         return Template(template).render(self._confreader['build_config'])
 
-
     def _get_rules(self):
         rules = []
-        rules.extend(self._clone_build_environment_repo())
+        rules.extend(self._get_clone_build_environment_rule())
+        rules.extend(self._get_config_creation_rules())
         return rules
 
 if __name__ == "__main__":
