@@ -1,5 +1,16 @@
 # science-build-rules
 
+science-build-rules is a framework for doing consistent builds of
+scientific software and deploying them to target systems. It consists
+of `buildrules`-package that constains Builders for:
+
+1. [Spack](https://spack.io)
+2. [Singularity](https://sylabs.io/singularity) (work-in-progress)
+2. [Anaconda](https://anaconda.org) (work-in-progress)
+
+After builds the software is deployed using a Deployer. Currently there's
+only one Deployer: `RsyncDeployer`.
+
 ## Quick installation
 
 ![](docs/images/install.gif)
