@@ -84,6 +84,9 @@ class CIBuilder(Builder):
                     'properties': {
                         'name': {'type': 'string'},
                         'image:': {'type': 'string'},
+                        'spack_target_path:': {'type': 'string'},
+                        'singularity_target_path:': {'type': 'string'},
+                        'registry_clone_target_path:': {'type': 'string'},
                     },
                     'required': ['name', 'image'],
                 },
@@ -114,6 +117,10 @@ class CIBuilder(Builder):
         self._templates_folder = os.path.join(
             self._confreader['build_config']['build_folder'],
             'templates')
+        self._nfs_folder = os.path.join(
+            self._confreader['build_config']['build_folder'],
+            'nfs')
+
 
     def _get_clone_build_environment_rule(self):
         """Clones build environment into a temporary directory"""
@@ -165,11 +172,72 @@ class CIBuilder(Builder):
                     ),
                 ],
             ),
+            LoggingRule('Creating nginx.conf'),
+            PythonRule(
+                self._write_template,
+                args=[
+                    os.path.join(
+                        self._conf_folder,
+                        'nginx',
+                        'nginx.conf'
+                    ),
+                    os.path.join(
+                        self._templates_folder,
+                        'nginx.conf.j2'
+                    ),
+                ],
+            ),
+            LoggingRule('Creating exports.txt'),
+            PythonRule(
+                self._write_template,
+                args=[
+                    os.path.join(
+                        self._conf_folder,
+                        'nfs',
+                        'exports.txt'
+                    ),
+                    os.path.join(
+                        self._templates_folder,
+                        'exports.txt.j2'
+                    ),
+                ],
+            ),
         ]
 
-
-    def _create_nfs_directories(self):
+    def _get_directory_creation_rules(self):
         """Creates directories for nfs"""
+        rules = [LoggingRule('Creating build directories')]
+
+        for worker in self._confreader['build_config']['target_workers']:
+            for builder_name, builder_opts in self._confreader['build_config']['builds'].items():
+                if builder_opts.get('enabled', False):
+                    rules.extend([
+                        PythonRule(
+                            os.makedirs,
+                            args=[
+                                os.path.join(
+                                    self._nfs_folder,
+                                    'builds',
+                                    worker['name'],
+                                    builder_name
+                                 ),
+                            ],
+                        ),
+                        PythonRule(
+                            os.makedirs,
+                            args=[
+                                os.path.join(
+                                    self._nfs_folder,
+                                    'software',
+                                    worker['name'],
+                                    builder_name
+                                 ),
+                            ],
+                        )
+                    ])
+        return rules
+
+        return rules
 
     def _write_template(self, config_path, template_path):
         """Fills buildbot configuration"""
@@ -193,6 +261,7 @@ class CIBuilder(Builder):
         rules = []
         rules.extend(self._get_clone_build_environment_rule())
         rules.extend(self._get_config_creation_rules())
+        rules.extend(self._get_directory_creation_rules())
         return rules
 
 if __name__ == "__main__":
