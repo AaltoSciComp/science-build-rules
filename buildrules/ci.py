@@ -4,6 +4,7 @@
 import os
 import logging
 import tempfile
+from shutil import copy2 as copy_file
 from jinja2 import Template
 
 from buildrules.common.builder import Builder
@@ -30,6 +31,8 @@ class CIBuilder(Builder):
                 'properties': {
                     'image': {'type': 'string'},
                     'fqdn': {'type': 'string'},
+                    'private_key': {'type': 'string'},
+                    'public_cert':  {'type': 'string'},
                     'web_port': {'type': 'integer'},
                     'gitlab_hook_secret': {'type': 'string'},
                     'worker_password': {'type': 'string'},
@@ -121,10 +124,9 @@ class CIBuilder(Builder):
             self._confreader['build_config']['build_folder'],
             'nfs')
 
-
     def _get_clone_build_environment_rule(self):
         """Clones build environment into a temporary directory"""
-        if not self._skip_rule('clone_environment_repository'):
+        if not os.path.isdir(self._build_folder):
             src = self._confreader['build_config']['build_environment_repository']
             dest = self._build_folder
             return [
@@ -227,7 +229,7 @@ class CIBuilder(Builder):
                                     'builds',
                                     worker['name'],
                                     builder_name
-                                 ),
+                                ),
                             ],
                         ),
                         PythonRule(
@@ -238,7 +240,7 @@ class CIBuilder(Builder):
                                     'software',
                                     worker['name'],
                                     builder_name
-                                 ),
+                                ),
                             ],
                         ),
                         PythonRule(
@@ -248,11 +250,58 @@ class CIBuilder(Builder):
                                     self._nfs_folder,
                                     'buildbot_home',
                                     '.spack_%s' % worker['name']
-                                 ),
+                                ),
                             ],
                         ),
                     ])
         return rules
+
+    def _copy_certs(self):
+
+        fqdn = self._confreader['build_config']['buildbot_master']['fqdn']
+        private_key = self._confreader['build_config']['buildbot_master'].get('private_key', None)
+        public_cert = self._confreader['build_config']['buildbot_master'].get('public_cert', None)
+        key = os.path.join(self._build_folder, 'certs', 'buildbot.key')
+        cert = os.path.join(self._build_folder, 'certs', 'buildbot.crt')
+
+        rules = []
+        if private_key is None or public_cert is None:
+            rules.extend([
+                LoggingRule('Creating self signed certs', self._logger.warning),
+                SubprocessRule(
+                    ['openssl', 'req', '-x509', '-nodes', '-new',
+                     '-keyout', key, '-out', cert,
+                     '-days', '365', '-subj', '/CN=%s' % fqdn],
+                    stderr_writer=self._logger.warning
+                    )
+            ])
+        else:
+            rules.extend([
+                LoggingRule('Copying certs'),
+                PythonRule(
+                    copy_file,
+                    args=[
+                        self._confreader['build_config']['buildbot_master']['private_key'],
+                        key
+                    ]
+                ),
+                PythonRule(
+                    copy_file,
+                    args=[
+                        self._confreader['build_config']['buildbot_master']['public_cert'],
+                        cert
+                    ]
+                )
+            ])
+
+        rules.extend([
+            LoggingRule('Setting cert modes'),
+            PythonRule(os.chmod,
+                       args=[key, 0o600]),
+            PythonRule(os.chmod,
+                       args=[cert, 0o644])
+        ])
+
 
         return rules
 
@@ -277,6 +326,7 @@ class CIBuilder(Builder):
     def _get_rules(self):
         rules = []
         rules.extend(self._get_clone_build_environment_rule())
+        rules.extend(self._copy_certs())
         rules.extend(self._get_config_creation_rules())
         rules.extend(self._get_directory_creation_rules())
         return rules
