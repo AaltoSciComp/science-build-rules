@@ -204,6 +204,13 @@ class CIBuilder(Builder):
             ),
         ]
 
+    @classmethod
+    def _makedirs(cls, path):
+        try:
+            os.makedirs(path)
+        except FileExistsError:
+            pass
+
     def _get_directory_creation_rules(self):
         """Creates directories for nfs"""
         rules = [LoggingRule('Creating build directories')]
@@ -213,7 +220,7 @@ class CIBuilder(Builder):
                 if builder_opts.get('enabled', False):
                     rules.extend([
                         PythonRule(
-                            os.makedirs,
+                            self._makedirs,
                             args=[
                                 os.path.join(
                                     self._nfs_folder,
@@ -224,7 +231,7 @@ class CIBuilder(Builder):
                             ],
                         ),
                         PythonRule(
-                            os.makedirs,
+                            self._makedirs,
                             args=[
                                 os.path.join(
                                     self._nfs_folder,
@@ -233,7 +240,17 @@ class CIBuilder(Builder):
                                     builder_name
                                  ),
                             ],
-                        )
+                        ),
+                        PythonRule(
+                            self._makedirs,
+                            args=[
+                                os.path.join(
+                                    self._nfs_folder,
+                                    'buildbot_home',
+                                    '.spack_%s' % worker['name']
+                                 ),
+                            ],
+                        ),
                     ])
         return rules
 

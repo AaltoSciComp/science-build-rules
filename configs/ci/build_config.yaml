@@ -28,4 +28,4 @@ target_workers:
   - name: centos-test-dev
     image: registry.cs.aalto.fi/aaltoscienceit/scibuilder-worker:centos-test-dev
     spack_target_path: /share/apps/spack/dev
-skip_rules: ['clone_environment_repository']
+#skip_rules: ['clone_environment_repository']
