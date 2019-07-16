@@ -8,7 +8,7 @@ from shutil import copy2 as copy_file
 from jinja2 import Template
 
 from buildrules.common.builder import Builder
-from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule
+from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule, RuleError
 
 class CIBuilder(Builder):
 
@@ -291,14 +291,15 @@ class CIBuilder(Builder):
     def _copy_certs(self):
 
         fqdn = self._confreader['build_config']['buildbot_master']['fqdn']
-        private_key = self._confreader['build_config']['buildbot_master'].get('private_key', '')
-        public_cert = self._confreader['build_config']['buildbot_master'].get('public_cert', '')
+        private_key = self._confreader['build_config']['buildbot_master'].get('private_key', None)
+        public_cert = self._confreader['build_config']['buildbot_master'].get('public_cert', None)
         key = os.path.join(self._build_folder, 'certs', 'buildbot.key')
         cert = os.path.join(self._build_folder, 'certs', 'buildbot.crt')
 
         rules = []
 
-        if os.path.isfile(private_key) and os.path.isfile(public_cert):
+        if private_key and public_cert:
+
             rules.extend([
                 LoggingRule('Copying certs'),
                 PythonRule(
@@ -346,8 +347,8 @@ class CIBuilder(Builder):
         auth_ssh_conf = self._confreader['build_config'].get('auths', {}).get('ssh', {})
 
 
-        ssh_config_src = auth_ssh_conf.get('config_file', '')
-        known_hosts_src = auth_ssh_conf.get('known_hosts_file', '')
+        ssh_config_src = auth_ssh_conf.get('config_file', None)
+        known_hosts_src = auth_ssh_conf.get('known_hosts_file', None)
 
         ssh_config_target = os.path.join(ssh_folder, 'config')
         known_hosts_target = os.path.join(ssh_folder, 'known_hosts')
@@ -356,7 +357,7 @@ class CIBuilder(Builder):
         public_keys = auth_ssh_conf.get('public_keys', [])
 
         rules = []
-        if os.path.isfile(ssh_config_src):
+        if ssh_config_src:
             rules.extend([
                 LoggingRule('Copying ssh configuration'),
                 PythonRule(
@@ -369,7 +370,7 @@ class CIBuilder(Builder):
                 PythonRule(os.chmod,
                            args=[ssh_config_target, 0o644])
             ])
-        if os.path.isfile(known_hosts_src):
+        if known_hosts_src:
             rules.extend([
                 LoggingRule('Copying ssh known_hosts'),
                 PythonRule(
@@ -382,6 +383,46 @@ class CIBuilder(Builder):
                 PythonRule(os.chmod,
                            args=[ssh_config_target, 0o600])
             ])
+        if len(private_keys) > 0:
+            rules.append(LoggingRule('Copying ssh private keys'))
+            for private_key_src in private_keys:
+                private_key_target = os.path.join(
+                    ssh_folder,
+                    os.path.basename(private_key_src)
+                )
+                rules.extend([
+                    PythonRule(
+                        copy_file,
+                        args=[
+                            private_key_src,
+                            private_key_target
+                        ]
+                    ),
+                    PythonRule(os.chmod,
+                               args=[private_key_target, 0o600])
+                ])
+        else:
+            rules.extend([
+                LoggingRule('No private keys given, generating ')])
+
+        if len(public_keys) > 0:
+            rules.append(LoggingRule('Copying ssh public keys'))
+            for public_key_src in public_keys:
+                public_key_target = os.path.join(
+                    ssh_folder,
+                    os.path.basename(public_key_src)
+                )
+                rules.extend([
+                    PythonRule(
+                        copy_file,
+                        args=[
+                            public_key_src,
+                            public_key_target
+                        ]
+                    ),
+                    PythonRule(os.chmod,
+                               args=[private_key_target, 0o644])
+                ])
 
         return rules
 
