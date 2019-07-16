@@ -56,12 +56,12 @@ class CIBuilder(Builder):
                             'config_file': {'type': 'string'},
                             'known_hosts_file': {'type': 'string'},
                             'private_keys': {
-                               'type': 'array',
-                               'items': {'type': 'string'}
+                                'type': 'array',
+                                'items': {'type': 'string'}
                             },
                             'public_keys': {
-                               'type': 'array',
-                               'items': {'type': 'string'}
+                                'type': 'array',
+                                'items': {'type': 'string'}
                             },
                         },
                     },
@@ -352,7 +352,8 @@ class CIBuilder(Builder):
         ssh_config_target = os.path.join(ssh_folder, 'config')
         known_hosts_target = os.path.join(ssh_folder, 'known_hosts')
 
-        key_files = auth_ssh_conf.get('key_files', [])
+        private_keys = auth_ssh_conf.get('private_keys', [])
+        public_keys = auth_ssh_conf.get('public_keys', [])
 
         rules = []
         if os.path.isfile(ssh_config_src):
@@ -364,7 +365,9 @@ class CIBuilder(Builder):
                         ssh_config_src,
                         ssh_config_target
                     ]
-                )
+                ),
+                PythonRule(os.chmod,
+                           args=[ssh_config_target, 0o644])
             ])
         if os.path.isfile(known_hosts_src):
             rules.extend([
@@ -375,7 +378,9 @@ class CIBuilder(Builder):
                         known_hosts_src,
                         known_hosts_target
                     ]
-                )
+                ),
+                PythonRule(os.chmod,
+                           args=[ssh_config_target, 0o600])
             ])
 
         return rules
