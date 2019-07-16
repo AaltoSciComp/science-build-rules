@@ -305,6 +305,30 @@ class CIBuilder(Builder):
 
         return rules
 
+    def _copy_ssh(self):
+        """AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"""
+
+        config_file = self._confreader['auths']['ssh'].get('config_file', None)
+        known_hosts_file = self._confreader['auths']['ssh'].get('known_hosts_file', None)
+        key_files = self._confreader['auths']['ssh']['key_files']
+        configs = os.path.join(slef._build_foler, 'nfs', 'buildbot_home', '.ssh', 'configs')
+        known_hosts = os.path.join(slef._build_foler, 'nfs', 'buildbot_home', '.ssh', 'known_hosts')
+
+        rules = []
+        if config_file:
+            rules.extend([
+                LogginRule('Copying ssh configuration file'),
+                PythonRule(
+                    copy_file,
+                    args=[
+                        config_file,
+                        configs
+                    ]
+                )
+            ])
+
+        return rules
+
     def _write_template(self, config_path, template_path):
         """Fills buildbot configuration"""
         with open(template_path, 'r') as template_file:
