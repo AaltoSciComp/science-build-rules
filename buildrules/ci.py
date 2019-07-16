@@ -47,6 +47,38 @@ class CIBuilder(Builder):
                     'worker_uid'
                 ],
             },
+            'auths': {
+                'type': 'object',
+                'properties': {
+                    'ssh': {
+                        'type': 'object',
+                        'properties': {
+                            'config_file': {'type': 'string'},
+                            'known_hosts_file': {'type': 'string'},
+                            'private_keys': {
+                               'type': 'array',
+                               'items': {'type': 'string'}
+                            },
+                            'public_keys': {
+                               'type': 'array',
+                               'items': {'type': 'string'}
+                            },
+                        },
+                    },
+                    'docker': {
+                        'type': 'object',
+                        'properties': {
+                            'config_file': {'type': 'string'},
+                        },
+                    },
+                    'singularity': {
+                        'type': 'object',
+                        'properties': {
+                            'config_file': {'type': 'string'},
+                        },
+                    },
+                },
+            },
             'buildbot_db': {
                 'type': 'object',
                 'properties': {
@@ -259,23 +291,14 @@ class CIBuilder(Builder):
     def _copy_certs(self):
 
         fqdn = self._confreader['build_config']['buildbot_master']['fqdn']
-        private_key = self._confreader['build_config']['buildbot_master'].get('private_key', None)
-        public_cert = self._confreader['build_config']['buildbot_master'].get('public_cert', None)
+        private_key = self._confreader['build_config']['buildbot_master'].get('private_key', '')
+        public_cert = self._confreader['build_config']['buildbot_master'].get('public_cert', '')
         key = os.path.join(self._build_folder, 'certs', 'buildbot.key')
         cert = os.path.join(self._build_folder, 'certs', 'buildbot.crt')
 
         rules = []
-        if private_key is None or public_cert is None:
-            rules.extend([
-                LoggingRule('Creating self signed certs', self._logger.warning),
-                SubprocessRule(
-                    ['openssl', 'req', '-x509', '-nodes', '-new',
-                     '-keyout', key, '-out', cert,
-                     '-days', '365', '-subj', '/CN=%s' % fqdn],
-                    stderr_writer=self._logger.warning
-                    )
-            ])
-        else:
+
+        if os.path.isfile(private_key) and os.path.isfile(public_cert):
             rules.extend([
                 LoggingRule('Copying certs'),
                 PythonRule(
@@ -293,6 +316,16 @@ class CIBuilder(Builder):
                     ]
                 )
             ])
+        else:
+            rules.extend([
+                LoggingRule('Creating self signed certs', self._logger.warning),
+                SubprocessRule(
+                    ['openssl', 'req', '-x509', '-nodes', '-new',
+                     '-keyout', key, '-out', cert,
+                     '-days', '365', '-subj', '/CN=%s' % fqdn],
+                    stderr_writer=self._logger.warning
+                    )
+            ])
 
         rules.extend([
             LoggingRule('Setting cert modes'),
@@ -306,23 +339,41 @@ class CIBuilder(Builder):
         return rules
 
     def _copy_ssh(self):
-        """AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"""
+        """Copies or creates ssh keys based on configuration"""
 
-        config_file = self._confreader['auths']['ssh'].get('config_file', None)
-        known_hosts_file = self._confreader['auths']['ssh'].get('known_hosts_file', None)
-        key_files = self._confreader['auths']['ssh']['key_files']
-        configs = os.path.join(slef._build_foler, 'nfs', 'buildbot_home', '.ssh', 'configs')
-        known_hosts = os.path.join(slef._build_foler, 'nfs', 'buildbot_home', '.ssh', 'known_hosts')
+        ssh_folder = os.path.join(self._build_folder, 'nfs', 'buildbot_home', '.ssh')
+
+        auth_ssh_conf = self._confreader['build_config'].get('auths', {}).get('ssh', {})
+
+
+        ssh_config_src = auth_ssh_conf.get('config_file', '')
+        known_hosts_src = auth_ssh_conf.get('known_hosts_file', '')
+
+        ssh_config_target = os.path.join(ssh_folder, 'config')
+        known_hosts_target = os.path.join(ssh_folder, 'known_hosts')
+
+        key_files = auth_ssh_conf.get('key_files', [])
 
         rules = []
-        if config_file:
+        if os.path.isfile(ssh_config_src):
             rules.extend([
-                LogginRule('Copying ssh configuration file'),
+                LoggingRule('Copying ssh configuration'),
                 PythonRule(
                     copy_file,
                     args=[
-                        config_file,
-                        configs
+                        ssh_config_src,
+                        ssh_config_target
+                    ]
+                )
+            ])
+        if os.path.isfile(known_hosts_src):
+            rules.extend([
+                LoggingRule('Copying ssh known_hosts'),
+                PythonRule(
+                    copy_file,
+                    args=[
+                        known_hosts_src,
+                        known_hosts_target
                     ]
                 )
             ])
@@ -351,6 +402,7 @@ class CIBuilder(Builder):
         rules = []
         rules.extend(self._get_clone_build_environment_rule())
         rules.extend(self._copy_certs())
+        rules.extend(self._copy_ssh())
         rules.extend(self._get_config_creation_rules())
         rules.extend(self._get_directory_creation_rules())
         return rules

@@ -15,7 +15,9 @@ auths:
   ssh:
     config_file: /path/to/file
     known_hosts_file: /path/to/file
-    key_files:
+    private_keys:
+      - /path/to/file
+    public_keys:
       - /path/to/file
   docker:
     config_file: /path/to/file
