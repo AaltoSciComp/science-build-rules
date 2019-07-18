@@ -1,5 +1,5 @@
 config:
-  install_tree: /share/apps/spack/production
+  install_tree: /share/apps/spack/production/software
   install_path_scheme: '${PACKAGE}/${VERSION}/${HASH:7}'
   module_roots:
     tcl: /share/apps/spack/production/modules

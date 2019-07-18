@@ -431,7 +431,6 @@ class SpackBuilder(Builder):
         rules.append(LoggingRule('Installing packages'))
         for package_config in packages:
             rules.extend([
-                self._get_package_spec_rule(package_config),
                 self._get_package_install_rule(package_config)
             ])
 
