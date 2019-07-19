@@ -53,14 +53,14 @@ class CIBuilder(Builder):
                     'ssh': {
                         'type': 'object',
                         'properties': {
-                            'config_file': {'type': 'string'},
-                            'known_hosts_file': {'type': 'string'},
+                            'config_file': {'type': ['string', 'null']},
+                            'known_hosts_file': {'type': ['string', 'null']},
                             'private_keys': {
-                                'type': 'array',
+                                'type': ['array', 'null'],
                                 'items': {'type': 'string'}
                             },
                             'public_keys': {
-                                'type': 'array',
+                                'type': ['array', 'null'],
                                 'items': {'type': 'string'}
                             },
                         },
@@ -383,7 +383,7 @@ class CIBuilder(Builder):
                 PythonRule(os.chmod,
                            args=[ssh_config_target, 0o600])
             ])
-        if len(private_keys) > 0:
+        if private_keys and len(private_keys) > 0:
             rules.append(LoggingRule('Copying ssh private keys'))
             for private_key_src in private_keys:
                 private_key_target = os.path.join(
@@ -405,7 +405,7 @@ class CIBuilder(Builder):
             rules.extend([
                 LoggingRule('No private keys given, generating ')])
 
-        if len(public_keys) > 0:
+        if public_keys and len(public_keys) > 0:
             rules.append(LoggingRule('Copying ssh public keys'))
             for public_key_src in public_keys:
                 public_key_target = os.path.join(
