@@ -53,14 +53,14 @@ class CIBuilder(Builder):
                     'ssh': {
                         'type': 'object',
                         'properties': {
-                            'config_file': {'type': 'string'},
-                            'known_hosts_file': {'type': 'string'},
+                            'config_file': {'type': ['string', 'null']},
+                            'known_hosts_file': {'type': ['string', 'null']},
                             'private_keys': {
-                                'type': 'array',
+                                'type': ['array', 'null'],
                                 'items': {'type': 'string'}
                             },
                             'public_keys': {
-                                'type': 'array',
+                                'type': ['array', 'null'],
                                 'items': {'type': 'string'}
                             },
                         },
