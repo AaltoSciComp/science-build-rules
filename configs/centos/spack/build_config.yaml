@@ -1,4 +1,6 @@
-compilers: []
+compilers:
+  - name: 'gcc'
+    version: 5.5.0
 packages:
   - name: libtool
     version: 2.4.6
