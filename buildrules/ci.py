@@ -4,7 +4,7 @@
 import os
 import logging
 import tempfile
-from shutil import copy2 as copy_file
+from shutil import copy2
 from jinja2 import Template
 
 from buildrules.common.builder import Builder
@@ -239,11 +239,19 @@ class CIBuilder(Builder):
         ]
 
     @classmethod
-    def _makedirs(cls, path):
+    def _makedirs(cls, path, chmod=None):
         try:
             os.makedirs(path)
+            if chmod:
+                os.chmod(path, chmod)
         except FileExistsError:
             pass
+
+    @classmethod
+    def _copy_file(cls, src, target, chmod=None):
+        copy2(src, target)
+        if chmod:
+            os.chmod(target, chmod)
 
     def _get_directory_creation_rules(self):
         """Creates directories for nfs"""
@@ -266,9 +274,8 @@ class CIBuilder(Builder):
                 ),
                 PythonRule(
                     self._makedirs,
-                    args=[worker_ssh_folder]),
-                PythonRule(os.chmod,
-                           args=[worker_ssh_folder, 0o700]),
+                    args=[worker_ssh_folder],
+                    kwargs={'chmod':0o700}),
                 LoggingRule(
                     ('Creating build and software '
                      'directories for worker %s') % worker['name'])
@@ -316,14 +323,14 @@ class CIBuilder(Builder):
             rules.extend([
                 LoggingRule('Copying certs'),
                 PythonRule(
-                    copy_file,
+                    self._copy_file,
                     args=[
                         self._confreader['build_config']['buildbot_master']['private_key'],
                         key
                     ]
                 ),
                 PythonRule(
-                    copy_file,
+                    self._copy_file,
                     args=[
                         self._confreader['build_config']['buildbot_master']['public_cert'],
                         cert
@@ -381,44 +388,31 @@ class CIBuilder(Builder):
             private_keys = auth_ssh_conf.get('private_keys', [])
             public_keys = auth_ssh_conf.get('public_keys', [])
 
+            rules.append(LoggingRule(
+                ('Copying ssh settings '
+                 'to home folder of %s') % worker['name']
+            ))
             if ssh_config_src:
                 rules.extend([
-                    LoggingRule(
-                        ('Copying ssh configuration '
-                         'for worker %s') % worker['name']
-                    ),
                     PythonRule(
-                        copy_file,
+                        self._copy_file,
                         args=[
                             ssh_config_src,
                             ssh_config_target
-                        ]
-                    ),
-                    PythonRule(os.chmod,
-                               args=[ssh_config_target, 0o644])
+                        ],
+                        kwargs={'chmod':0o644})
                 ])
             if known_hosts_src:
                 rules.extend([
-                    LoggingRule(
-                        ('Copying ssh known_hosts'
-                         'for worker %s') % worker['name']
-                    ),
                     PythonRule(
-                        copy_file,
+                        self._copy_file,
                         args=[
                             known_hosts_src,
                             known_hosts_target
-                        ]
-                    ),
-                    PythonRule(os.chmod,
-                               args=[known_hosts_target, 0o600])
+                        ],
+                        kwargs={'chmod':0o600})
                 ])
             if private_keys:
-                rules.append(
-                    LoggingRule(
-                        ('Copying ssh private keys'
-                         'for worker %s') % worker['name']
-                    ))
                 for private_key_src in private_keys:
                     private_key_target = os.path.join(
                         ssh_folder,
@@ -426,14 +420,12 @@ class CIBuilder(Builder):
                     )
                     rules.extend([
                         PythonRule(
-                            copy_file,
+                            self._copy_file,
                             args=[
                                 private_key_src,
                                 private_key_target
-                            ]
-                        ),
-                        PythonRule(os.chmod,
-                                   args=[private_key_target, 0o600])
+                            ],
+                            kwargs={'chmod':0o600})
                     ])
             else:
                 private_key_target = os.path.join(
@@ -461,11 +453,6 @@ class CIBuilder(Builder):
                     ])
 
             if public_keys:
-                rules.append(
-                    LoggingRule(
-                        ('Copying ssh public keys'
-                         'for worker %s') % worker['name']
-                    ))
                 for public_key_src in public_keys:
                     public_key_target = os.path.join(
                         ssh_folder,
@@ -473,14 +460,12 @@ class CIBuilder(Builder):
                     )
                     rules.extend([
                         PythonRule(
-                            copy_file,
+                            self._copy_file,
                             args=[
                                 public_key_src,
                                 public_key_target
-                            ]
-                        ),
-                        PythonRule(os.chmod,
-                                   args=[public_key_target, 0o644])
+                            ],
+                            kwargs={'chmod':0o644})
                     ])
 
         return rules
