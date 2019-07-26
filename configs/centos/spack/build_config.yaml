@@ -6,12 +6,22 @@ packages:
     version: 2.4.6
   - name: 'openmpi'
     version: 2.1.2
-    variants: "fabrics=verbs schedulers=slurm +pmi +thread_multiple"
-    dependencies: "%gcc@5.5.0"
+    variants:
+      - "fabrics=verbs"
+      - "schedulers=slurm"
+      - "+pmi"
+      - "+thread_multiple"
+    dependencies:
+      - "%gcc@5.5.0"
   - name: 'openmpi'
     version: 2.1.5
-    variants: "fabrics=verbs schedulers=slurm +pmi +thread_multiple"
-    dependencies: "%gcc@5.5.0"
+    variants:
+      - "fabrics=verbs"
+      - "schedulers=slurm"
+      - "+pmi"
+      - "+thread_multiple"
+    dependencies:
+      - "%gcc@5.5.0"
   - name: 'bison'
     version: 3.0.4
   - name: 'clhep'

@@ -302,16 +302,16 @@ class SpackBuilder(Builder):
                             'name': {'type': 'string'},
                             'version': {'type': 'string'},
                             'variants': {
-                                'type': 'string',
-                                'default':''
+                                'type': 'array',
+                                'items': {'type': 'string'},
                             },
                             'dependencies': {
-                                'type': 'string',
-                                'default':''
+                                'type': 'array',
+                                'items': {'type': 'string'},
                             },
                             'extra_flags': {
-                                'type': 'string',
-                                'default':''
+                                'type': 'array',
+                                'items': {'type': 'string'},
                             },
                         },
                         'required': ['name', 'version'],
@@ -326,16 +326,16 @@ class SpackBuilder(Builder):
                             'name': {'type': 'string'},
                             'version': {'type': 'string'},
                             'variants': {
-                                'type': 'string',
-                                'default':''
+                                'type': 'array',
+                                'items': {'type': 'string'},
                             },
                             'dependencies': {
-                                'type': 'string',
-                                'default':''
+                                'type': 'array',
+                                'items': {'type': 'string'},
                             },
                             'extra_flags': {
-                                'type': 'string',
-                                'default':''
+                                'type': 'array',
+                                'items': {'type': 'string'},
                             },
                         },
                         'required': ['name', 'version'],
@@ -359,12 +359,9 @@ class SpackBuilder(Builder):
 
     @classmethod
     def _get_spec_list(cls, package_config):
-        spec_list = [
-            '{name}@{version}'.format(**package_config),
-            package_config.get('variants', None),
-            package_config.get('dependencies', None)
-        ]
-        spec_list = [x for x in spec_list if x is not None]
+        spec_list = ['{name}@{version}'.format(**package_config)]
+        spec_list.extend(package_config.get('variants', []))
+        spec_list.extend(package_config.get('dependencies', []))
         return spec_list
 
     @classmethod
