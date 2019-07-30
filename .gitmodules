@@ -1,3 +1,4 @@
 [submodule "spack"]
-	path = spack
-	url = https://github.com/spack/spack.git
+    path = spack
+    url = https://github.com/spack/spack.git
+    branch = develop
