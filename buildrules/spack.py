@@ -4,8 +4,7 @@
 import sys
 import os
 import logging
-from copy import deepcopy
-from yaml import load as yaml_load, dump as yaml_dump
+import yaml
 
 from buildrules.common.builder import Builder
 from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule
@@ -304,6 +303,7 @@ class SpackBuilder(Builder):
                         'properties': {
                             'name': {'type': 'string'},
                             'version': {'type': 'string'},
+                            'system_compiler': {'type': 'boolean'},
                             'variants': {
                                 'type': 'array',
                                 'items': {'type': 'string'},
@@ -397,23 +397,21 @@ class SpackBuilder(Builder):
         self._logger.debug(msg='Creating package install rule for spec: {0}'.format(spec_str))
         return SubprocessRule(self._spack_cmd + ['install', '-v'] + spec_list)
 
-    def _set_compiler_flags(self, compilers_file, spec, flags):
-        if os.path.isfile(compilers_file):
-            with open(compilers_file, 'r') as f:
-                self._logger.info(''.join(f.readlines()))
-        sys.exit(0)
-        """
+    def _set_compiler_flags(self, spec, flags):
+        if os.path.isfile(self._compilers_file):
+            with open(self._compilers_file, 'r') as compilers_file:
+                compiler_dict = yaml.load(compilers_file, Loader=yaml.SafeLoader)
             for index, compiler in zip(range(len(compiler_dict['compilers'])),
                                        compiler_dict['compilers']):
                 if compiler['compiler']['spec'] == spec:
                     compiler_dict['compilers'][index]['compiler']['flags'] = flags
             with open(self._compilers_file, 'w') as compilers_file:
-                compilers_file.write(yaml_dump(compiler_dict, default_flow_style=False))
-        """
-
-    def _get_compiler_flags_rule(self, spec_list, package_config):
-        flags = package_config.get('flags',{})
-        return PythonRule(self._set_compiler_flags, [self._compilers_file, spec_list[0], flags])
+                compilers_file.write(
+                    yaml.dump(
+                        compiler_dict,
+                        default_flow_style=False,
+                        Dumper=yaml.SafeDumper
+                ))
 
     def _get_compiler_install_rules(self):
         rules = []
@@ -421,6 +419,7 @@ class SpackBuilder(Builder):
         compiler_packages = self._confreader['build_config']['compilers']
         rules.append(LoggingRule('Removing old compilers.yml'))
         rules.append(PythonRule(self._remove_compilers_file))
+
         def get_compiler_find_rule(spec_list):
             return SubprocessRule(
                 (self._spack_cmd + ['find', '-p'] +
@@ -430,6 +429,11 @@ class SpackBuilder(Builder):
                  self._spack_cmd + ['compiler', 'add']),
                 shell=True,
                 check=False)
+        
+        def get_compiler_flags_rule(spec_list, package_config):
+            flags = package_config.get('flags', {})
+            return PythonRule(self._set_compiler_flags, [spec_list[0], flags])
+
 
         rules.extend([
             LoggingRule('Adding default compilers'),
@@ -445,15 +449,16 @@ class SpackBuilder(Builder):
             self._logger.debug(msg='Creating compiler find rule for spec: {0}'.format(spec_str))
             rules.extend([
                 get_compiler_find_rule(spec_list),
-                self._get_compiler_flags_rule(spec_list, package_config)
+                get_compiler_flags_rule(spec_list, package_config)
             ])
         rules.append(LoggingRule('Installing compilers'))
         for package_config in compiler_packages:
-            rules.extend([
-                self._get_package_install_rule(package_config),
-                get_compiler_find_rule(spec_list),
-                self._get_compiler_flags_rule(spec_list, package_config)
-            ])
+            if not package_config.get('system_compiler', False):
+                rules.extend([
+                    self._get_package_install_rule(package_config),
+                    get_compiler_find_rule(spec_list),
+                    get_compiler_flags_rule(spec_list, package_config)
+                ])
 
         return rules
 
@@ -513,7 +518,6 @@ class SpackBuilder(Builder):
         pass
 
 if __name__ == "__main__":
-    import sys
 
     CONF_FOLDER = sys.argv[1]
 
