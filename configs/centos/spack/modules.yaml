@@ -35,6 +35,7 @@ modules:
       - '%gcc@4.8.5'
     core_compilers:
       - 'gcc@5.5.0'
+      - 'gcc@4.8.5'
     hash_length: 0
     all:
       autoload: 'direct'
