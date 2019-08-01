@@ -1,6 +1,7 @@
 compilers:
   - name: 'gcc'
     version: 5.5.0
+    dependencies: '%gcc@4.8.5'
 packages:
   - name: libtool
     version: 2.4.6
@@ -11,8 +12,6 @@ packages:
       - "schedulers=slurm"
       - "+pmi"
       - "+thread_multiple"
-    dependencies:
-      - "%gcc@5.5.0"
   - name: 'openmpi'
     version: 2.1.5
     variants:
@@ -20,8 +19,6 @@ packages:
       - "schedulers=slurm"
       - "+pmi"
       - "+thread_multiple"
-    dependencies:
-      - "%gcc@5.5.0"
   - name: 'bison'
     version: 3.0.5
   - name: 'clhep'
