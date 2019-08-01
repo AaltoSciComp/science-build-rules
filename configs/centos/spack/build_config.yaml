@@ -40,7 +40,9 @@ packages:
   - name: 'doxygen'
     version: 1.8.14
   - name: 'ffmpeg'
-    version: 3.2.4
+    version: 4.1.1
+    variants:
+      - "+aom"
   - name: 'geant4'
     version: '10.04'
   - name: 'go'
