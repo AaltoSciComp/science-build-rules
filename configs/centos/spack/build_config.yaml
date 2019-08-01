@@ -1,5 +1,13 @@
 compilers:
   - name: 'gcc'
+    version: 4.8.5
+    system_compiler: true
+    flags:
+      cflags: -O2 -fPIC
+      cxxflags: -O2 -fPIC
+      cppflags: -O2 -fPIC
+      fflags: -O2 -fPIC
+  - name: 'gcc'
     version: 5.5.0
     dependencies:
       - '%gcc@4.8.5'
