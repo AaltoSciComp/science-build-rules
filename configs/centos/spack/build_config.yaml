@@ -2,6 +2,11 @@ compilers:
   - name: 'gcc'
     version: 5.5.0
     dependencies: '%gcc@4.8.5'
+    flags:
+      cflags: -O2 -fPIC
+      cxxflags: -O2 -fPIC
+      cppflags: -O2 -fPIC
+      fflags: -O2 -fPIC
 packages:
   - name: libtool
     version: 2.4.6
