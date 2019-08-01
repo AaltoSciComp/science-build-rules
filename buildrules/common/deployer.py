@@ -9,7 +9,6 @@ import logging
 import os
 from jsonschema import validate
 from buildrules.common.rule import SubprocessRule, LoggingRule
-from buildrules.common.utils import stdstreams_to_logger
 
 DEPLOYMENTCONFIG_SCHEMA = {
     "$schema" : "http://json-schema.org/draft-07/schema#",

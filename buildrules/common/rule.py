@@ -13,7 +13,6 @@ import subprocess
 import select
 import traceback
 from io import StringIO
-from buildrules.common.utils import stdstreams_to_logger
 
 class RuleError(Exception):
     """BuildRuleError is the error for build rules."""
@@ -65,9 +64,6 @@ class Rule:
     def __repr__(self):
         return self.__str__()
 
-    def _log_streams(self, function):
-        return stdstreams_to_logger(self._stdout_writer, self._stderr_writer)(function)
-
     def __call__(self):
         return False
 
@@ -109,7 +105,7 @@ class PythonRule(Rule):
         self._logger.info('Running %s', self)
 
         if not dry_run:
-            return self._log_streams(self._func)(*self._args, **self._kwargs)
+            return self._func(*self._args, **self._kwargs)
 
         return False
 
