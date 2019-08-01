@@ -16,8 +16,8 @@ packages:
   mesa:
     variants: ~hwrender+llvm+swrender
   openblas:
-    version: [0.3.2]
-    variants: +virtual_machine threads=pthreads
+    version: [0.3.6]
+    variants: +virtual_machine threads=pthreads +avx2
   openmpi:
     version: [2.1.5]
     compiler: [gcc@5.5.0]

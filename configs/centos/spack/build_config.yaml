@@ -37,3 +37,17 @@ packages:
     version: 3.0.5
   - name: 'clhep'
     version: 2.4.0.0
+  - name: 'doxygen'
+    version: 1.8.14
+  - name: 'ffmpeg'
+    version: 3.2.4
+  - name: 'geant4'
+    version: '10.04'
+  - name: 'go'
+    version: 1.10.3
+  - name: 'hadoop'
+    version: 3.1.0
+  - name: 'libpcap'
+    version: 1.8.1
+  - name: 'netcdf-cxx4'
+    version: 4.3.0
