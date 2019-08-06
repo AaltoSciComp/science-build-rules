@@ -59,7 +59,7 @@ packages:
       - "+guile"
       - "+mpi"
     dependencies:
-      - "^guile@2.0.11"
+      - "^guile@2.2.0"
       - "^openmpi"
     extra_flags:
       - "--jobs 1"
