@@ -45,6 +45,8 @@ packages:
       - "+aom"
   - name: 'geant4'
     version: '10.04'
+    variants:
+      - "cxxstd=11"
   - name: 'go'
     version: 1.10.3
   - name: 'hadoop'
