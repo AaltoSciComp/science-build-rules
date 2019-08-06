@@ -55,3 +55,9 @@ packages:
     version: 1.8.1
   - name: 'netcdf-cxx4'
     version: 4.3.0
+  - name: 'h5utils'
+    version: 1.13.1
+    variants:
+      - "+png"
+    extra_flags:
+      - "--jobs 1"
