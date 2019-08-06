@@ -18,6 +18,8 @@ packages:
     variants: +progress
   mesa:
     variants: ~hwrender+llvm+swrender
+  netcdf:
+    version: [4.6.3]
   openblas:
     version: [0.3.6]
     variants: +virtual_machine threads=pthreads +avx2
