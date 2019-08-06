@@ -61,3 +61,13 @@ packages:
       - "+png"
     extra_flags:
       - "--jobs 1"
+  - name: 'meep'
+    version: 1.4.3
+    variants:
+      - "+guile"
+      - "+mpi"
+    dependencies:
+      - "^guile@2.0.11"
+      - "^openmpi"
+    extra_flags:
+      - "--jobs 1"
