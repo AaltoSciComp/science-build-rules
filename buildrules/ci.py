@@ -36,6 +36,7 @@ class CIBuilder(Builder):
                     'web_port': {'type': 'integer'},
                     'gitlab_hook_secret': {'type': 'string'},
                     'github_hook_secret': {'type': 'string'},
+                    'github_token_secret': {'type': 'string'},
                     'worker_password': {'type': 'string'},
                     'worker_port': {'type': 'integer'},
                     'timeout': {'type': 'integer'},
