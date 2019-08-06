@@ -4,7 +4,10 @@ packages:
   cuda:
     version: [9.2.88]
   curl:
-    variants: +libssh2 ~nghttp2
+    version: [7.29.0]
+    paths:
+      curl@7.29.0: /fake/path
+    buildable: False
   gcc:
     version: [5.5.0]
   graphviz:
