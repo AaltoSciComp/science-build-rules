@@ -394,8 +394,11 @@ class SpackBuilder(Builder):
     def _get_package_install_rule(self, package_config):
         spec_str = self._get_spec_string(package_config)
         spec_list = self._get_spec_list(package_config)
+        extra_flags = []
+        for flag_str in package_config.get('extra_flags', []):
+            extra_flags.extend(flag_str.split(' '))
         self._logger.debug(msg='Creating package install rule for spec: {0}'.format(spec_str))
-        return SubprocessRule(self._spack_cmd + ['install', '-v'] + spec_list)
+        return SubprocessRule(self._spack_cmd + ['install', '-v'] + extra_flags + spec_list)
 
     def _set_compiler_flags(self, spec, flags):
         if os.path.isfile(self._compilers_file):
@@ -411,7 +414,7 @@ class SpackBuilder(Builder):
                         compiler_dict,
                         default_flow_style=False,
                         Dumper=yaml.SafeDumper
-                ))
+                    ))
 
     def _get_compiler_install_rules(self):
         rules = []
@@ -429,7 +432,7 @@ class SpackBuilder(Builder):
                  self._spack_cmd + ['compiler', 'add']),
                 shell=True,
                 check=False)
-        
+
         def get_compiler_flags_rule(spec_list, package_config):
             flags = package_config.get('flags', {})
             return PythonRule(self._set_compiler_flags, [spec_list[0], flags])
