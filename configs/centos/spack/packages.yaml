@@ -10,8 +10,6 @@ packages:
     buildable: False
   gcc:
     version: [5.5.0]
-  bdw-gc:
-    version: [7.6.0]
   graphviz:
     variants: +expat +ghostscript +gtkplus +gts +java +libgd +pangocairo +qt
   hdf5:
