@@ -80,7 +80,7 @@ packages:
         - "^openmpi"
         - "^python@:2.9"
   - name: 'poppler'
-    version: 0.65.0
+    version: 0.77.0
   - name: 'py-gpaw'
     version: 1.3.0
     variants:
