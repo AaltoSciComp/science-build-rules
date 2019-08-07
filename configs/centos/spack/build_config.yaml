@@ -59,18 +59,18 @@ packages:
       - "+python"
     dependencies:
       - "^python@3:"
-  - name: 'paraview'
-    version: 5.4.1
-    variants:
-      - "+mpi"
-      - "+opengl2"
-      - "+qt"
-      - "+plugins"
-    dependencies:
-      - "^openmpi"
-      - "^qt@4.8.6"
-      - "^python@:2.9"
-  - name: 'paraview'
+#  - name: 'paraview'
+#    version: 5.4.1
+#    variants:
+#      - "+mpi"
+#      - "+opengl2"
+#      - "+qt"
+#      - "+plugins"
+#    dependencies:
+#      - "^openmpi"
+#      - "^qt@4.8.6"
+#      - "^python@:2.9"
+#  - name: 'paraview'
     version: 5.4.1
     variants:
         - "+mpi"
