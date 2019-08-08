@@ -37,8 +37,8 @@ packages:
   pcre:
     variants: +jit +utf
   python:
-    version: [3.6.3, 3.7.0]
-    variants: +pic +shared +tk
+    version: [3.7.4]
+    variants: +pic +shared +tk +optimizations +ucs4
   qmd-progress:
     variants: +graphlib
   qt:
