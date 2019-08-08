@@ -38,7 +38,7 @@ packages:
     variants: +jit +utf
   python:
     version: [3.7.4]
-    variants: +pic +shared +tk +optimizations +ucs4
+    variants: +pic +shared +tk +optimizations
   qmd-progress:
     variants: +graphlib
   qt:
