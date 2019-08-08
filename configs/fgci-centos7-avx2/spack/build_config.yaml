@@ -21,11 +21,6 @@ compilers:
 packages:
   - name: 'openmpi'
     version: 4.0.1
-    variants:
-      - "fabrics=ucx"
-      - "schedulers=slurm"
-      - "+pmi"
-      - "+thread_multiple"
   - name: 'go'
     version: 1.12.6
   - name: 'python'

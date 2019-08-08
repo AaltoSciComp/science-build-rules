@@ -22,11 +22,10 @@ packages:
     version: [4.6.3]
   openblas:
     version: [0.3.6]
-    variants: +virtual_machine threads=pthreads +avx2
+    variants: +virtual_machine threads=pthreads +avx2 +pic
   openmpi:
-    version: [2.1.5]
-    compiler: [gcc@5.5.0]
-    variants: fabrics=verbs +pmi +thread_multiple schedulers=slurm
+    version: [4.0.1]
+    variants: fabrics=ucx +pmi +thread_multiple schedulers=slurm
   openssl:
     version: [system]
     paths:
@@ -49,7 +48,7 @@ packages:
   slurm:
     version: [system]
     paths:
-      slurm@system: /fake/path
+      slurm@system: /usr
     buildable: False
   all:
     compiler: [gcc, intel, pgi, clang, xl, nag]
