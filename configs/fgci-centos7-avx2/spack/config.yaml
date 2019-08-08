@@ -1,0 +1,12 @@
+config:
+  install_tree: /share/apps/spack/envs/fgci-centos7-avx2/software
+  install_path_scheme: '${PACKAGE}/${VERSION}/${HASH:7}'
+  module_roots:
+    tcl: /share/apps/spack/envs/fgci-centos7-avx2/modules
+    lmod: /share/apps/spack/envs/fgci-centos7-avx2/lmod
+    dotkit: /share/apps/spack/envs/fgci-centos7-avx2/dotkit
+  source_cache: /cache
+  misc_cache: /tmp/spack_misc_cache
+  build_stage:
+    - $spack/var/spack/stage
+  locks: false

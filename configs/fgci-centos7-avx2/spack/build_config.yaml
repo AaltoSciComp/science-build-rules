@@ -1,0 +1,34 @@
+compilers:
+  - name: 'gcc'
+    version: 4.8.5
+    system_compiler: true
+    flags:
+      cflags: -O2 -g
+      cxxflags: -O2 -g
+      cppflags: -O2 -g
+      fflags: -O2 -g
+  - name: 'gcc'
+    version: 9.1.0
+    variants:
+      - '+piclibs'
+    dependencies:
+      - '%gcc@4.8.5'
+    flags:
+      cflags: -O2 -g -march=haswell -ftree-loop-vectorize
+      cxxflags: -O2 -g -march=haswell -ftree-loop-vectorize
+      cppflags: -O2 -g -march=haswell -ftree-loop-vectorize
+      fflags: -O2 -g -march=haswell -ftree-loop-vectorize
+packages:
+  - name: 'openmpi'
+    version: 4.0.1
+    variants:
+      - "fabrics=ucx"
+      - "schedulers=slurm"
+      - "+pmi"
+      - "+thread_multiple"
+  - name: 'go'
+    version: 1.12.6
+  - name: 'python'
+    version: 3.7.4
+  - name: 'r'
+    version: 3.6.0
