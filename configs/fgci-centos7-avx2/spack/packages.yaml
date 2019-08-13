@@ -14,8 +14,6 @@ packages:
     variants: +expat +ghostscript +gtkplus +gts +java +libgd +pangocairo +qt
   hdf5:
     variants: +cxx +fortran +hl +pic +shared +szip +threadsafe
-  hwloc:
-    version: [1.11.11]
   latte:
     variants: +progress
   mesa:
@@ -26,7 +24,7 @@ packages:
     version: [0.3.6]
     variants: +virtual_machine threads=pthreads +avx2 +pic
   openmpi:
-    version: [4.0.1]
+    version: [3.1.4]
     variants: fabrics=ucx +pmi +thread_multiple schedulers=slurm +legacylaunchers
   openssl:
     version: [system]
