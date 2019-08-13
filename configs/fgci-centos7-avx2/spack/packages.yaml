@@ -48,7 +48,7 @@ packages:
   slurm:
     version: [system]
     paths:
-      slurm@system: /fake/path
+      slurm@system: /usr/lib64
     buildable: False
   all:
     compiler: [gcc, intel, pgi, clang, xl, nag]
