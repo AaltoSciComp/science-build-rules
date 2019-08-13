@@ -4,9 +4,9 @@ packages:
   cuda:
     version: [9.2.88]
   curl:
-    version: [system]
+    version: [7.29.0]
     paths:
-      curl@system: /fake/path
+      curl@7.29.0: /fake/path
     buildable: False
   gcc:
     version: [9.1.0]
@@ -27,9 +27,9 @@ packages:
     version: [3.1.4]
     variants: fabrics=ucx +pmi +thread_multiple schedulers=slurm +legacylaunchers
   openssl:
-    version: [system]
+    version: [1.0.2k]
     paths:
-      openssl@system: /fake/path
+      openssl@1.0.2k: /fake/path
     buildable: False
   pango:
     variants: +X
@@ -46,9 +46,9 @@ packages:
     version: [3.6.0]
     variants: +X +external-lapack
   slurm:
-    version: [system]
+    version: [17-11-5-1]
     paths:
-      slurm@system: /usr
+      slurm@17-11-5-1: /usr
     buildable: False
   all:
     compiler: [gcc, intel, pgi, clang, xl, nag]
