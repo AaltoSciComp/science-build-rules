@@ -14,6 +14,8 @@ packages:
     variants: +expat +ghostscript +gtkplus +gts +java +libgd +pangocairo +qt
   hdf5:
     variants: +cxx +fortran +hl +pic +shared +szip +threadsafe
+  hwloc:
+    version: [1.11.11]
   latte:
     variants: +progress
   mesa:
