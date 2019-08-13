@@ -25,7 +25,7 @@ packages:
     variants: +virtual_machine threads=pthreads +avx2 +pic
   openmpi:
     version: [4.0.1]
-    variants: fabrics=ucx +pmi +thread_multiple schedulers=slurm
+    variants: fabrics=ucx +pmi +thread_multiple schedulers=slurm +legacylaunchers
   openssl:
     version: [system]
     paths:
@@ -48,7 +48,7 @@ packages:
   slurm:
     version: [system]
     paths:
-      slurm@system: /usr
+      slurm@system: /fake/path
     buildable: False
   all:
     compiler: [gcc, intel, pgi, clang, xl, nag]
