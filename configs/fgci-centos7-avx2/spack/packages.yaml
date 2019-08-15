@@ -3,11 +3,6 @@ packages:
     variants: +X
   cuda:
     version: [9.2.88]
-  curl:
-    version: [7.29.0]
-    paths:
-      curl@7.29.0: /fake/path
-    buildable: False
   gcc:
     version: [9.1.0]
   graphviz:
