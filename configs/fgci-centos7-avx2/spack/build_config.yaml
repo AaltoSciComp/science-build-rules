@@ -16,7 +16,7 @@ compilers:
     flags:
       cflags: -O2 -g -march=haswell -ftree-loop-vectorize
       cxxflags: -O2 -g -march=haswell -ftree-loop-vectorize
-      cppflags: -O2 -g -march=haswell -ftree-loop-vectorize
+      cppflags: -O2 -g -march=haswell
       fflags: -O2 -g -march=haswell -ftree-loop-vectorize
 packages:
   - name: 'openmpi'
