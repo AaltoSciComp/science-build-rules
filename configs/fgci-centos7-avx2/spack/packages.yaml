@@ -3,6 +3,8 @@ packages:
     variants: +X
   cuda:
     version: [9.2.88]
+  curl:
+    variants: +libssh2 ~nghttp
   gcc:
     version: [9.1.0]
   graphviz:
