@@ -26,7 +26,7 @@ packages:
   openssl:
     version: [1.0.2k]
     paths:
-      openssl@1.0.2k: /fake/path
+      openssl@1.0.2k: /usr
     buildable: False
   pango:
     variants: +X
