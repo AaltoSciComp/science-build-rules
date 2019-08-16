@@ -27,6 +27,16 @@ packages:
       - "+thread_multiple"
       - "schedulers=slurm"
       - "+legacylaunchers"
+  - name: 'openmpi'
+    version: 2.1.5
+  - name: 'openmpi'
+    version: 2.1.5
+    variants:
+      - "fabrics=verbs"
+      - "+pmi"
+      - "+thread_multiple"
+      - "schedulers=slurm"
+      - "+legacylaunchers"
 #  - name: 'go'
 #    version: 1.12.6
 #  - name: 'python'
