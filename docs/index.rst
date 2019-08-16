@@ -10,4 +10,4 @@ Science build rules
    source/installation
    source/builders
    source/deployers
-   source/configuring_a_build
+   source/configuring
