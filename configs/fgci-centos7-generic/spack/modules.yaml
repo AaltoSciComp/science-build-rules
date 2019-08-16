@@ -1,0 +1,73 @@
+modules:
+  enable:
+    - lmod
+  prefix_inspections:
+    bin:
+      - PATH
+    man:
+      - MANPATH
+    share/man:
+      - MANPATH
+    share/aclocal:
+      - ACLOCAL_PATH
+    lib:
+      - LIBRARY_PATH
+      - LD_LIBRARY_PATH
+    lib64:
+      - LIBRARY_PATH
+      - LD_LIBRARY_PATH
+    include:
+      - CPATH
+    lib/pkgconfig:
+      - PKG_CONFIG_PATH
+    lib64/pkgconfig:
+      - PKG_CONFIG_PATH
+    '':
+      - CMAKE_PREFIX_PATH
+  lmod:
+    whitelist:
+      - 'gcc'
+      - 'paraview'
+      - 'openmpi'
+      - 'clhep'
+      - 'xerces-c'
+    blacklist:
+      - '%gcc@4.8.5'
+    core_compilers:
+      - 'gcc@9.1.0'
+      - 'gcc@4.8.5'
+    hash_length: 0
+    all:
+      autoload: 'direct'
+      environment:
+        set:
+          '${PACKAGE}_ROOT': '${PREFIX}'
+      suffixes:
+        '^cuda'          : 'cuda'
+        '^openmpi'       : 'openmpi'
+        '^scalapack'     : 'scalapack'
+        '+qt'            : 'qt'
+        '+opengl2'       : 'opengl2'
+        '+opengl'        : 'opengl'
+        '+osmesa'        : 'osmesa'
+        '+mesa'          : 'mesa'
+        '+metis'         : 'metis'
+        '+sprayfix'      : 'sprayfix'
+        '+ucs4'          : 'ucs4'
+        '^ucx'           : 'ucx'
+        '^python@3:'     : 'python3'
+        '^python@:2.9'   : 'python2'
+        '^r@3.4.3'       : 'r-3.4.3'
+        '^r@3.5.0'       : 'r-3.5.0'
+    geant4:
+      environment:
+        set:
+          G4INSTALL: '${PREFIX}'
+          G4VERSION: '${VERSION}'
+          G4INCLUDE: '${PREFIX}/include/Geant4'
+          G4LIB: '${PREFIX}/lib64/Geant4'
+    gcc:
+      environment:
+        prepend_path:
+          LIBRARY_PATH: '${PREFIX}/lib/gcc/x86_64-unknown-linux-gnu/${VERSION}'
+          LD_LIBRARY_PATH: '${PREFIX}/lib/gcc/x86_64-unknown-linux-gnu/${VERSION}'

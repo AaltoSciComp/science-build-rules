@@ -1,0 +1,72 @@
+packages:
+  cairo:
+    variants: +X
+  cuda:
+    version: [9.2.88]
+  curl:
+    variants: +libssh2 ~nghttp
+  gcc:
+    version: [9.1.0]
+  graphviz:
+    variants: +expat +ghostscript +gtkplus +gts +java +libgd +pangocairo +qt
+  hdf5:
+    variants: +cxx +fortran +hl +pic +shared +szip +threadsafe
+  latte:
+    variants: +progress
+  mesa:
+    variants: ~hwrender+llvm+swrender
+  netcdf:
+    version: [4.6.3]
+  openblas:
+    version: [0.3.6]
+    variants: +virtual_machine threads=pthreads +avx2 +pic
+  openmpi:
+    version: [3.1.4]
+    variants: fabrics=ucx +pmi +thread_multiple schedulers=slurm +legacylaunchers
+  openssl:
+    version: [1.0.2k]
+    paths:
+      openssl@1.0.2k: /usr
+    buildable: False
+  pango:
+    variants: +X
+  pcre:
+    variants: +jit +utf
+  python:
+    version: [3.7.4]
+    variants: +pic +shared +tkinter +optimizations +uuid
+  qmd-progress:
+    variants: +graphlib
+  qt:
+    variants: +phonon +dbus +opengl +webkit
+  r:
+    version: [3.6.0]
+    variants: +X +external-lapack
+  slurm:
+    version: [17-11-5-1]
+    paths:
+      slurm@17-11-5-1: /usr
+    buildable: False
+  all:
+    compiler: [gcc, intel, pgi, clang, xl, nag]
+    providers:
+      awk: [gawk]
+      blas: [openblas]
+      daal: [intel-daal]
+      elf: [elfutils]
+      gl: [mesa]
+      golang: [gcc]
+      ipp: [intel-ipp]
+      java: [jdk]
+      lapack: [openblas]
+      mkl: [intel-mkl]
+      mpe: [mpe2]
+      mpi: [openmpi, mpich]
+      opencl: [pocl]
+      openfoam: [openfoam-com, openfoam-org, foam-extend]
+      pil: [py-pillow]
+      pkgconfig: [pkgconf, pkg-config]
+      scalapack: [netlib-scalapack]
+      szip: [libszip, libaec]
+      tbb: [intel-tbb]
+      jpeg: [libjpeg-turbo, libjpeg]

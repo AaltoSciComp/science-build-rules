@@ -1,0 +1,7 @@
+[]
+#- method: rsync
+#  target_host: triton
+#  source: /share/apps/spack/envs/fgci-centos7-avx2
+#  dest: /share/apps/spack/envs/fgci-centos7-avx2
+#  set_sbit: true
+#  rsync_flags: -surlptDxv
