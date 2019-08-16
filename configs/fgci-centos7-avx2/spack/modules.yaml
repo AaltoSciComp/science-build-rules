@@ -54,6 +54,7 @@ modules:
         '+metis'         : 'metis'
         '+sprayfix'      : 'sprayfix'
         '+ucs4'          : 'ucs4'
+        '^ucx'           : 'ucx'
         '^python@3:'     : 'python3'
         '^python@:2.9'   : 'python2'
         '^r@3.4.3'       : 'r-3.4.3'
