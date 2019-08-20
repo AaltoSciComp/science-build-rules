@@ -94,6 +94,8 @@ class CIBuilder(Builder):
                         'type': 'object',
                         'properties': {
                             'enabled': {'type': 'boolean'},
+                            'url': {'type': 'boolean'},
+                            'branch': {'type': 'boolean'},
                         },
                         'required': ['enabled'],
                     },
