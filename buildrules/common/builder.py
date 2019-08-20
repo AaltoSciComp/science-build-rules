@@ -5,8 +5,10 @@ This module contains base Builder class used by various buildrules to
 actually build software.
 """
 import os
+import sys
 import logging
 
+from buildrules.common.errors import log_error_and_quit
 from buildrules.common.confreader import ConfReader
 from buildrules.common.rule import Rule, RuleError
 from buildrules.common.deployer import deployer_factory, Deployer, DEPLOYMENTCONFIG_SCHEMA
@@ -36,6 +38,7 @@ class Builder:
     CONF_FILES = []
     SCHEMAS = []
 
+    @log_error_and_quit
     def __init__(self, conf_folder):
         self._logger = logging.getLogger(self.__class__.__name__)
         self._conf_files = list(
@@ -44,7 +47,7 @@ class Builder:
         self._schemas = self.SCHEMAS + [DEPLOYMENTCONFIG_SCHEMA]
         self._confreader = ConfReader(self._conf_files, self._schemas)
         self._deployers = deployer_factory(self._confreader)
-    
+
     def _skip_rule(self, step):
         return step in self._confreader.get('build_config',{}).get('skip_rules',[])
 
@@ -60,12 +63,13 @@ class Builder:
                 rule(dry_run=dry_run)
             except RuleError as e:
                 self._logger.error('Encountered an error while executing BuildRule: {0}: {1}'.format(rule, e))
-                raise e
+                sys.exit(1)
 
     def _get_rules(self):
         """"""
         return []
 
+    @log_error_and_quit
     def describe(self):
         """"""
         self._logger.info('Builder: {0}'.format(self.BUILDER_NAME))
