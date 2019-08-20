@@ -3,9 +3,12 @@
 """
 import sys
 import os
+import shutil
 import logging
-import yaml
 from glob import glob
+from io import StringIO
+import yaml
+from sh import spack, which
 
 from buildrules.common.builder import Builder
 from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule
@@ -495,13 +498,30 @@ class SpackBuilder(Builder):
             )
         return [logging_rule, recreate_rule]
 
-    def _create_all_modules_folders(self, module_folder):
+    @classmethod
+    def _get_module_arch_folders(cls, lmod_root):
+        if '$spack' in lmod_root:
+            if which('spack'):
+                spack_root = spack('location', '-r').split('\n')[0]
+                lmod_root = lmod_root.replace('$spack', spack_root)
 
         def is_arch_folder(folder):
             return os.path.isdir(os.path.join(folder,'Core'))
 
-        arch_folders = [ folder for folder in glob(os.path.join(module_folder,'*')) if os.path.isdir(folder) ]
-        print(arch_folders)
+        arch_folders = [folder for folder in glob(os.path.join(lmod_root, '*')) if is_arch_folder(folder)]
+
+        return arch_folders
+    
+    def _remove_all_modules_folders(self, module_root):
+        for arch_folder in self._get_module_arch_folders(module_root):
+            all_folder = os.path.join(arch_folder, 'all')
+            if os.path.isdir(all_folder):
+                shutil.rmtree(all_folder)
+
+    def _create_all_modules_folders(self, module_root):
+        for arch_folder in self._get_module_arch_folders(module_root):
+            all_folder = os.path.join(arch_folder, 'all')
+            self._makedirs(all_folder, 0o755)
 
     def _get_flatten_lmod_rules(self):
         """This function will create rules that generate a flat lmod
@@ -510,6 +530,16 @@ class SpackBuilder(Builder):
         lmod_root = self._confreader['config']['config']['module_roots']['lmod']
 
         rules = [
+            LoggingRule(
+                'Removing folders that contain the non-hierarchal module structure.'
+            ),
+            PythonRule(
+                self._remove_all_modules_folders,
+                args=[lmod_root],
+            ),
+            LoggingRule(
+                'Creating folders for non-hierarchal module structure.'
+            ),
             PythonRule(
                 self._create_all_modules_folders,
                 args=[lmod_root],
