@@ -5,6 +5,7 @@ import sys
 import os
 import logging
 import yaml
+from glob import glob
 
 from buildrules.common.builder import Builder
 from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule
@@ -494,8 +495,27 @@ class SpackBuilder(Builder):
             )
         return [logging_rule, recreate_rule]
 
-    def _get_symlink_modules_rules(self):
-        return []
+    def _create_all_modules_folders(self, module_folder):
+
+        def is_arch_folder(folder):
+            return os.path.isdir(os.path.join(folder,'Core'))
+
+        arch_folders = [ folder for folder in glob(os.path.join(module_folder,'*')) if os.path.isdir(folder) ]
+        print(arch_folders)
+
+    def _get_flatten_lmod_rules(self):
+        """This function will create rules that generate a flat lmod
+        structure from hierarchical modulefiles"""
+
+        lmod_root = self._confreader['config']['config']['module_roots']['lmod']
+
+        rules = [
+            PythonRule(
+                self._create_all_modules_folders,
+                args=[lmod_root],
+            )
+        ]
+        return rules
 
     def _get_rules(self):
         """_get_rules provides build rules for the builder.
@@ -504,7 +524,10 @@ class SpackBuilder(Builder):
 
         1. Reindexing already installed software
         2. Installing compilers
-
+        3. Installing required packages
+        4. Copying license files
+        5. Re-creating lmod modules to check for name clashes
+        6. Creating flat lmod structure
         """
 
         rules = (
@@ -513,7 +536,7 @@ class SpackBuilder(Builder):
             self._get_package_install_rules() +
             self._get_license_copy_rules() +
             self._get_recreate_modules_rules() +
-            self._get_symlink_modules_rules()
+            self._get_flatten_lmod_rules()
             )
         return rules
 

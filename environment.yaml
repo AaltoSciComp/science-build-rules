@@ -2,30 +2,37 @@ name: buildrules
 channels:
   - defaults
 dependencies:
+  - _libgcc_mutex
   - alabaster
   - asn1crypto
   - astroid
   - attrs
   - babel
+  - bzip2
   - ca-certificates
   - certifi
   - cffi
   - chardet
   - coloredlogs
   - conda
+  - conda-package-handling
   - cryptography
   - docutils
+  - humanfriendly
   - idna
   - imagesize
-  - ipython
   - isort
   - jinja2
   - jsonschema
   - lazy-object-proxy
+  - libarchive
   - libedit
   - libffi
   - libgcc-ng
   - libstdcxx-ng
+  - libxml2
+  - lz4-c
+  - lzo
   - markupsafe
   - mccabe
   - ncurses
@@ -40,13 +47,15 @@ dependencies:
   - pyparsing
   - pyrsistent
   - pysocks
-  - python>=3.7
+  - python
+  - python-libarchive-c
   - pytz
   - pyyaml
   - readline
   - requests
   - ruamel_yaml
   - setuptools
+  - sh
   - six
   - snowballstemmer
   - sphinx
@@ -60,9 +69,14 @@ dependencies:
   - sqlite
   - testfixtures
   - tk
+  - tqdm
   - urllib3
   - wheel
   - wrapt
   - xz
   - yaml
   - zlib
+  - zstd
+  - pip:
+    - j2cli
+    - jinja2-cli

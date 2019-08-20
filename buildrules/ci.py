@@ -4,8 +4,6 @@
 import os
 import logging
 import tempfile
-from shutil import copy2
-from jinja2 import Template
 
 from buildrules.common.builder import Builder
 from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule, RuleError
@@ -242,21 +240,6 @@ class CIBuilder(Builder):
             ),
         ]
 
-    @classmethod
-    def _makedirs(cls, path, chmod=None):
-        try:
-            os.makedirs(path)
-            if chmod:
-                os.chmod(path, chmod)
-        except FileExistsError:
-            pass
-
-    @classmethod
-    def _copy_file(cls, src, target, chmod=None):
-        copy2(src, target)
-        if chmod:
-            os.chmod(target, chmod)
-
     def _get_directory_creation_rules(self):
         """Creates directories for nfs"""
         rules = [LoggingRule('Creating build directories')]
@@ -478,24 +461,6 @@ class CIBuilder(Builder):
                     public_keys.append('%s.pub' % private_key_target)
 
         return rules
-
-    def _write_template(self, config_path, template_path):
-        """Fills buildbot configuration"""
-        with open(template_path, 'r') as template_file:
-            template = ''.join(template_file.readlines())
-        filled_template = self._fill_template(template)
-        with open(config_path, 'w') as configuration_file:
-            configuration_file.write(filled_template)
-
-    def _fill_template(self, template):
-        """Fills a jinja2-template based on build_config.
-
-        Args:
-            template (str): jinja2-template as a string.
-        Returns:
-            str: Filled template.
-        """
-        return Template(template).render(self._confreader['build_config'])
 
     def _get_rules(self):
         rules = []
