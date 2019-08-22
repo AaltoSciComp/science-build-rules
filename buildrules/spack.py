@@ -369,7 +369,7 @@ class SpackBuilder(Builder):
         super().__init__(conf_folder)
 
     def _get_reindex_rules(self):
-        logging_rule = LoggingRule('Re-indexing installed packages')
+        logging_rule = LoggingRule('Re-indexing installed packages.')
         reindex_rule = SubprocessRule(self._spack_cmd + ['reindex'])
         return [logging_rule, reindex_rule]
 
@@ -443,13 +443,13 @@ class SpackBuilder(Builder):
 
 
         rules.extend([
-            LoggingRule('Adding default compilers'),
+            LoggingRule('Adding default compilers.'),
             SubprocessRule(
                 self._spack_cmd + ['compiler', 'add'],
             )
         ])
 
-        rules.append(LoggingRule('Adding existing compilers'))
+        rules.append(LoggingRule('Adding existing compilers.'))
         for package_config in compiler_packages:
             spec_str = self._get_spec_string(package_config)
             spec_list = self._get_spec_list(package_config)
@@ -458,7 +458,7 @@ class SpackBuilder(Builder):
                 get_compiler_find_rule(spec_list),
                 get_compiler_flags_rule(spec_list, package_config)
             ])
-        rules.append(LoggingRule('Installing compilers'))
+        rules.append(LoggingRule('Installing compilers.'))
         for package_config in compiler_packages:
             if not package_config.get('system_compiler', False):
                 rules.extend([
@@ -475,7 +475,7 @@ class SpackBuilder(Builder):
 
         packages = self._confreader['build_config']['packages']
 
-        rules.append(LoggingRule('Installing packages'))
+        rules.append(LoggingRule('Installing packages.'))
         for package_config in packages:
             rules.extend([
                 self._get_package_install_rule(package_config)
@@ -487,7 +487,7 @@ class SpackBuilder(Builder):
         return []
 
     def _get_recreate_modules_rules(self):
-        logging_rule = LoggingRule('Recreating modules')
+        logging_rule = LoggingRule('Recreating modules.')
         recreate_rule = SubprocessRule(
             self._spack_cmd +
             ['module',
@@ -518,10 +518,15 @@ class SpackBuilder(Builder):
             if os.path.isdir(all_folder):
                 shutil.rmtree(all_folder)
 
-    def _create_all_modules_folders(self, module_root):
+    def _copy_all_modules(self, module_root):
         for arch_folder in self._get_module_arch_folders(module_root):
             all_folder = os.path.join(arch_folder, 'all')
             self._makedirs(all_folder, 0o755)
+            #modulefiles = glob(os.path.join(arch_folder, '*','*','*.lua'))
+            #for modulefile in modulefiles:
+            #    module_folder, module_version = os.path.split(modulefiles)
+            #module_name,
+            #print(modules)
 
     def _get_flatten_lmod_rules(self):
         """This function will create rules that generate a flat lmod
@@ -538,10 +543,10 @@ class SpackBuilder(Builder):
                 args=[lmod_root],
             ),
             LoggingRule(
-                'Creating folders for non-hierarchal module structure.'
+                'Copying modules to non-hierarchal module structure.'
             ),
             PythonRule(
-                self._create_all_modules_folders,
+                self._copy_all_modules,
                 args=[lmod_root],
             )
         ]
