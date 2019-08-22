@@ -3,4 +3,5 @@
   source: /share/apps/spack/envs/fgci-centos7-generic
   dest: /share/apps/spack/envs/fgci-centos7-generic
   rsync_flags: -surlptDxv
-  delete: true
+  chmod_options: 'Dg+s,ug+w,Fo-w,+X'
+  delete: false

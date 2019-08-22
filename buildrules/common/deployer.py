@@ -69,7 +69,7 @@ class RsyncDeployer(Deployer):
             "source": {"type" : "string"},
             "dest": {"type" : "string"},
             "working_directory": {"type" : "string"},
-            "set_sbit": {"type" : "boolean"},
+            "chmod_options": {"type" : "string"},
             "rsync_flags": {"type" : "string"},
             "ssh_command": {"type" : "string"},
             "delete": {"type" : "boolean"}
@@ -79,7 +79,7 @@ class RsyncDeployer(Deployer):
 
     DEFAULT_CONFIGS = {
         "rsync_flags": "-surlptDxv",
-        "set_sbit": False,
+        "chmod_options": None,
         "ssh_command": "ssh",
         "delete": False,
         "working_directory": None
@@ -91,8 +91,8 @@ class RsyncDeployer(Deployer):
 
         cmd = ['rsync']
         cmd.append(rsync_deployer_config['rsync_flags'])
-        if rsync_deployer_config['set_sbit']:
-            cmd.append('--chmod=Dg+s')
+        if rsync_deployer_config['chmod_options']:
+            cmd.append('--chmod={0}'.format(rsync_deployer_config['chmod_options']))
         cmd.extend(['-e',rsync_deployer_config['ssh_command']])
         if rsync_deployer_config['delete']:
             cmd.append('--delete')
