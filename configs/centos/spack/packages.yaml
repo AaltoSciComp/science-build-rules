@@ -21,7 +21,7 @@ packages:
   netcdf:
     version: [4.6.3]
   openblas:
-    version: [0.3.6]
+    version: [0.3.7]
     variants: +virtual_machine threads=pthreads +avx2
   openmpi:
     version: [2.1.5]
