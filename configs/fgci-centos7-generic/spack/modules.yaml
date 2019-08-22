@@ -39,7 +39,8 @@ modules:
     hash_length: 0
     all:
       filter:
-        - 'MODULEPATH'
+        environment_blacklist:
+          - 'MODULEPATH'
       autoload: 'direct'
       environment:
         set:
