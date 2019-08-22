@@ -2,4 +2,5 @@
   target_host: triton
   source: /share/apps/spack/envs/fgci-centos7-generic
   dest: /share/apps/spack/envs/fgci-centos7-generic
-  rsync_flags: -surlptDxv
+  rsync_flags: -surlptDxvn
+  delete: true
