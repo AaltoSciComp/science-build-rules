@@ -38,6 +38,9 @@ modules:
       - 'gcc@4.8.5'
     hash_length: 0
     all:
+      filter:
+        environment_blacklist:
+          - 'MODULEPATH'
       autoload: 'direct'
       environment:
         set:
