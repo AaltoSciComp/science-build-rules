@@ -1,10 +1,26 @@
 packages:
+  autoconf:
+    paths:
+      autoconf: /fake/path
+    buildable: False
+  automake:
+    paths:
+      automake: /fake/path
+    buildable: False
   cairo:
     variants: +X
+  cmake:
+    paths:
+      cmake: /fake/path
+    buildable: False
   cuda:
     version: [9.2.88]
   curl:
     variants: +libssh2 ~nghttp
+  flex:
+    paths:
+      flex: /fake/path
+    buildable: False
   gcc:
     version: [9.2.0]
   graphviz:
@@ -13,6 +29,14 @@ packages:
     variants: +cxx +fortran +hl +pic +shared +szip +threadsafe
   latte:
     variants: +progress
+  libnl:
+    paths:
+      libnl: /fake/path
+    buildable: False
+  m4:
+    paths:
+      m4: /fake/path
+    buildable: False
   mesa:
     variants: ~hwrender+llvm+swrender
   netcdf:
@@ -46,6 +70,10 @@ packages:
     version: [17-11-5-1]
     paths:
       slurm@17-11-5-1: /usr
+    buildable: False
+  zlib:
+    paths:
+      zlib: /fake/path
     buildable: False
   all:
     compiler: [gcc, intel, pgi, clang, xl, nag]
