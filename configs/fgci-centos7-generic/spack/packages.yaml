@@ -75,10 +75,10 @@ packages:
     paths:
       slurm@17-11-5-1: /usr
     buildable: False
-  zlib:
-    paths:
-      zlib: /fake/path
-    buildable: False
+#  zlib:
+#    paths:
+#      zlib: /fake/path
+#    buildable: False
   all:
     compiler: [gcc, intel, pgi, clang, xl, nag]
     providers:
