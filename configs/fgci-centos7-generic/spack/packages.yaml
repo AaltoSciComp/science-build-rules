@@ -33,6 +33,10 @@ packages:
     paths:
       libnl: /fake/path
     buildable: False
+  libtool:
+    paths:
+      libtool: /fake/path
+    buildable: False
   m4:
     paths:
       m4: /fake/path
