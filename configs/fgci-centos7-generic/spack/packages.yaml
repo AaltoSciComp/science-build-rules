@@ -1,12 +1,4 @@
 packages:
-  autoconf:
-    paths:
-      autoconf: /fake/path
-    buildable: False
-  automake:
-    paths:
-      automake: /fake/path
-    buildable: False
   cairo:
     variants: +X
   cuda:
