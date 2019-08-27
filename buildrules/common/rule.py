@@ -33,7 +33,7 @@ def rule_error_wrapper(function):
             return function(*args, **kwargs)
         except KeyboardInterrupt as error:
             raise error
-        except (FileNotFoundError, subprocess.CalledProcessError) as error:
+        except Exception as error:
             logging.error('Encountered an error:')
             trace = StringIO()
             traceback.print_stack(file=trace)

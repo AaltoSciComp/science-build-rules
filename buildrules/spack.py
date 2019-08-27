@@ -2,11 +2,11 @@
 """SpackBuilder is a builder that builds using spack.
 """
 import sys
+import re
 import os
 import shutil
 import logging
 from glob import glob
-from io import StringIO
 import yaml
 from sh import spack, which
 
@@ -506,12 +506,12 @@ class SpackBuilder(Builder):
                 lmod_root = lmod_root.replace('$spack', spack_root)
 
         def is_arch_folder(folder):
-            return os.path.isdir(os.path.join(folder,'Core'))
+            return os.path.isdir(os.path.join(folder, 'Core'))
 
         arch_folders = [folder for folder in glob(os.path.join(lmod_root, '*')) if is_arch_folder(folder)]
 
         return arch_folders
-    
+
     def _remove_all_modules_folders(self, module_root):
         for arch_folder in self._get_module_arch_folders(module_root):
             all_folder = os.path.join(arch_folder, 'all')
@@ -519,14 +519,70 @@ class SpackBuilder(Builder):
                 shutil.rmtree(all_folder)
 
     def _copy_all_modules(self, module_root):
+
+        def write_module_file_without_modulepath(src, dest):
+            with open(src, 'r') as modulefile:
+                modulefile_lines = modulefile.readlines()
+            with open(dest, 'w') as modulefile_new:
+                for line in modulefile_lines:
+                    if 'MODULEPATH' not in line:
+                        modulefile_new.write(line)
+            os.chmod(dest, 0o644)
+
+        copied_modules = {}
+
         for arch_folder in self._get_module_arch_folders(module_root):
+
+            core_regexp = re.compile(os.path.join(
+                arch_folder,
+                'Core',
+                '(?P<modulename>[^/]+)',
+                '(?P<version>[^/]+).lua'))
+            mpi_regexp = re.compile(os.path.join(
+                arch_folder,
+                '(?P<mpi>[^/]+)',
+                '(?P<mpi_version>[^/]+)',
+                'Core',
+                '(?P<modulename>[^/]+)',
+                '(?P<version>[^/]+).lua'))
+
             all_folder = os.path.join(arch_folder, 'all')
             self._makedirs(all_folder, 0o755)
-            #modulefiles = glob(os.path.join(arch_folder, '*','*','*.lua'))
-            #for modulefile in modulefiles:
-            #    module_folder, module_version = os.path.split(modulefiles)
-            #module_name,
-            #print(modules)
+
+            corefiles = glob(os.path.join(arch_folder, 'Core', '*', '*.lua'))
+            mpifiles = glob(os.path.join(arch_folder, '*', '*', 'Core', '*', '*.lua'))
+            moduledict = dict([(x, core_regexp.match(x).groupdict()) for x in corefiles])
+            moduledict.update(dict([(x, mpi_regexp.match(x).groupdict()) for x in mpifiles]))
+            for modulefile, match in moduledict.items():
+
+                modulefolder_new = os.path.join(all_folder, match['modulename'])
+                modulefile_new = os.path.join(
+                    modulefolder_new,
+                    '{}.lua'.format(match['version']))
+
+                if modulefile_new in copied_modules:
+                    raise FileExistsError(
+                        ('Modulefile overlap encountered. '
+                         'Tried to copy modulefile {0} to {1}, but it was also '
+                         'copied from modulefile {2}').format(
+                             modulefile, modulefile_new, copied_modules[modulefile_new]))
+
+                self._makedirs(modulefolder_new, 0o755)
+                write_module_file_without_modulepath(modulefile, modulefile_new)
+
+                copied_modules[modulefile_new] = match
+        self._logger.info(
+            'Copied following modules to %s:', all_folder)
+        for _, copied_module_info in sorted(copied_modules.items()):
+            if 'mpi' in copied_module_info:
+                mpi = '%s/%s' % (copied_module_info['mpi'], copied_module_info['mpi_version'])
+            else:
+                mpi = 'None'
+            self._logger.info(
+                'Module: %-30s Version: %-30s MPI: %-10s',
+                copied_module_info['modulename'],
+                copied_module_info['version'],
+                mpi)
 
     def _get_flatten_lmod_rules(self):
         """This function will create rules that generate a flat lmod
