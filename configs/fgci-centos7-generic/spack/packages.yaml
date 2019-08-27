@@ -21,10 +21,6 @@ packages:
     variants: +cxx +fortran +hl +pic +shared +szip +threadsafe
   latte:
     variants: +progress
-  libtool:
-    paths:
-      libtool: /fake/path
-    buildable: False
   m4:
     paths:
       m4: /fake/path
