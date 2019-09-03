@@ -18,7 +18,7 @@ def log_error_and_quit(function):
         try:
             return function(*args, **kwargs)
         except Exception as error:
-            logging.error('Encountered an error:')
+            logging.error('Encountered an error:\n\n%s', error)
             trace = StringIO()
             traceback.print_stack(file=trace)
             logging.error(trace.getvalue())
