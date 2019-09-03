@@ -26,7 +26,7 @@ packages:
     variants: +virtual_machine threads=pthreads +avx2 +pic
   openmpi:
     version: [3.1.4]
-    variants: fabrics=ucx +pmi +thread_multiple schedulers=slurm +legacylaunchers
+    variants: fabrics=verbs +pmi +thread_multiple schedulers=slurm +legacylaunchers
   openssl:
     version: [1.0.2k]
     paths:
