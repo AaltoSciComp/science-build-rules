@@ -19,9 +19,9 @@ compilers:
 packages:
   - name: 'openmpi'
     version: 3.1.4
-#  - name: 'go'
-#    version: 1.12.6
-#  - name: 'python'
-#    version: 3.7.4
-#  - name: 'r'
-#    version: 3.6.0
+  - name: 'go'
+    version: 1.12.8
+  - name: 'python'
+    version: 3.7.4
+  - name: 'r'
+    version: 3.6.1
