@@ -8,7 +8,7 @@ import shutil
 import logging
 from glob import glob
 import yaml
-from sh import spack, which
+from sh import spack, which, find
 
 from buildrules.common.builder import Builder
 from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule
@@ -308,6 +308,10 @@ class SpackBuilder(Builder):
                             'name': {'type': 'string'},
                             'version': {'type': 'string'},
                             'system_compiler': {'type': 'boolean'},
+                            'licenses': {
+                                'type': 'array',
+                                'items': {'type': 'string'},
+                            },
                             'variants': {
                                 'type': 'array',
                                 'items': {'type': 'string'},
@@ -343,6 +347,10 @@ class SpackBuilder(Builder):
                         'properties': {
                             'name': {'type': 'string'},
                             'version': {'type': 'string'},
+                            'licenses': {
+                                'type': 'array',
+                                'items': {'type': 'string'},
+                            },
                             'variants': {
                                 'type': 'array',
                                 'items': {'type': 'string'},
@@ -365,6 +373,7 @@ class SpackBuilder(Builder):
 
     def __init__(self, conf_folder):
         self._spack_cmd = ['spack', '--config-scope', conf_folder]
+        self._spack_sh = spack.bake('--config-scope', conf_folder)
         self._compilers_file = os.path.expanduser('~/.spack/linux/compilers.yaml')
         super().__init__(conf_folder)
 
@@ -420,6 +429,14 @@ class SpackBuilder(Builder):
                         Dumper=yaml.SafeDumper
                     ))
 
+    def _show_compilers(self):
+        self._logger.info('Following compilers found:')
+        if os.path.isfile(self._compilers_file):
+            with open(self._compilers_file, 'r') as compilers_file:
+                compiler_dict = yaml.load(compilers_file, Loader=yaml.SafeLoader)
+            for compiler in compiler_dict['compilers']:
+                self._logger.info(compiler['compiler']['spec'])
+
     def _get_compiler_install_rules(self):
         rules = []
         self._logger.debug(msg='Parsing rules for compilers:')
@@ -466,6 +483,7 @@ class SpackBuilder(Builder):
                     get_compiler_find_rule(spec_list),
                     get_compiler_flags_rule(spec_list, package_config)
                 ])
+        rules.append(PythonRule(self._show_compilers))
 
         return rules
 
@@ -483,8 +501,45 @@ class SpackBuilder(Builder):
 
         return rules
 
+    def _copy_license_rule(self, package_config):
+
+        licenses = package_config['licenses']
+        spec_list = self._get_spec_list(package_config)
+        spec_str = self._get_spec_string(package_config)
+
+        location_args = ['location', '-i'] + spec_list
+        install_dir = self._spack_sh(*location_args).splitlines()[0]
+        
+        if not install_dir:
+            raise Exception(
+                'Could not find the installation directory for spec {0}'.format(spec_str))
+        license_find_sh = find.bake(install_dir)
+        for license in licenses:
+            license_files = license_find_sh('-name', license).splitlines()
+            if not license_files:
+                self._logger.warning(
+                    ("No license files found in the installation directory "
+                     "of spec '%s' with license file name '%s'."),
+                    spec_str,
+                    license)
+                continue
+            for 
+            self._logger.warning(license_files)
+
     def _get_license_copy_rules(self):
-        return []
+
+        rules = []
+        self._logger.debug(msg='Copying license files:')
+
+        packages = (
+            self._confreader['build_config']['packages'] +
+            self._confreader['build_config']['compilers']
+        )
+        for package_config in packages:
+            if 'licenses' in package_config:
+                rules.append(PythonRule(self._copy_license_rule, [package_config]))
+
+        return rules
 
     def _get_recreate_modules_rules(self):
         logging_rule = LoggingRule('Recreating modules.')
@@ -498,11 +553,10 @@ class SpackBuilder(Builder):
             )
         return [logging_rule, recreate_rule]
 
-    @classmethod
-    def _get_module_arch_folders(cls, lmod_root):
+    def _get_module_arch_folders(self, lmod_root):
         if '$spack' in lmod_root:
             if which('spack'):
-                spack_root = spack('location', '-r').split('\n')[0]
+                spack_root = self._spack_sh('location', '-r').splitlines()[0]
                 lmod_root = lmod_root.replace('$spack', spack_root)
 
         def is_arch_folder(folder):

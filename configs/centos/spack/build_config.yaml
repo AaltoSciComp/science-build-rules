@@ -5,7 +5,6 @@ compilers:
     flags:
       cflags: -O2 -g
       cxxflags: -O2 -g
-      cppflags: -O2 -g
       fflags: -O2 -g
 packages:
   - name: libtool
