@@ -523,8 +523,21 @@ class SpackBuilder(Builder):
                     spec_str,
                     license)
                 continue
-            for 
-            self._logger.warning(license_files)
+            for license_file in license_files:
+                if not os.path.islink(license_file):
+                    continue
+                real_path = os.path.realpath(license_file)
+                self._logger.info(
+                    "Copying license file for package '%s':",
+                    spec_str)
+                self._logger.info(
+                    "License source path: '%s':",
+                    real_path)
+                self._logger.info(
+                    "License target path: '%s':",
+                    license_file)
+                os.remove(license_file)
+                shutil.copy(real_path, license_file)
 
     def _get_license_copy_rules(self):
 
