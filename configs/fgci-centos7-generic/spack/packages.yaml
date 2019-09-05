@@ -15,12 +15,14 @@ packages:
     variants: +cxx +fortran +hl +pic +shared +szip +threadsafe
   latte:
     variants: +progress
+  llvm:
+    variants: +python
   m4:
     paths:
       m4: /fake/path
     buildable: False
   mesa:
-    variants: ~hwrender+llvm+swrender
+    variants: +glx +llvm +opengl +osmesa swr=none
   netcdf:
     version: [4.6.3]
   openblas:
