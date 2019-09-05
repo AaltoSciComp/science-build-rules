@@ -3,91 +3,10 @@ compilers:
     version: 4.8.5
     system_compiler: true
     flags:
-      cflags: -O2 -fPIC
-      cxxflags: -O2 -fPIC
-      cppflags: -O2 -fPIC
-      fflags: -O2 -fPIC
-  - name: 'gcc'
-    version: 5.5.0
-    dependencies:
-      - '%gcc@4.8.5'
-    flags:
-      cflags: -O2 -fPIC
-      cxxflags: -O2 -fPIC
-      cppflags: -O2 -fPIC
-      fflags: -O2 -fPIC
+      cflags: -O2 -g
+      cxxflags: -O2 -g
+      cppflags: -O2 -g
+      fflags: -O2 -g
 packages:
   - name: libtool
     version: 2.4.6
-  - name: 'openmpi'
-    version: 2.1.2
-    variants:
-      - "fabrics=verbs"
-      - "schedulers=slurm"
-      - "+pmi"
-      - "+thread_multiple"
-  - name: 'openmpi'
-    version: 2.1.5
-    variants:
-      - "fabrics=verbs"
-      - "schedulers=slurm"
-      - "+pmi"
-      - "+thread_multiple"
-  - name: 'bison'
-    version: 3.0.5
-  - name: 'clhep'
-    version: 2.4.0.0
-  - name: 'doxygen'
-    version: 1.8.14
-  - name: 'ffmpeg'
-    version: 4.1.1
-    variants:
-      - "+aom"
-  - name: 'geant4'
-    version: '10.04'
-    variants:
-      - "cxxstd=11"
-  - name: 'go'
-    version: 1.10.3
-  - name: 'hadoop'
-    version: 3.1.1
-  - name: 'libpcap'
-    version: 1.8.1
-  - name: 'openbabel'
-    version: 2.4.1
-    variants:
-      - "+python"
-    dependencies:
-      - "^python@3:"
-#  - name: 'paraview'
-#    version: 5.4.1
-#    variants:
-#      - "+mpi"
-#      - "+opengl2"
-#      - "+qt"
-#      - "+plugins"
-#    dependencies:
-#      - "^openmpi"
-#      - "^qt@4.8.6"
-#      - "^python@:2.9"
-  - name: 'paraview'
-    version: 5.4.1
-    variants:
-        - "+mpi"
-        - "+osmesa"
-        - "+plugins"
-    dependencies:
-        - "^openmpi"
-        - "^python@:2.9"
-  - name: 'py-gpaw'
-    version: 1.3.0
-    variants:
-      - "+mpi"
-      - "+fftw"
-      - "+scalapack"
-    dependencies:
-      - "^python@3:"
-  - name: 'py-mpi4py'
-    version: 3.0.0
-    dependencies:
-      - "^python@:2.9"
