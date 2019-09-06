@@ -1,0 +1,29 @@
+compilers:
+  - name: 'gcc'
+    version: 4.8.5
+    system_compiler: true
+    flags:
+      cflags: -O2 -g
+      cxxflags: -O2 -g
+      fflags: -O2 -g
+  - name: 'gcc'
+    version: 9.2.0
+    variants:
+      - '+piclibs'
+    dependencies:
+      - '%gcc@4.8.5'
+    flags:
+      cflags: -O2 -g -march=westmere -ftree-vectorize
+      cxxflags: -O2 -g -march=westmere -ftree-vectorize
+      fflags: -O2 -g -march=westmere -ftree-vectorize
+packages:
+  - name: 'openmpi'
+    version: 3.1.4
+  - name: 'go'
+    version: 1.12.8
+  - name: 'python'
+    version: 3.7.4
+  - name: 'r'
+    version: 3.6.1
+  - name: 'xorg-server'
+    version: 1.18.99.901
