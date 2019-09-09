@@ -31,3 +31,9 @@ packages:
       - '+fftw'
       - '+mpi'
       - '+scalapack'
+  - name: 'py-gpaw'
+    version: 19.8.1
+    variants:
+      - '+fftw'
+      - '+mpi'
+      - '+scalapack'
