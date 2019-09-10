@@ -25,5 +25,15 @@ packages:
     version: 3.7.4
   - name: 'r'
     version: 3.6.1
-  - name: 'xorg-server'
-    version: 1.18.99.901
+  - name: 'py-gpaw'
+    version: 1.3.0
+    variants:
+      - '+fftw'
+      - '+mpi'
+      - '+scalapack'
+  - name: 'py-gpaw'
+    version: 19.8.1
+    variants:
+      - '+fftw'
+      - '+mpi'
+      - '+scalapack'

@@ -33,3 +33,9 @@ packages:
     version: 3.7.4
   - name: 'r'
     version: 3.6.1
+  - name: 'llvm'
+    version: 8.0.0
+    variants:
+      - '+python'
+    extra_flags:
+      - '--jobs 4'
