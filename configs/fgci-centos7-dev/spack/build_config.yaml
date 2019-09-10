@@ -16,6 +16,14 @@ compilers:
       cflags: -O2 -g -march=westmere -ftree-vectorize
       cxxflags: -O2 -g -march=westmere -ftree-vectorize
       fflags: -O2 -g -march=westmere -ftree-vectorize
+  - name: 'intel-parallel-studio'
+    version: 'cluster.2019.3'
+    licenses:
+      - 'license.lic'
+    flags:
+      cflags: -O2 -g
+      cxxflags: -O2 -g
+      fflags: -O2 -g
 packages:
   - name: 'openmpi'
     version: 3.1.4
@@ -25,5 +33,3 @@ packages:
     version: 3.7.4
   - name: 'r'
     version: 3.6.1
-  - name: 'xorg-server'
-    version: 1.18.99.901
