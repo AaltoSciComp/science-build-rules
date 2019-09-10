@@ -249,10 +249,12 @@ class CIBuilder(Builder):
         workers.extend(self._confreader['build_config']['target_workers'])
 
         for worker in workers:
-            worker_ssh_folder = os.path.join(
+            worker_home_folder = os.path.join(
                 self._nfs_folder,
                 'buildbot_home',
-                worker['name'],
+                worker['name'])
+            worker_ssh_folder = os.path.join(
+                worker_home_folder,
                 '.ssh')
             rules.extend([
                 LoggingRule(
@@ -263,6 +265,20 @@ class CIBuilder(Builder):
                     self._makedirs,
                     args=[worker_ssh_folder],
                     kwargs={'chmod':0o700}),
+                LoggingRule('Creating .bashrc'),
+                PythonRule(
+                    self._write_template,
+                    args=[
+                        os.path.join(
+                            worker_home_folder,
+                            '.bashrc'
+                        ),
+                        os.path.join(
+                            self._templates_folder,
+                            'bashrc.j2'
+                        ),
+                    ]
+                ),
                 LoggingRule(
                     ('Creating build and software '
                      'directories for worker %s') % worker['name'])
