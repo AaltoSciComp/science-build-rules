@@ -49,3 +49,5 @@ packages:
       - '+fftw'
       - '+mpi'
       - '+scalapack'
+  - name: 'upcxx'
+    version: 2019.3.2
