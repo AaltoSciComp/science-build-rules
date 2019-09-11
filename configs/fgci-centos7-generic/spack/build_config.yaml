@@ -16,6 +16,14 @@ compilers:
       cflags: -O2 -g -march=westmere -ftree-vectorize
       cxxflags: -O2 -g -march=westmere -ftree-vectorize
       fflags: -O2 -g -march=westmere -ftree-vectorize
+  - name: 'intel-parallel-studio'
+    version: 'cluster.2019.3'
+    licenses:
+      - 'license.lic'
+    flags:
+      cflags: -O2 -g -march=westmere
+      cxxflags: -O2 -g -march=westmere
+      fflags: -O2 -g -march=westmere
 packages:
   - name: 'cuda'
     version: 10.1.243
