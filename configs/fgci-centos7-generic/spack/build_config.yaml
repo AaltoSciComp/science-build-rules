@@ -17,6 +17,8 @@ compilers:
       cxxflags: -O2 -g -march=westmere -ftree-vectorize
       fflags: -O2 -g -march=westmere -ftree-vectorize
 packages:
+  - name: 'chapel'
+    version: 1.19.0
   - name: 'cuda'
   - name: 'openmpi'
     version: 3.1.4
