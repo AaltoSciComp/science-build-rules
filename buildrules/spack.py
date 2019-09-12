@@ -8,7 +8,7 @@ import shutil
 import logging
 from glob import glob
 import yaml
-from sh import spack, which, find
+import sh
 
 from buildrules.common.builder import Builder
 from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule
@@ -373,7 +373,7 @@ class SpackBuilder(Builder):
 
     def __init__(self, conf_folder):
         self._spack_cmd = ['spack', '--config-scope', conf_folder]
-        self._spack_sh = spack.bake('--config-scope', conf_folder)
+        self._spack_sh = sh.spack.bake('--config-scope', conf_folder)
         self._compilers_file = os.path.expanduser('~/.spack/linux/compilers.yaml')
         super().__init__(conf_folder)
 
@@ -509,11 +509,11 @@ class SpackBuilder(Builder):
 
         location_args = ['location', '-i'] + spec_list
         install_dir = self._spack_sh(*location_args).splitlines()[0]
-        
+
         if not install_dir:
             raise Exception(
                 'Could not find the installation directory for spec {0}'.format(spec_str))
-        license_find_sh = find.bake(install_dir)
+        license_find_sh = sh.find.bake(install_dir)
         for license in licenses:
             license_files = license_find_sh('-name', license).splitlines()
             if not license_files:
@@ -568,7 +568,7 @@ class SpackBuilder(Builder):
 
     def _get_module_arch_folders(self, lmod_root):
         if '$spack' in lmod_root:
-            if which('spack'):
+            if sh.which('spack'):
                 spack_root = self._spack_sh('location', '-r').splitlines()[0]
                 lmod_root = lmod_root.replace('$spack', spack_root)
 
@@ -705,5 +705,5 @@ if __name__ == "__main__":
 
     CONF_FOLDER = sys.argv[1]
 
-    SPACK_BUILDER = SpackBuilder(CONF_FOLDER)
-    SPACK_BUILDER.describe()
+    BUILDER = SpackBuilder(CONF_FOLDER)
+    BUILDER.describe()

@@ -1,0 +1,6 @@
+config:
+  install_path: $conda/opt/conda/software
+  module_path: $conda/opt/conda/modules
+  source_cache: $conda/var/conda/cache
+  build_stage: $conda/var/conda/stage
+  locks: false
