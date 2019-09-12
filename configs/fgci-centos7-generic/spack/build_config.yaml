@@ -38,6 +38,7 @@ packages:
       - '+kahip'
       - '+scotch'
       - '+mgridgen'
+      - '^python@:2.9'
   - name: 'openmpi'
     version: 3.1.4
   - name: 'python'
