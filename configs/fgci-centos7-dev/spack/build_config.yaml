@@ -25,6 +25,12 @@ compilers:
       cxxflags: -O2 -g
       fflags: -O2 -g
 packages:
+  - name: 'openfoam'
+    version: '1906'
+    variants:
+      - '+metis'
+      - '+scotch'
+      - '+mgridgen'
   - name: 'openmpi'
     version: 3.1.4
   - name: 'go'

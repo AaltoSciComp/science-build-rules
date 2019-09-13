@@ -134,6 +134,8 @@ class AnacondaBuilder(Builder):
 
         return config
 
+    def _get_installer_name(self, install_config):
+        pass
 
     def _get_environment_install_rules(self):
         rules = []
