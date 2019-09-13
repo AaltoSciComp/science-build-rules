@@ -201,23 +201,25 @@ class AnacondaBuilder(Builder):
             install_config['module_version'])
         return install_path
 
-    def _prepare_installation_paths(self, install_config):
+    def _prepare_installation_paths(self, module_name, module_version):
 
         stage_root = os.path.join(
-            self._build_stage, install_config['module_name'])
+            self._build_stage, module_name)
         if not os.path.isdir(stage_root):
             self._makedirs(stage_root, 0o755)
-        stage_path = os.path.join(stage_root, install_config['module_version'])
+        stage_path = os.path.join(stage_root, module_version)
         if os.path.isdir(stage_path):
+            self._logger.info((
+                "Cleaning previous stage path: %s"), stage_path)
             shutil.rmtree(stage_path)
 
         install_root = os.path.join(
-            self._install_path, install_config['module_name'])
+            self._install_path, module_name)
         if not os.path.isdir(install_root):
             self._makedirs(install_root, 0o755)
 
         module_root = os.path.join(
-            self._module_path, install_config['module_name'])
+            self._module_path, module_name)
         if not os.path.isdir(module_root):
             self._makedirs(module_root, 0o755)
 
@@ -246,28 +248,42 @@ class AnacondaBuilder(Builder):
 
         installed_environments = self._get_installed_environments()['environments']
 
+        env_path = list(filter(
+            lambda x: re.search('^/usr',x),
+            os.getenv('PATH').split(':')))
+
         for environment in self._confreader['build_config']['environments']:
             config = self._create_environment_config(environment)
-
-            environment_name = config['environment_name']
 
             installer = self._get_installer_path(config)
             stage_path = self._get_stage_path(config)
             install_path = self._get_install_path(config)
 
-
-            if environment_name not in installed_environments:
+            if config['name'] not in installed_environments:
+                env_path_environment = {
+                    'PATH': ':'.join([os.path.join(stage_path, 'bin')] + env_path)
+                }
                 rules.extend([
                     LoggingRule((
+                        "Environment {{name}} not found.\n"
                         "Installing conda environment '{name}' with "
                         "module '{environment_name}'").format(**config)),
                     PythonRule(self._download_installer, [config]),
-                    PythonRule(self._prepare_installation_paths, [config]),
+                    PythonRule(
+                        self._prepare_installation_paths,
+                        [config['module_name'], config['module_version']]),
+                    SubprocessRule(['bash', installer, '-b', '-p', stage_path], shell=True),
+                ])
+                rules.extend([
+                    SubprocessRule(
+                        ['conda', 'list'],
+                        env=env_path_environment,
+                        shell=True)
                 ])
             #rules.append(
             #    PythonRule(
             #        self._update_installed_environments,
-            #        [environment_name, config]))
+            #        [config['name'], config]))
 
         return rules
 
