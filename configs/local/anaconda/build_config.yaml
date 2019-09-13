@@ -1,1 +1,5 @@
-environments: []
+environments:
+  - name: miniconda
+    miniconda: True
+    python_version: 3
+    installer_version: latest
