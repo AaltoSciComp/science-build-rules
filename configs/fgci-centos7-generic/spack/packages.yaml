@@ -53,6 +53,9 @@ packages:
     paths:
       slurm@17-11-5-1: /usr
     buildable: False
+  sqlite:
+    version: [3.28.0]
+    variants: ~column_metadata +fts ~functions ~rtree
   all:
     compiler: [gcc, intel, pgi, clang, xl, nag]
     providers:
