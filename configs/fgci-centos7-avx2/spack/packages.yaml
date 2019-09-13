@@ -1,20 +1,26 @@
 packages:
   cairo:
     variants: +X
-  cuda:
-    version: [9.2.88]
   curl:
     variants: +libssh2 ~nghttp
   gcc:
     version: [9.2.0]
+  go:
+    version: [1.12.8]
   graphviz:
     variants: +expat +ghostscript +gtkplus +gts +java +libgd +pangocairo +qt
   hdf5:
     variants: +cxx +fortran +hl +pic +shared +szip +threadsafe
   latte:
     variants: +progress
+  llvm:
+    variants: +python
+  m4:
+    paths:
+      m4: /fake/path
+    buildable: False
   mesa:
-    variants: ~hwrender+llvm+swrender
+    variants: +glx +llvm +opengl +osmesa swr=none
   netcdf:
     version: [4.6.3]
   openblas:
@@ -22,7 +28,7 @@ packages:
     variants: +virtual_machine threads=pthreads +avx2 +pic
   openmpi:
     version: [3.1.4]
-    variants: fabrics=ucx +pmi +thread_multiple schedulers=slurm +legacylaunchers
+    variants: fabrics=verbs +pmi +thread_multiple schedulers=slurm +legacylaunchers
   openssl:
     version: [1.0.2k]
     paths:
@@ -40,13 +46,16 @@ packages:
   qt:
     variants: +phonon +dbus +opengl +webkit
   r:
-    version: [3.6.0]
+    version: [3.6.1]
     variants: +X +external-lapack
   slurm:
     version: [17-11-5-1]
     paths:
       slurm@17-11-5-1: /usr
     buildable: False
+  sqlite:
+    version: [3.28.0]
+    variants: ~column_metadata +fts ~functions ~rtree
   all:
     compiler: [gcc, intel, pgi, clang, xl, nag]
     providers:
