@@ -7,6 +7,7 @@ actually build software.
 import os
 import sys
 import logging
+import hashlib
 from shutil import copy2
 from jinja2 import Template
 
@@ -147,3 +148,14 @@ class Builder:
             str: Filled template.
         """
         return Template(template).render(self._confreader['build_config'])
+
+    def _calculate_checksum(self, filename, hash_function='sha256'):
+        hash_functions = {
+            'sha256': hashlib.sha256
+        }
+        calculated_hash = hash_functions[hash_function]()
+        with open(filename, "rb") as input_file:
+            for byte_block in iter(lambda: input_file.read(4096), b""):
+                calculated_hash.update(byte_block)
+
+        return calculated_hash.hexdigest()
