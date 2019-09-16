@@ -1,4 +1,5 @@
 *.swp
 *.pyc
+*~
 conda
 docs/_build
