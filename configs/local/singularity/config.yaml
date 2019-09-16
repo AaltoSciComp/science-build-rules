@@ -1,0 +1,6 @@
+config:
+  install_path: $singularity/opt/singularity/software
+  module_path: $singularity/opt/singularity/modules
+  source_cache: $singularity/var/singularity/cache
+  build_stage: $singularity/var/singularity/stage
+  locks: false
