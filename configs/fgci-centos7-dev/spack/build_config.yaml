@@ -45,3 +45,5 @@ packages:
       - '+python'
     extra_flags:
       - '--jobs 4'
+  - name: 'valgrind'
+    version: 3.1.5
