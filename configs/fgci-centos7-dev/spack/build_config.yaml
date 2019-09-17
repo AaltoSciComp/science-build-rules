@@ -25,6 +25,12 @@ compilers:
       cxxflags: -O2 -g
       fflags: -O2 -g
 packages:
+  - name: 'chapel'
+    version: 1.19.0
+  - name: 'cuda'
+    version: 10.1.243
+  - name: 'go'
+    version: 1.12.8
   - name: 'openfoam'
     version: '1906'
     variants:
@@ -33,17 +39,23 @@ packages:
       - '+mgridgen'
   - name: 'openmpi'
     version: 3.1.4
-  - name: 'go'
-    version: 1.12.8
   - name: 'python'
     version: 3.7.4
   - name: 'r'
     version: 3.6.1
-  - name: 'llvm'
-    version: 8.0.0
+  - name: 'py-gpaw'
+    version: 1.3.0
     variants:
-      - '+python'
-    extra_flags:
-      - '--jobs 4'
+      - '+fftw'
+      - '+mpi'
+      - '+scalapack'
+  - name: 'py-gpaw'
+    version: 19.8.1
+    variants:
+      - '+fftw'
+      - '+mpi'
+      - '+scalapack'
+  - name: 'upcxx'
+    version: 2019.3.2
   - name: 'valgrind'
     version: 3.15.0

@@ -57,3 +57,5 @@ packages:
       - '+scalapack'
   - name: 'upcxx'
     version: 2019.3.2
+  - name: 'valgrind'
+    version: 3.15.0
