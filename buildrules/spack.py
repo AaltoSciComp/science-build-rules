@@ -537,7 +537,7 @@ class SpackBuilder(Builder):
                     "License target path: '%s':",
                     license_file)
                 os.remove(license_file)
-                shutil.copy(real_path, license_file)
+                self._copy_file(real_path, license_file)
 
     def _get_license_copy_rules(self):
 

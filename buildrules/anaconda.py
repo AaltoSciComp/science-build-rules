@@ -61,8 +61,7 @@ class AnacondaBuilder(Builder):
                         'type': 'object',
                         'properties': {
                             'name': {'type': 'string'},
-                            'module_name': {'type': 'string'},
-                            'module_version': {'type': 'string'},
+                            'version': {'type': 'string'},
                             'miniconda': {'type': 'boolean'},
                             'installer_version': {'type': 'string'},
                             'python_version': {
@@ -81,7 +80,7 @@ class AnacondaBuilder(Builder):
                                 'items': {'type': 'string'},
                             },
                         },
-                        'required': ['name'],
+                        'required': ['name', 'version'],
                     },
                 },
             },
@@ -134,11 +133,10 @@ class AnacondaBuilder(Builder):
 
         config = copy.deepcopy(default_config)
         config.update(environment_dict)
-        if 'module_name' not in config:
-            config['module_name'] = config['name']
-        if 'module_version' not in config:
-            config['module_version'] = '{name}{python_version}-{installer_version}'.format(**config)
-        config['environment_name'] = '{module_name}/{module_version}'.format(**config)
+        config['environment_name'] = '{name}/{version}'.format(**config)
+
+        config['checksum'] = self._calculate_dict_checksum(config)
+        config['checksum_small'] = config['checksum'][:8]
 
         return config
 
@@ -175,7 +173,7 @@ class AnacondaBuilder(Builder):
         if checksum:
             self._logger.info(
                 "Calculating checksum for installer '%s'", installer)
-            calculated_checksum = self._calculate_checksum(cached_installer)
+            calculated_checksum = self._calculate_file_checksum(cached_installer)
             if calculated_checksum != checksum:
                 self._logger.error(
                     ("The checksum for installer file '%s' "
@@ -187,41 +185,45 @@ class AnacondaBuilder(Builder):
                     calculated_checksum)
                 raise Exception('Invalid checksum for installer')
 
-    def _get_stage_path(self, stage_config):
+    def _get_stage_path(self, config):
+        stage_name = '{name}-{version}-{checksum_small}'.format(**config)
         stage_path = os.path.join(
             self._build_stage,
-            stage_config['module_name'],
-            stage_config['module_version'])
+            stage_name)
         return stage_path
 
-    def _get_install_path(self, install_config):
+    def _get_install_path(self, config):
         install_path = os.path.join(
             self._install_path,
-            install_config['module_name'],
-            install_config['module_version'])
+            config['name'],
+            config['version'],
+            config['checksum_small'])
         return install_path
+    
+    def _get_module_path(self, config):
+        module_path = os.path.join(
+            self._module_path,
+            config['name'])
+        return module_path
 
-    def _prepare_installation_paths(self, module_name, module_version):
+    @classmethod
+    def _clean_stage(self, stage_path):
+        shutil.rmtree(stage_path)
 
-        stage_root = os.path.join(
-            self._build_stage, module_name)
-        if not os.path.isdir(stage_root):
-            self._makedirs(stage_root, 0o755)
-        stage_path = os.path.join(stage_root, module_version)
+    def _prepare_installation_paths(self, stage_path=None, install_path=None, module_path=None):
+        
         if os.path.isdir(stage_path):
             self._logger.info((
                 "Cleaning previous stage path: %s"), stage_path)
-            shutil.rmtree(stage_path)
+            self._clean_stage(stage_path)
+        self._makedirs(stage_path, 0o755)
 
-        install_root = os.path.join(
-            self._install_path, module_name)
+        install_root = os.path.dirname(install_path)
         if not os.path.isdir(install_root):
             self._makedirs(install_root, 0o755)
 
-        module_root = os.path.join(
-            self._module_path, module_name)
-        if not os.path.isdir(module_root):
-            self._makedirs(module_root, 0o755)
+        if not os.path.isdir(module_path):
+            self._makedirs(module_path, 0o755)
 
     def _get_installed_environments(self):
         installed_dict = {
@@ -258,8 +260,9 @@ class AnacondaBuilder(Builder):
             installer = self._get_installer_path(config)
             stage_path = self._get_stage_path(config)
             install_path = self._get_install_path(config)
+            module_path = self._get_module_path(config)
 
-            if config['name'] not in installed_environments:
+            if config['environment_name'] not in installed_environments:
                 env_path_environment = {
                     'PATH': ':'.join([os.path.join(stage_path, 'bin')] + env_path)
                 }
@@ -271,19 +274,30 @@ class AnacondaBuilder(Builder):
                     PythonRule(self._download_installer, [config]),
                     PythonRule(
                         self._prepare_installation_paths,
-                        [config['module_name'], config['module_version']]),
-                    SubprocessRule(['bash', installer, '-b', '-p', stage_path], shell=True),
-                ])
-                rules.extend([
+                        kwargs={ 
+                            'stage_path': stage_path,
+                            'install_path': install_path,
+                            'module_path': module_path,
+                        }
+                    ),
                     SubprocessRule(
-                        ['conda', 'list'],
-                        env=env_path_environment,
-                        shell=True)
+                        ['bash', installer, '-f', '-b', '-p', stage_path],
+                        shell=True),
                 ])
-            #rules.append(
-            #    PythonRule(
-            #        self._update_installed_environments,
-            #        [config['name'], config]))
+            rules.extend([
+                SubprocessRule(
+                    ['conda', 'list'],
+                    env=env_path_environment,
+                    shell=True),
+                PythonRule(
+                    self._copy_dir,
+                    [stage_path, install_path]
+                ),
+            ])
+            rules.append(
+                PythonRule(
+                    self._update_installed_environments,
+                    [config['environment_name'], config]))
 
         return rules
 

@@ -8,7 +8,8 @@ import os
 import sys
 import logging
 import hashlib
-from shutil import copy2
+from shutil import copy2, copytree
+import json
 from jinja2 import Template
 
 from buildrules.common.errors import log_error_and_quit
@@ -123,6 +124,20 @@ class Builder:
         copy2(src, target)
         if chmod:
             os.chmod(target, chmod)
+    
+    @classmethod
+    def _copy_dir(cls, src, target, chmod=None):
+        """ This function copies a folder from src to target with required
+        permissions.
+
+        Args:
+            src (str): Folder that will be copied.
+            target (str): Target folder.
+            chmod (str): Chmod permissions. Default is None.
+        """
+        copytree(src, target, symlinks=True)
+        if chmod:
+            os.chmod(target, chmod)
 
     def _write_template(self, target_path, template_path=None, template=None):
         """Writes a file based on jinja2-template.
@@ -149,13 +164,23 @@ class Builder:
         """
         return Template(template).render(self._confreader['build_config'])
 
-    def _calculate_checksum(self, filename, hash_function='sha256'):
+    def _calculate_file_checksum(self, filename, hash_function='sha256'):
         hash_functions = {
             'sha256': hashlib.sha256
         }
-        calculated_hash = hash_functions[hash_function]()
+        hash_function = hash_functions[hash_function]()
         with open(filename, "rb") as input_file:
             for byte_block in iter(lambda: input_file.read(4096), b""):
-                calculated_hash.update(byte_block)
+                hash_function.update(byte_block)
 
-        return calculated_hash.hexdigest()
+        return hash_function.hexdigest()
+
+    def _calculate_dict_checksum(self, dict_object, hash_function='sha256'):
+        hash_functions = {
+            'sha256': hashlib.sha256
+        }
+        hash_function = hash_functions[hash_function]()
+        json_dump = json.dumps(dict_object, ensure_ascii=False, sort_keys=True)
+        hash_function.update(json_dump.encode('utf-8'))
+
+        return hash_function.hexdigest()
