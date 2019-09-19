@@ -37,6 +37,11 @@ packages:
       - '+metis'
       - '+scotch'
       - '+mgridgen'
+    version: '1812_190531'
+    variants:
+      - '+metis'
+      - '+scotch'
+      - '+mgridgen'
   - name: 'openmpi'
     version: 3.1.4
   - name: 'python'
