@@ -6,3 +6,6 @@ environments:
     miniconda: True
     python_version: 3
     installer_version: latest
+    conda_packages:
+      - numpy
+      - scipy

@@ -11,6 +11,7 @@ import yaml
 import copy
 import requests
 import sh
+import json
 
 from buildrules.common.builder import Builder
 from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule
@@ -199,7 +200,7 @@ class AnacondaBuilder(Builder):
             config['version'],
             config['checksum_small'])
         return install_path
-    
+
     def _get_module_path(self, config):
         module_path = os.path.join(
             self._module_path,
@@ -211,7 +212,7 @@ class AnacondaBuilder(Builder):
         shutil.rmtree(stage_path)
 
     def _prepare_installation_paths(self, stage_path=None, install_path=None, module_path=None):
-        
+
         if os.path.isdir(stage_path):
             self._logger.info((
                 "Cleaning previous stage path: %s"), stage_path)
@@ -245,6 +246,20 @@ class AnacondaBuilder(Builder):
                     Dumper=yaml.SafeDumper
                 ))
 
+    def _verify_condarc(self, conda_path=None, env=None):
+        config_json = sh.conda('info','--json', _env=env).stdout.decode('utf-8')
+        config = json.loads(config_json)
+        conda_rc = os.path.join(conda_path, 'condarc')
+        if config['config_files']:
+            if len(config['config_files']) > 1:
+                raise Exception(
+                    ('Too many configuration files: '
+                     '{0}').format(config['config_files']))
+            elif config['config_files'][0] != conda_rc:
+                raise Exception(
+                    ('Configuration file is not from the '
+                     'installation root: {0}'.format(config['config_files'])))
+
     def _get_environment_install_rules(self):
         rules = []
 
@@ -255,6 +270,7 @@ class AnacondaBuilder(Builder):
             os.getenv('PATH').split(':')))
 
         for environment in self._confreader['build_config']['environments']:
+
             config = self._create_environment_config(environment)
 
             installer = self._get_installer_path(config)
@@ -262,10 +278,13 @@ class AnacondaBuilder(Builder):
             install_path = self._get_install_path(config)
             module_path = self._get_module_path(config)
 
+            conda_env = {
+                'PATH': ':'.join([os.path.join(stage_path, 'bin')] + env_path)
+            }
+            conda_install_cmd = ['conda', 'install', '--yes', '-n', 'base']
+
             if config['environment_name'] not in installed_environments:
-                env_path_environment = {
-                    'PATH': ':'.join([os.path.join(stage_path, 'bin')] + env_path)
-                }
+                # This build installs a brand new environment
                 rules.extend([
                     LoggingRule((
                         "Environment {{name}} not found.\n"
@@ -274,7 +293,7 @@ class AnacondaBuilder(Builder):
                     PythonRule(self._download_installer, [config]),
                     PythonRule(
                         self._prepare_installation_paths,
-                        kwargs={ 
+                        kwargs={
                             'stage_path': stage_path,
                             'install_path': install_path,
                             'module_path': module_path,
@@ -285,10 +304,21 @@ class AnacondaBuilder(Builder):
                         shell=True),
                 ])
             rules.extend([
-                SubprocessRule(
-                    ['conda', 'list'],
-                    env=env_path_environment,
-                    shell=True),
+                LoggingRule('Verifying that only the environment condarc is utilized'),
+                PythonRule(self._verify_condarc,
+                    kwargs={
+                        'conda_path': install_path,
+                        'env': conda_env
+                    }),
+            ])
+            if config.get('conda_packages',[]):
+                rules.extend([
+                    SubprocessRule(
+                        conda_install_cmd + config['conda_packages'],
+                        env=conda_env,
+                        shell=True),
+                ])
+            rules.extend([
                 PythonRule(
                     self._copy_dir,
                     [stage_path, install_path]
