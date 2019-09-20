@@ -9,3 +9,6 @@ environments:
     conda_packages:
       - numpy
       - scipy
+    condarc:
+      channels:
+        - defaults

@@ -34,12 +34,6 @@ class AnacondaBuilder(Builder):
                     'default': {},
                     'properties': {
                         'install_tree': {'type': 'string'},
-                        'build_stage': {
-                            'oneOf': [
-                                {'type': 'string'},
-                                {'type': 'array',
-                                 'items': {'type': 'string'}}],
-                        },
                         'module_path': {'type': 'string'},
                         'source_cache': {'type': 'string'},
                     },
@@ -80,6 +74,10 @@ class AnacondaBuilder(Builder):
                                 'type': 'array',
                                 'items': {'type': 'string'},
                             },
+                            'condarc': {
+                                'default' : {},
+                                'type': 'object',
+                            },
                         },
                         'required': ['name', 'version'],
                     },
@@ -91,8 +89,9 @@ class AnacondaBuilder(Builder):
     def __init__(self, conf_folder):
         self._conda_path = os.path.join(os.getcwd(), 'conda')
         super().__init__(conf_folder)
-        self._source_cache = self._get_path('source_cache')
-        self._build_stage = self._get_path('build_stage')
+        source_cache = self._get_path('source_cache')
+        self._installer_cache = os.path.join(source_cache, 'installers')
+        self._pkg_cache = os.path.join(source_cache, 'pkgs')
         self._install_path = self._get_path('install_path')
         self._module_path = self._get_path('module_path')
         self._installed_file = os.path.join(self._install_path, 'installed_environments.yml')
@@ -102,7 +101,6 @@ class AnacondaBuilder(Builder):
             'install_path': '$conda/opt/conda/software',
             'module_path': '$conda/opt/conda/modules',
             'source_cache': '$conda/var/conda/cache',
-            'build_stage': '$conda/var/conda/stage',
         }
         path_config.update(self._confreader['config']['config'])
         return re.sub('\$conda', self._conda_path, path_config[path_name])
@@ -111,10 +109,10 @@ class AnacondaBuilder(Builder):
         rules = []
 
         rules.extend([
-            LoggingRule('Creating cache directory: %s' % self._source_cache),
-            PythonRule(self._makedirs, [self._source_cache, 0o755]),
-            LoggingRule('Creating stage directory: %s' % self._build_stage),
-            PythonRule(self._makedirs, [self._build_stage, 0o755]),
+            LoggingRule('Creating installer cache directory: %s' % self._installer_cache),
+            PythonRule(self._makedirs, [self._installer_cache, 0o755]),
+            LoggingRule('Creating package cache directory: %s' % self._pkg_cache),
+            PythonRule(self._makedirs, [self._pkg_cache, 0o755]),
             LoggingRule('Creating installation directory: %s' % self._install_path),
             PythonRule(self._makedirs, [self._install_path, 0o755]),
             LoggingRule('Creating module directory: %s' % self._module_path),
@@ -148,7 +146,7 @@ class AnacondaBuilder(Builder):
         else:
             installer_fmt = "Anaconda{python_version}-{installer_version}-Linux-x86_64.sh"
 
-        installer = os.path.join(self._source_cache, installer_fmt.format(**install_config))
+        installer = os.path.join(self._installer_cache, installer_fmt.format(**install_config))
 
         return installer
 
@@ -186,13 +184,6 @@ class AnacondaBuilder(Builder):
                     calculated_checksum)
                 raise Exception('Invalid checksum for installer')
 
-    def _get_stage_path(self, config):
-        stage_name = '{name}-{version}-{checksum_small}'.format(**config)
-        stage_path = os.path.join(
-            self._build_stage,
-            stage_name)
-        return stage_path
-
     def _get_install_path(self, config):
         install_path = os.path.join(
             self._install_path,
@@ -208,23 +199,11 @@ class AnacondaBuilder(Builder):
         return module_path
 
     @classmethod
-    def _clean_stage(self, stage_path):
-        shutil.rmtree(stage_path)
-
-    def _prepare_installation_paths(self, stage_path=None, install_path=None, module_path=None):
-
-        if os.path.isdir(stage_path):
+    def _clean_failed(self, install_path):
+        if os.path.isdir(install_path):
             self._logger.info((
-                "Cleaning previous stage path: %s"), stage_path)
-            self._clean_stage(stage_path)
-        self._makedirs(stage_path, 0o755)
-
-        install_root = os.path.dirname(install_path)
-        if not os.path.isdir(install_root):
-            self._makedirs(install_root, 0o755)
-
-        if not os.path.isdir(module_path):
-            self._makedirs(module_path, 0o755)
+                "Cleaning previous failed installation: %s"), install_path)
+            shutil.rmtree(install_path)
 
     def _get_installed_environments(self):
         installed_dict = {
@@ -242,6 +221,19 @@ class AnacondaBuilder(Builder):
             installed_file.write(
                 yaml.dump(
                     installed_dict,
+                    default_flow_style=False,
+                    Dumper=yaml.SafeDumper
+                ))
+
+    def _update_condarc(self, conda_path, condarc):
+        condarc_defaults = {
+            'pkgs_dirs': [self._pkg_cache]
+        }
+        condarc.update(condarc_defaults)
+        with open(os.path.join(conda_path,'.condarc'), 'w') as condarc_file:
+            condarc_file.write(
+                yaml.dump(
+                    condarc,
                     default_flow_style=False,
                     Dumper=yaml.SafeDumper
                 ))
@@ -272,14 +264,16 @@ class AnacondaBuilder(Builder):
         for environment in self._confreader['build_config']['environments']:
 
             config = self._create_environment_config(environment)
+            pip_packages = config.pop('pip_packages', [])
+            conda_packages = config.pop('conda_packages', [])
+            condarc = config.pop('condarc', {})
 
             installer = self._get_installer_path(config)
-            stage_path = self._get_stage_path(config)
             install_path = self._get_install_path(config)
             module_path = self._get_module_path(config)
 
             conda_env = {
-                'PATH': ':'.join([os.path.join(stage_path, 'bin')] + env_path)
+                'PATH': ':'.join([os.path.join(install_path, 'bin')] + env_path)
             }
             conda_install_cmd = ['conda', 'install', '--yes', '-n', 'base']
 
@@ -287,20 +281,17 @@ class AnacondaBuilder(Builder):
                 # This build installs a brand new environment
                 rules.extend([
                     LoggingRule((
-                        "Environment {{name}} not found.\n"
+                        "Environment {name} not installed.\n"
                         "Installing conda environment '{name}' with "
                         "module '{environment_name}'").format(**config)),
                     PythonRule(self._download_installer, [config]),
+                    PythonRule(self._clean_failed, [install_path]),
                     PythonRule(
-                        self._prepare_installation_paths,
-                        kwargs={
-                            'stage_path': stage_path,
-                            'install_path': install_path,
-                            'module_path': module_path,
-                        }
+                        self._makedirs,
+                        [install_path, 0o755],
                     ),
                     SubprocessRule(
-                        ['bash', installer, '-f', '-b', '-p', stage_path],
+                        ['bash', installer, '-f', '-b', '-p', install_path],
                         shell=True),
                 ])
             rules.extend([
@@ -310,20 +301,22 @@ class AnacondaBuilder(Builder):
                         'conda_path': install_path,
                         'env': conda_env
                     }),
+                PythonRule(
+                    self._update_condarc,
+                    [install_path, condarc],
+                ),
             ])
-            if config.get('conda_packages',[]):
+            if conda_packages:
                 rules.extend([
                     SubprocessRule(
-                        conda_install_cmd + config['conda_packages'],
+                        conda_install_cmd + conda_packages,
                         env=conda_env,
                         shell=True),
                 ])
-            rules.extend([
-                PythonRule(
-                    self._copy_dir,
-                    [stage_path, install_path]
-                ),
-            ])
+            PythonRule(
+                self._makedirs,
+                [module_path, 0o755],
+            ),
             rules.append(
                 PythonRule(
                     self._update_installed_environments,
