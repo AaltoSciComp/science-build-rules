@@ -92,8 +92,6 @@ class CIBuilder(Builder):
                         'type': 'object',
                         'properties': {
                             'enabled': {'type': 'boolean'},
-                            'url': {'type': 'boolean'},
-                            'branch': {'type': 'boolean'},
                         },
                         'required': ['enabled'],
                     },
@@ -121,9 +119,22 @@ class CIBuilder(Builder):
                     'properties': {
                         'name': {'type': 'string'},
                         'image:': {'type': 'string'},
-                        'spack_target_path:': {'type': 'string'},
-                        'singularity_target_path:': {'type': 'string'},
-                        'registry_clone_target_path:': {'type': 'string'},
+                        'spack': {
+                            'type': 'object',
+                            'properties': {
+                                'target_path:': {'type': 'string'},
+                                'url': {'type': 'string'},
+                                'branch': {'type': 'string'},
+                                'schedule': {'type': 'string'},
+                            },
+                        },
+                        'singularity': {
+                            'type': 'object',
+                            'properties': {
+                                'target_path:': {'type': 'string'},
+                                'schedule': {'type': 'string'},
+                            },
+                        },
                     },
                     'required': ['name', 'image'],
                 },
