@@ -125,14 +125,32 @@ class CIBuilder(Builder):
                                 'target_path:': {'type': 'string'},
                                 'url': {'type': 'string'},
                                 'branch': {'type': 'string'},
-                                'schedule': {'type': 'string'},
+                                'schedule': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'hour': {'type':'integer'},
+                                        'minute': {'type':'integer'},
+                                        'dayOfMonth': {'type':'integer'},
+                                        'month': {'type':'integer'},
+                                        'dayOfWeek': {'type':'integer'},
+                                    },
+                                },
                             },
                         },
                         'singularity': {
                             'type': 'object',
                             'properties': {
                                 'target_path:': {'type': 'string'},
-                                'schedule': {'type': 'string'},
+                                'schedule': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'hour': {'type':'integer'},
+                                        'minute': {'type':'integer'},
+                                        'dayOfMonth': {'type':'integer'},
+                                        'month': {'type':'integer'},
+                                        'dayOfWeek': {'type':'integer'},
+                                    },
+                                },
                             },
                         },
                     },
