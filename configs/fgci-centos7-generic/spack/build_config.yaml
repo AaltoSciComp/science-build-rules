@@ -29,6 +29,8 @@ compilers:
       cxxflags: -O2 -g -march=westmere
       fflags: -O2 -g -march=westmere
 packages:
+  - name: 'cairo'
+    version: 1.16.0
   - name: 'chapel'
     version: 1.19.0
   - name: 'cuda'
