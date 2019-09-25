@@ -393,13 +393,14 @@ class SpackBuilder(Builder):
     def _get_spec_string(self, package_config):
         return ' '.join(self._get_spec_list(package_config))
 
-    def _get_target_architecture_flags(self):
+    def _get_target_architecture_flags(self, package_config):
         target_architecture = {
             'platform': 'linux',
             'os': 'None',
             'arch': 'None',
         }
         target_architecture.update(self._confreader['build_config'].get('target_architecture', {}))
+        target_architecture.update(package_config.get('target_architecture', {}))
         arch_flags = ['arch={platform}-{os}-{arch}'.format(**target_architecture) ]
         return arch_flags
 
@@ -432,7 +433,7 @@ class SpackBuilder(Builder):
         spec_str = self._get_spec_string(package_config)
         spec_list = self._get_spec_list(package_config)
         extra_flags = self._get_extra_flags(package_config)
-        arch_flags = self._get_target_architecture_flags()
+        arch_flags = self._get_target_architecture_flags(package_config)
         self._logger.debug(msg='Creating package install rule for spec: {0}'.format(spec_str))
         return SubprocessRule(self._spack_cmd + ['install', '-v'] + extra_flags + spec_list + arch_flags)
 
