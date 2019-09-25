@@ -50,20 +50,15 @@ class SingularityBuilder(Builder):
             'type': 'object',
             'additionalProperties': False,
             'patternProperties': {
-                'installer_checksums': {
-                    'type': 'object',
-                    'default': {},
-                },
-                'environments': {
+                'definitions': {
                     'type': 'array',
                     'default': [],
                     'items': {
                         'type': 'object',
                         'properties': {
                             'name': {'type': 'string'},
-                            'module_name': {'type': 'string'},
-                            'module_version': {'type': 'string'},
-                            'installer_version': {'type': 'string'},
+                            'path': {'type': 'string'},
+                            'fakeroot': {'type': 'boolean', 'default': False},
                         },
                         'required': ['name'],
                     },
@@ -79,7 +74,7 @@ class SingularityBuilder(Builder):
         self._build_stage = self._get_path('build_stage')
         self._install_path = self._get_path('install_path')
         self._module_path = self._get_path('module_path')
-        self._installed_file = os.path.join(self._install_path, 'installed_environments.yml')
+        self._installed_file = os.path.join(self._install_path, 'installed_images.yml')
 
     def _get_path(self, path_name):
         path_config = {
@@ -107,18 +102,18 @@ class SingularityBuilder(Builder):
 
         return rules
 
-    def _create_environment_config(self, environment_dict):
+    def _create_image_config(self, image_dict):
         default_config = {
             'installer_version': 'latest',
         }
 
         config = copy.deepcopy(default_config)
-        config.update(environment_dict)
+        config.update(image_dict)
         if 'module_name' not in config:
             config['module_name'] = config['name']
         if 'module_version' not in config:
             config['module_version'] = '{name}-{installer_version}'.format(**config)
-        config['environment_name'] = '{module_name}/{module_version}'.format(**config)
+        config['image_name'] = '{module_name}/{module_version}'.format(**config)
 
         return config
 
@@ -130,36 +125,6 @@ class SingularityBuilder(Builder):
 
         return installer
 
-    def _download_installer(self, install_config):
-
-        cached_installer = self._get_installer_path(install_config)
-        installer = os.path.basename(cached_installer)
-
-        installer_url = "https://github.com/sylabs/singularity/releases/download/v3.4.0/singularity-3.4.0.tar.gz/{0}".format(installer)
-
-        if not os.path.isfile(cached_installer):
-            self._logger.info((
-                "Installer '%s' was not found in the cache directory. "
-                "Downloading it."), installer)
-            download_request = requests.get(installer_url)
-            with open(cached_installer, 'wb') as installer_file:
-                installer_file.write(download_request.content)
-
-        checksum = self._confreader['build_config'].get('installer_checksums', {}).get(installer, '')
-        if checksum:
-            self._logger.info(
-                "Calculating checksum for installer '%s'", installer)
-            calculated_checksum = self._calculate_checksum(cached_installer)
-            if calculated_checksum != checksum:
-                self._logger.error(
-                    ("The checksum for installer file '%s' "
-                     "does not match the expected value:\n"
-                     "Expected:   %s\n"
-                     "Calculated: %s"),
-                    installer,
-                    checksum,
-                    calculated_checksum)
-                raise Exception('Invalid checksum for installer')
 
     def _get_stage_path(self, stage_config):
         stage_path = os.path.join(
@@ -197,18 +162,14 @@ class SingularityBuilder(Builder):
         if not os.path.isdir(module_root):
             self._makedirs(module_root, 0o755)
 
-    def _get_installed_environments(self):
-        installed_dict = {
-            'environments': {}
-        }
-        if os.path.isfile(self._installed_file):
-            with open(self._installed_file, 'r') as installed_file:
-                installed_dict = yaml.load(installed_file, Loader=yaml.SafeLoader)
-        return installed_dict
+    def _get_installed_images(self):
+        imgdir = self._install_path
+        images = glob(os.path.join(imgdir, '*.sif'))
+        return images
 
-    def _update_installed_environments(self, environment_name, installation_config):
-        installed_dict = self._get_installed_environments()
-        installed_dict['environments'][environment_name] = installation_config
+    def _update_installed_images(self, image_name, installation_config):
+        installed_dict = self._get_installed_images()
+        installed_dict['images'][image_name] = installation_config
         with open(self._installed_file, 'w') as installed_file:
             installed_file.write(
                 yaml.dump(
@@ -217,32 +178,31 @@ class SingularityBuilder(Builder):
                     Dumper=yaml.SafeDumper
                 ))
 
-    def _get_environment_install_rules(self):
+    def _get_image_install_rules(self):
         rules = []
 
-        installed_environments = self._get_installed_environments()['environments']
+        installed_images = self._get_installed_images()
 
         env_path = list(filter(
             lambda x: re.search('^/usr',x),
             os.getenv('PATH').split(':')))
 
-        for environment in self._confreader['build_config']['environments']:
-            config = self._create_environment_config(environment)
+        for definition in self._confreader['build_config']['definitions']:
+            config = self._create_image_config(definition)
 
             installer = self._get_installer_path(config)
             stage_path = self._get_stage_path(config)
             install_path = self._get_install_path(config)
 
-            if config['name'] not in installed_environments:
-                env_path_environment = {
+            if config['name'] not in installed_images:
+                env_path_image = {
                     'PATH': ':'.join([os.path.join(stage_path, 'bin')] + env_path)
                 }
                 rules.extend([
                     LoggingRule((
-                        "Environment {{name}} not found.\n"
+                        "Image {{name}} not found.\n"
                         "Installing singularity image '{name}' with "
-                        "module '{environment_name}'").format(**config)),
-                    PythonRule(self._download_installer, [config]),
+                        "module '{image_name}'").format(**config)),
                     PythonRule(
                         self._prepare_installation_paths,
                         [config['module_name'], config['module_version']]),
@@ -251,12 +211,12 @@ class SingularityBuilder(Builder):
                 rules.extend([
                     SubprocessRule(
                         ['singularity', 'list'],
-                        env=env_path_environment,
+                        env=env_path_image,
                         shell=True)
                 ])
             #rules.append(
             #    PythonRule(
-            #        self._update_installed_environments,
+            #        self._update_installed_images,
             #        [config['name'], config]))
 
         return rules
@@ -270,7 +230,7 @@ class SingularityBuilder(Builder):
 
         rules = (
             self._get_directory_creation_rules() +
-            self._get_environment_install_rules()
+            self._get_image_install_rules()
         )
         return rules
 
