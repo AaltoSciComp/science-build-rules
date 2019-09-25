@@ -1,3 +1,6 @@
+target_architecture:
+  platform: linux
+  os: centos7
 compilers:
   - name: 'gcc'
     version: 4.8.5
