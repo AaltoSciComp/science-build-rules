@@ -1,7 +1,7 @@
 target_architecture:
   platform: linux
   os: centos7
-  arch: westmere
+  arch: x86_64
 compilers:
   - name: 'gcc'
     version: 4.8.5
