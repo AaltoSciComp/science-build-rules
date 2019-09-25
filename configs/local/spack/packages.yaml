@@ -1,32 +1,4 @@
 packages:
-  autoconf:
-    paths:
-      autoconf: /fake/path
-    buildable: False
-  automake:
-    paths:
-      automake: /fake/path
-    buildable: False
-  cmake:
-    paths:
-      cmake: /fake/path
-    buildable: False
-  flex:
-    paths:
-      flex: /fake/path
-    buildable: False
-  libtool:
-    paths:
-      libtool: /fake/path
-    buildable: False
-  m4:
-    paths:
-      m4: /fake/path
-    buildable: False
-  zlib:
-    paths:
-      zlib: /fake/path
-    buildable: False
   all:
     compiler: [gcc, intel, pgi, clang, xl, nag]
     providers:

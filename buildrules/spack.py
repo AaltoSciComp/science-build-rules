@@ -299,6 +299,14 @@ class SpackBuilder(Builder):
             'type': 'object',
             'additionalProperties': False,
             'patternProperties': {
+                'target_architecture': {
+                     'type': 'object',
+                     'properties': {
+                        'platform': {'type': 'string'},
+                        'os': {'type': 'string'},
+                        'target': {'type': 'string'},
+                    },
+                },
                 'compilers': {
                     'type': 'array',
                     'default': [],
@@ -385,6 +393,22 @@ class SpackBuilder(Builder):
     def _get_spec_string(self, package_config):
         return ' '.join(self._get_spec_list(package_config))
 
+    def _get_target_architecture_flags(self):
+        target_architecture = {
+            'platform': 'linux',
+            'os': 'None',
+            'arch': 'None',
+        }
+        target_architecture.update(self._confreader['build_config'].get('target_architecture', {}))
+        arch_flags = ['arch={platform}-{os}-{arch}'.format(**target_architecture) ]
+        return arch_flags
+
+    def _get_extra_flags(self, package_config):
+        extra_flags = []
+        for flag_str in package_config.get('extra_flags', []):
+            extra_flags.extend(flag_str.split(' '))
+        return extra_flags
+
     @classmethod
     def _get_spec_list(cls, package_config):
         spec_list = ['{name}@{version}'.format(**package_config)]
@@ -407,11 +431,10 @@ class SpackBuilder(Builder):
     def _get_package_install_rule(self, package_config):
         spec_str = self._get_spec_string(package_config)
         spec_list = self._get_spec_list(package_config)
-        extra_flags = []
-        for flag_str in package_config.get('extra_flags', []):
-            extra_flags.extend(flag_str.split(' '))
+        extra_flags = self._get_extra_flags(package_config)
+        arch_flags = self._get_target_architecture_flags()
         self._logger.debug(msg='Creating package install rule for spec: {0}'.format(spec_str))
-        return SubprocessRule(self._spack_cmd + ['install', '-v'] + extra_flags + spec_list)
+        return SubprocessRule(self._spack_cmd + ['install', '-v'] + extra_flags + spec_list + arch_flags)
 
     def _set_compiler_flags(self, spec, flags):
         if os.path.isfile(self._compilers_file):

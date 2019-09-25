@@ -2,4 +2,4 @@ config:
   install_path: $conda/opt/conda/software
   module_path: $conda/opt/conda/modules
   source_cache: $conda/var/conda/cache
-  locks: false
+  tmpdir: $conda/var/conda/tmp
