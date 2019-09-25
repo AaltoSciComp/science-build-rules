@@ -1,5 +1,3 @@
-installer_checksums:
-  'singularity-3.4.0.tar.gz': 'abc123'
-environments:
-  - name: sing_test_env
-    installer_version: latest
+definitions:
+  - name: default
+    path: 'defs/*.def'
