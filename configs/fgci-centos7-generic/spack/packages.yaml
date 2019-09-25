@@ -1,6 +1,6 @@
 packages:
   cairo:
-    variants: +X
+    variants: +X +gobject
   curl:
     variants: +libssh2 ~nghttp
   gcc:
