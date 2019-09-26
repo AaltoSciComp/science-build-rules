@@ -125,6 +125,7 @@ class CIBuilder(Builder):
                                 'target_path:': {'type': 'string'},
                                 'url': {'type': 'string'},
                                 'branch': {'type': 'string'},
+                                'github_hook': {'type': 'boolean'},
                                 'schedule': {
                                     'type': 'object',
                                     'properties': {
@@ -141,6 +142,7 @@ class CIBuilder(Builder):
                             'type': 'object',
                             'properties': {
                                 'target_path:': {'type': 'string'},
+                                'github_hook': {'type': 'boolean'},
                                 'schedule': {
                                     'type': 'object',
                                     'properties': {
