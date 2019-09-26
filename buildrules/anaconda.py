@@ -243,11 +243,10 @@ class AnacondaBuilder(Builder):
                     Dumper=yaml.SafeDumper
                 ))
 
-    def _export_conda_environment(self, name, conda_path=None, env=None):
+    def _export_conda_environment(self, conda_path=None, env=None):
         conda_env_json = sh.conda('env', 'export', '-n', 'base', '--json', _env=env).stdout.decode('utf-8')
         conda_env = json.loads(conda_env_json)
-        del conda_env['prefix']
-        with open(os.path.join(self._tmpdir, '%s.yml' % name), 'w') as conda_env_file:
+        with open(os.path.join(conda_path, 'environment.yml'), 'w') as conda_env_file:
             conda_env_file.write(
                 yaml.dump(
                     conda_env,
@@ -321,10 +320,6 @@ class AnacondaBuilder(Builder):
             if update_install:
                 conda_install_cmd.append('--freeze-installed')
 
-                rules.extend([
-                    LoggingRule('Exporting old environment for cloning.'),
-                    PythonRule(self._export_conda_environment, [config])
-                ])
 
 
             rules.extend([
@@ -345,6 +340,7 @@ class AnacondaBuilder(Builder):
                         'conda_path': install_path,
                         'env': conda_env
                     }),
+                LoggingRule('Creating condarc for environment.'),
                 PythonRule(
                     self._update_condarc,
                     [install_path, condarc],
@@ -357,10 +353,12 @@ class AnacondaBuilder(Builder):
                         env=conda_env,
                         shell=True),
                 ])
-            PythonRule(
+                LoggingRule('Creating environment.yml for cloning.'),
+                PythonRule(self._export_conda_environment, [config]),
+            rules.append(PythonRule(
                 self._makedirs,
                 [module_path, 0o755],
-            ),
+            ))
             rules.append(
                 PythonRule(
                     self._update_installed_environments,
