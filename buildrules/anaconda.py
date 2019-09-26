@@ -317,11 +317,6 @@ class AnacondaBuilder(Builder):
             if skip_install:
                 continue
 
-            if update_install:
-                conda_install_cmd.append('--freeze-installed')
-
-
-
             rules.extend([
                 PythonRule(self._download_installer, [config]),
                 PythonRule(self._clean_failed, [install_path]),
@@ -334,7 +329,7 @@ class AnacondaBuilder(Builder):
                     shell=True),
             ])
             rules.extend([
-                LoggingRule('Verifying that only the environment condarc is utilized'),
+                LoggingRule('Verifying that only the environment condarc is utilized.'),
                 PythonRule(self._verify_condarc,
                     kwargs={
                         'conda_path': install_path,
@@ -346,6 +341,9 @@ class AnacondaBuilder(Builder):
                     [install_path, condarc],
                 ),
             ])
+            if update_install:
+                conda_install_cmd.append('--freeze-installed')
+
             if conda_packages:
                 rules.extend([
                     SubprocessRule(
@@ -353,12 +351,19 @@ class AnacondaBuilder(Builder):
                         env=conda_env,
                         shell=True),
                 ])
-                LoggingRule('Creating environment.yml for cloning.'),
-                PythonRule(self._export_conda_environment, [config]),
-            rules.append(PythonRule(
-                self._makedirs,
-                [module_path, 0o755],
-            ))
+            rules.extend([
+                LoggingRule('Creating environment.yml from newly built environment.'),
+                PythonRule(
+                    self._export_conda_environment,
+                    kwargs={
+                        'conda_path': install_path,
+                        'env': conda_env,
+                    }),
+                LoggingRule('Creating module path.'),
+                PythonRule(
+                    self._makedirs,
+                    [module_path, 0o755])
+            ])
             rules.append(
                 PythonRule(
                     self._update_installed_environments,
