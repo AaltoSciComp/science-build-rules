@@ -50,6 +50,11 @@ packages:
   - name: 'heaptrack'
     version: 1.1.0
   - name: 'openfoam'
+    version: '1812_190531'
+    variants:
+      - '+metis'
+      - '+scotch'
+      - '+mgridgen'
     version: '1906'
     variants:
       - '+metis'
