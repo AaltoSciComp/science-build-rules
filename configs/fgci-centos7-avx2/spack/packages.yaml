@@ -49,9 +49,9 @@ packages:
     version: [3.6.1]
     variants: +X +external-lapack
   slurm:
-    version: [17-11-5-1]
+    version: [18-08-8-1]
     paths:
-      slurm@17-11-5-1: /usr
+      slurm@18-08-8-1: /usr
     buildable: False
   sqlite:
     version: [3.28.0]
