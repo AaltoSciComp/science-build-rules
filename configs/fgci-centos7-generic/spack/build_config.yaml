@@ -49,6 +49,10 @@ packages:
     version: 1.12.8
   - name: 'heaptrack'
     version: 1.1.0
+  - name: 'miniconda2'
+    version: 4.6.14
+  - name: 'miniconda3'
+    version: 4.6.14
   - name: 'openfoam'
     version: '1906'
     variants:
