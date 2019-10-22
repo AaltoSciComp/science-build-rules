@@ -58,6 +58,7 @@ packages:
     variants:
       - '~cuda'
       - '~vtk'
+      - '~openmp'
   - name: 'openfoam'
     version: '1812_190531'
     variants:
