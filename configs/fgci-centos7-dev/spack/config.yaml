@@ -4,7 +4,6 @@ config:
   module_roots:
     tcl: /share/apps/spack/envs/fgci-centos7-dev/modules
     lmod: /share/apps/spack/envs/fgci-centos7-dev/lmod
-    dotkit: /share/apps/spack/envs/fgci-centos7-dev/dotkit
   source_cache: /cache
   misc_cache: /tmp/spack_misc_cache
   build_stage:
