@@ -10,4 +10,4 @@ config:
   build_stage:
     - $spack/var/spack/stage
   locks: false
-  build_jobs: 8
+  build_jobs: 6
