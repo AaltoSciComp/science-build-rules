@@ -3,7 +3,8 @@ packages:
     variants: +X +gobject +pdf
   curl:
     variants: +libssh2 ~nghttp
-  fontconfig: [2.12.1]
+  fontconfig: 
+    version: [2.12.1]
   gcc:
     version: [9.2.0]
   go:
