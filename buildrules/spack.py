@@ -501,6 +501,7 @@ class SpackBuilder(Builder):
             ])
         rules.append(LoggingRule('Installing compilers.'))
         for package_config in compiler_packages:
+            spec_list = self._get_spec_list(package_config)
             if not package_config.get('system_compiler', False):
                 rules.extend([
                     self._get_package_install_rule(package_config),
