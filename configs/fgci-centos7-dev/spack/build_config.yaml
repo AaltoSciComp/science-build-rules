@@ -39,6 +39,10 @@ compilers:
       os: centos7
       arch: x86_64
 packages:
+  - name: 'llvm':
+    version: 8.0.0
+    extra_flags:
+      - '-j 6'
   - name: 'boost'
     version: 1.55.0
   - name: 'cairo'
