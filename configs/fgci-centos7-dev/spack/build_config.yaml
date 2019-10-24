@@ -39,7 +39,7 @@ compilers:
       os: centos7
       arch: x86_64
 packages:
-  - name: 'llvm':
+  - name: 'llvm'
     version: 8.0.0
     extra_flags:
       - '-j 6'
