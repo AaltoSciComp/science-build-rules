@@ -2,4 +2,4 @@
 Configuring a build
 =======================
 
-.. include: configuration/spack.rst
+.. include:: configuration/spack.rst
