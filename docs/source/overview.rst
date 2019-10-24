@@ -7,7 +7,7 @@ make it easier to create automated builds with Spack, Singularity and
 Anaconda. It is designed to run with ``science-build-environment``, but it
 can also be run independently. The basic structure is described below:
 
-.. image:: ../images/builder_structure.svg
+.. image:: ../images/builder_structure.*
    :width: 800
 
 Typical build will do the following steps:

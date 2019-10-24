@@ -47,6 +47,41 @@ help:
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
 	@echo "  coverage   to run coverage check of the documentation (if enabled)"
 
+########################################
+# Convert images to pngs for latex build
+
+SVG2PDF       = inkscape
+SVG2PDF_FLAGS = -C
+
+# SVG to PNG conversion
+SVG2PNG       = inkscape
+SVG2PNG_FLAGS = -C -d=90 --export-background-opacity=\#00
+
+# Pattern rule for converting SVG to PDF
+%.pdf : %.svg
+	$(SVG2PDF) $(SVG2PDF_FLAGS) -f $< -A $@
+
+# Pattern rule for converting SVG to PNG
+%.png : %.svg
+	$(SVG2PNG) $(SVG2PNG_FLAGS) -f $< -e $@
+
+# Build a list of SVG files to convert to PDFs
+PDFs := $(patsubst %.svg,%.pdf,$(wildcard images/*.svg))
+
+# Build a list of SVG files to convert to PNGs
+PNGs := $(patsubst %.svg,%.png,$(wildcard images/*.svg))
+
+# Make a rule to build the PDFs
+images-pdf: $(PDFs)
+
+# Make a rule to build the PNGs
+images-png: $(PNGs)
+
+# Make a rule to build the images
+images: images-pdf images-png
+
+########################################
+
 .PHONY: clean
 clean:
 	rm -rf $(BUILDDIR)/*
@@ -124,7 +159,7 @@ epub:
 	@echo "Build finished. The epub file is in $(BUILDDIR)/epub."
 
 .PHONY: latex
-latex:
+latex:images-pdf
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
 	@echo
 	@echo "Build finished; the LaTeX files are in $(BUILDDIR)/latex."
@@ -132,7 +167,7 @@ latex:
 	      "(use \`make latexpdf' here to do that automatically)."
 
 .PHONY: latexpdf
-latexpdf:
+latexpdf: images-pdf
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
 	@echo "Running LaTeX files through pdflatex..."
 	$(MAKE) -C $(BUILDDIR)/latex all-pdf
