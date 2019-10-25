@@ -43,6 +43,8 @@ packages:
     version: 1.55.0
   - name: 'cairo'
     version: 1.16.0
+  - name: 'ceres-solver'
+    version: 1.12.0
   - name: 'chapel'
     version: 1.19.0
   - name: 'cuda'
