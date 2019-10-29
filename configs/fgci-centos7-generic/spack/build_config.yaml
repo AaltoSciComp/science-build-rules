@@ -39,8 +39,16 @@ compilers:
       os: centos7
       arch: x86_64
 packages:
+  - name: 'llvm'
+    version: 8.0.0
+    extra_flags:
+      - '-j 6'
+  - name: 'boost'
+    version: 1.55.0
   - name: 'cairo'
     version: 1.16.0
+  - name: 'ceres-solver'
+    version: 1.12.0
   - name: 'chapel'
     version: 1.19.0
   - name: 'cuda'
@@ -53,6 +61,12 @@ packages:
     version: 4.6.14
   - name: 'miniconda3'
     version: 4.6.14
+  - name: 'opencv'
+    version: 4.1.0
+    variants:
+      - '~cuda'
+      - '~vtk'
+      - '~openmp'
   - name: 'openfoam'
     version: '1906'
     variants:
