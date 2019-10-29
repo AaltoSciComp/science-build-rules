@@ -117,3 +117,45 @@ this:
           platform: linux
           os: centos7
           arch: x86_64
+
+packages
+********
+
+The `packages`-array consists of individual packages as dictionaries.
+These packages are evaluated in sequential order from top to bottom.
+
+Each package can contain the following keys:
+
+    - `name`: Name of the package in spack (e.g. `gcc`).
+    - `version`: Version of the package in spack (e.g. `9.2.0`).
+    - `licenses`: Array of license files that need to be copied into
+      the installation directory. More information on this at the
+      licenses-page (TODO) (e.g. `[license.lic]`).
+    - `variants`: Additional variants that the installation should use
+      (e.g. `fabrics=verbs` for `openmpi`).
+    - `dependencies`: Additional dependencies for the installation.
+      (e.g. `%gcc@9.2.0` or `^python@3:`).
+    - `extra_flags`: Array of extra flags that should be given to `spack
+      install`-command (e.g. `--jobs 4` to limit the build to four cpus).
+    - `target_architecture`: Target architecture for building this package.
+      Structure is the same as for `target_architecture`.
+
+Only `name` and `version` are required. Default variants and versions
+should be set in `packages.yaml`. An example configuration might look
+something like this:
+
+.. code-block:: yaml
+
+    packages:
+      - name: 'openmpi'
+        version: 3.1.4
+      - name: 'python'
+        version: 3.7.4
+      - name: 'r'
+        version: 3.6.1
+      - name: 'py-gpaw'
+        version: 1.3.0
+        variants:
+          - '+fftw'
+          - '+mpi'
+          - '+scalapack'
