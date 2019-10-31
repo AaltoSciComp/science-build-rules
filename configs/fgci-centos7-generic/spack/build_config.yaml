@@ -76,12 +76,10 @@ packages:
   - name: 'openfoam-org'
     version: "6"
     variants:
-      - '+int64'
       - '+metis'
   - name: 'openfoam-org'
     version: "7"
     variants:
-      - '+int64'
       - '+metis'
   - name: 'openmpi'
     version: 3.1.4
