@@ -41,8 +41,6 @@ compilers:
 packages:
   - name: 'llvm'
     version: 8.0.0
-    extra_flags:
-      - '-j 6'
   - name: 'boost'
     version: 1.55.0
   - name: 'cairo'
@@ -97,6 +95,8 @@ packages:
       - '+fftw'
       - '+mpi'
       - '+scalapack'
+  - name: 'texlive'
+    version: 'live'
   - name: 'upcxx'
     version: 2019.3.2
   - name: 'valgrind'
