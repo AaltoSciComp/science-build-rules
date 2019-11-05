@@ -89,6 +89,8 @@ packages:
       - '+fftw'
       - '+mpi'
       - '+scalapack'
+  - name: 'texlive'
+    version: 'live'
   - name: 'upcxx'
     version: 2019.3.2
   - name: 'valgrind'
