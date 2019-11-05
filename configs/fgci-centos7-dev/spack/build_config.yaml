@@ -77,6 +77,18 @@ packages:
       - '+metis'
       - '+scotch'
       - '+mgridgen'
+  - name: 'openfoam'
+    version: 6
+    variants:
+      - '+metis'
+    dependencies:
+      - '^flex@:2.5.99'
+  - name: 'openfoam'
+    version: 7
+    variants:
+      - '+metis'
+    dependencies:
+      - '^flex@:2.5.99'
   - name: 'openmpi'
     version: 3.1.4
   - name: 'python'
