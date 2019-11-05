@@ -78,13 +78,13 @@ packages:
       - '+scotch'
       - '+mgridgen'
   - name: 'openfoam'
-    version: 6
+    version: '6'
     variants:
       - '+metis'
     dependencies:
       - '^flex@:2.5.99'
   - name: 'openfoam'
-    version: 7
+    version: '7'
     variants:
       - '+metis'
     dependencies:
