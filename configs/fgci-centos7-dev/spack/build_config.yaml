@@ -81,7 +81,6 @@ packages:
     version: '6'
     variants:
       - '+metis'
-      - 'cflags="-Wno-error=deprecated-copy\ -Wno-deprecated-copy"'
     extra_flags:
       - '-j 1'
   - name: 'openmpi'
