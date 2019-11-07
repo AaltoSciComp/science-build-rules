@@ -300,8 +300,8 @@ class SpackBuilder(Builder):
             'additionalProperties': False,
             'patternProperties': {
                 'target_architecture': {
-                     'type': 'object',
-                     'properties': {
+                    'type': 'object',
+                    'properties': {
                         'platform': {'type': 'string'},
                         'os': {'type': 'string'},
                         'target': {'type': 'string'},
@@ -401,10 +401,11 @@ class SpackBuilder(Builder):
         }
         target_architecture.update(self._confreader['build_config'].get('target_architecture', {}))
         target_architecture.update(package_config.get('target_architecture', {}))
-        arch_flags = ['arch={platform}-{os}-{arch}'.format(**target_architecture) ]
+        arch_flags = ['arch={platform}-{os}-{arch}'.format(**target_architecture)]
         return arch_flags
 
-    def _get_extra_flags(self, package_config):
+    @classmethod
+    def _get_extra_flags(cls, package_config):
         extra_flags = []
         for flag_str in package_config.get('extra_flags', []):
             extra_flags.extend(flag_str.split(' '))
@@ -435,7 +436,8 @@ class SpackBuilder(Builder):
         extra_flags = self._get_extra_flags(package_config)
         arch_flags = self._get_target_architecture_flags(package_config)
         self._logger.debug(msg='Creating package install rule for spec: {0}'.format(spec_str))
-        return SubprocessRule(self._spack_cmd + ['install', '-v'] + extra_flags + spec_list + arch_flags)
+        return SubprocessRule(
+            self._spack_cmd + ['install', '-v'] + extra_flags + spec_list + arch_flags)
 
     def _set_compiler_flags(self, spec, flags):
         if os.path.isfile(self._compilers_file):
@@ -600,7 +602,8 @@ class SpackBuilder(Builder):
         def is_arch_folder(folder):
             return os.path.isdir(os.path.join(folder, 'Core'))
 
-        arch_folders = [folder for folder in glob(os.path.join(lmod_root, '*')) if is_arch_folder(folder)]
+        arch_folders = [folder for folder in glob(os.path.join(lmod_root, '*'))
+                        if is_arch_folder(folder)]
 
         return arch_folders
 
@@ -643,8 +646,8 @@ class SpackBuilder(Builder):
 
             corefiles = glob(os.path.join(arch_folder, 'Core', '*', '*.lua'))
             mpifiles = glob(os.path.join(arch_folder, '*', '*', 'Core', '*', '*.lua'))
-            moduledict = dict([(x, core_regexp.match(x).groupdict()) for x in corefiles])
-            moduledict.update(dict([(x, mpi_regexp.match(x).groupdict()) for x in mpifiles]))
+            moduledict = {x:core_regexp.match(x).groupdict() for x in corefiles}
+            moduledict.update({x:mpi_regexp.match(x).groupdict() for x in mpifiles})
             for modulefile, match in moduledict.items():
 
                 modulefolder_new = os.path.join(all_folder, match['modulename'])
