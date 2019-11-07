@@ -78,7 +78,7 @@ packages:
       - '+scotch'
       - '+mgridgen'
   - name: 'openfoam-org'
-    version: '6'
+    version: '7'
     variants:
       - '+metis'
     extra_flags:
