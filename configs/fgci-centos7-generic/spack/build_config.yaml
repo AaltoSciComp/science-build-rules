@@ -73,6 +73,10 @@ packages:
       - '+metis'
       - '+scotch'
       - '+mgridgen'
+  - name: 'openfoam-org'
+    version: '7'
+    variants:
+      - '+metis'
   - name: 'python'
     version: 3.7.4
   - name: 'r'
