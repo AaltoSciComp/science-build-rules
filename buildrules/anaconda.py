@@ -7,11 +7,11 @@ import os
 import shutil
 import logging
 from glob import glob
-import yaml
+import json
 import copy
 import requests
 import sh
-import json
+import yaml
 
 from buildrules.common.builder import Builder
 from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule
@@ -173,7 +173,8 @@ class AnacondaBuilder(Builder):
             with open(cached_installer, 'wb') as installer_file:
                 installer_file.write(download_request.content)
 
-        checksum = self._confreader['build_config'].get('installer_checksums', {}).get(installer, '')
+        checksum = self._confreader['build_config'].get(
+            'installer_checksums', {}).get(installer, '')
         if checksum:
             self._logger.info(
                 "Calculating checksum for installer '%s'", installer)
@@ -203,7 +204,6 @@ class AnacondaBuilder(Builder):
             config['name'])
         return module_path
 
-    @classmethod
     def _clean_failed(self, install_path):
         if os.path.isdir(install_path):
             self._logger.info((
@@ -235,7 +235,7 @@ class AnacondaBuilder(Builder):
             'pkgs_dirs': [self._pkg_cache]
         }
         condarc.update(condarc_defaults)
-        with open(os.path.join(conda_path,'.condarc'), 'w') as condarc_file:
+        with open(os.path.join(conda_path, '.condarc'), 'w') as condarc_file:
             condarc_file.write(
                 yaml.dump(
                     condarc,
@@ -244,7 +244,8 @@ class AnacondaBuilder(Builder):
                 ))
 
     def _export_conda_environment(self, conda_path=None, env=None):
-        conda_env_json = sh.conda('env', 'export', '-n', 'base', '--json', _env=env).stdout.decode('utf-8')
+        conda_env_json = sh.conda('env', 'export', '-n', 'base', '--json', _env=env)
+        conda_env_json = conda_env_json.stdout.decode('utf-8')
         conda_env = json.loads(conda_env_json)
         with open(os.path.join(conda_path, 'environment.yml'), 'w') as conda_env_file:
             conda_env_file.write(
@@ -255,7 +256,7 @@ class AnacondaBuilder(Builder):
                 ))
 
     def _verify_condarc(self, conda_path=None, env=None):
-        config_json = sh.conda('info','--json', _env=env).stdout.decode('utf-8')
+        config_json = sh.conda('info', '--json', _env=env).stdout.decode('utf-8')
         config = json.loads(config_json)
         conda_rc = os.path.join(conda_path, 'condarc')
         if config['config_files']:
@@ -274,7 +275,7 @@ class AnacondaBuilder(Builder):
         installed_environments = self._get_installed_environments()['environments']
 
         env_path = list(filter(
-            lambda x: re.search('^/usr',x),
+            lambda x: re.search('^/usr', x),
             os.getenv('PATH').split(':')))
 
         for environment in self._confreader['build_config']['environments']:
@@ -298,7 +299,8 @@ class AnacondaBuilder(Builder):
             skip_install = False
             update_install = False
 
-            installed_checksum = installed_environments.get(environment_name, {}).get('checksum','')
+            installed_checksum = installed_environments.get(
+                environment_name, {}).get('checksum', '')
 
             if not installed_checksum:
                 install_msg = ("Environment {environment_name} "
@@ -330,7 +332,8 @@ class AnacondaBuilder(Builder):
             ])
             rules.extend([
                 LoggingRule('Verifying that only the environment condarc is utilized.'),
-                PythonRule(self._verify_condarc,
+                PythonRule(
+                    self._verify_condarc,
                     kwargs={
                         'conda_path': install_path,
                         'env': conda_env
