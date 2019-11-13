@@ -59,6 +59,8 @@ packages:
     version: 4.6.14
   - name: 'miniconda3'
     version: 4.6.14
+  - name: 'motif'
+    version: 2.3.8
   - name: 'opencv'
     version: 4.1.0
     variants:
