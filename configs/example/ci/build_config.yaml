@@ -13,8 +13,8 @@ buildbot_master:
   worker_uid: builder uid here
 auths:
   ssh:
-    config_file: configs/ci-local/ssh_config
-    known_hosts_file: configs/ci-local/ssh_known_hosts
+    config_file: configs/ci/ssh_config
+    known_hosts_file: configs/ci/ssh_known_hosts
 buildbot_db: 
   postgres_password: postgrespass
 builds:
