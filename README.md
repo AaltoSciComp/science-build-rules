@@ -6,7 +6,7 @@ of `buildrules`-package that constains Builders for:
 
 1. [Spack](https://spack.io)
 2. [Singularity](https://sylabs.io/singularity) (work-in-progress)
-2. [Anaconda](https://anaconda.org) (work-in-progress)
+3. [Anaconda](https://anaconda.org) (work-in-progress)
 
 After builds the software is deployed using a Deployer. Currently there's
 only one Deployer: `RsyncDeployer`.
