@@ -1,45 +1,31 @@
-build_environment_repository: git@version.aalto.fi:AaltoScienceIT/science-build-environment.git
-science_build_rules_repository: git@github.com:AaltoScienceIT/science-build-rules.git
+build_environment_repository: https://github.com/AaltoScienceIT/science-build-environment.git
+science_build_rules_repository: https://github.com/AaltoScienceIT/science-build-rules.git
 build_folder: /tmp/science-build-environment
-compose_project_name: triton-ci
+compose_project_name: example-ci
 buildbot_master:
-  image: registry.cs.aalto.fi/aaltoscienceit/scibuilder-master:latest
+  image: aaltoscienceit/scibuilder-master:latest
   fqdn: 'localhost'
   gitlab_hook_secret: 'hook_secret'
   worker_password: 'workerpass'
   worker_port: 9989
   web_port: 8010
   timeout: 7200
-  worker_uid: 123123
+  worker_uid: builder uid here
 auths:
   ssh:
-    config_file: /path/to/file
-    known_hosts_file: /path/to/file
-    private_keys:
-      - /path/to/file
-    public_keys:
-      - /path/to/file
-  docker:
-    config_file: /path/to/file
-  singularity:
-    config_file: /path/to/file
+    config_file: configs/ci-local/ssh_config
+    known_hosts_file: configs/ci-local/ssh_known_hosts
 buildbot_db: 
   postgres_password: postgrespass
 builds:
   singularity:
     enabled: False
-    enable_portus_hook: True
   spack:
     enabled: True
-  registry_clone:
-    enabled: False
 target_workers:
-  - name: centos-test
-    image: registry.cs.aalto.fi/aaltoscienceit/scibuilder-worker:centos-test
+  - name: centos
+    image: aaltoscienceit/scibuilder-worker:fgci-centos7
     spack:
       target_path: /share/apps/spack/production
-  - name: centos-test-dev
-    image: registry.cs.aalto.fi/aaltoscienceit/scibuilder-worker:centos-test-dev
-    spack:
-      target_path: /share/apps/spack/dev
-#skip_rules: ['clone_environment_repository']
+      url: https://github.com/AaltoScienceIT/spack.git
+      branch: develop
