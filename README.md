@@ -61,11 +61,11 @@ Documentation can be found in `docs/_build/html/index.html`
 After installation, you can find out what a test build does with:
 
 ```sh
-python -m buildrules spack describe configs/local/spack
+python -m buildrules spack describe configs/example/spack
 ```
 
 To do the build, you can run:
 
 ```sh
-python -m buildrules spack build configs/local/spack
+python -m buildrules spack build configs/example/spack
 ```
