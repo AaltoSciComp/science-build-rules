@@ -72,6 +72,7 @@ RUN yum update -y && yum install -y       \
 
 RUN yum update -y && yum install -y       \
   mesa-dri-drivers                        \
+  xorg-x11-xbitmaps                       \
   && yum clean all
 
 RUN echo 'buildbot ALL=(ALL) NOPASSWD:SETENV: /usr/local/bin/singularity, /bin/chown' >> /etc/sudoers
