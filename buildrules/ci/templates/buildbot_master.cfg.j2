@@ -1,0 +1,423 @@
+# -*- python -*-
+# ex: set filetype=python:
+
+import os
+import logging
+import json
+import re
+from buildbot.plugins import *
+from buildbot.plugins import webhooks
+from twisted.python import log
+
+from buildbot.util import bytes2unicode
+from dateutil.parser import parse as dateparse
+
+# This is a master configuration for the Aalto CI buildbot instance.
+# It will be loaded by the buildbot master.
+
+###############################################################################
+#
+# Environment reading
+# -------------------
+#
+# Environment variables provided by the docker-compose.yml are parsed here.
+#
+###############################################################################
+
+rules_repo = "{{ science_build_rules_repository }}"
+
+buildbot_timeout    = {{ buildbot_master.timeout | default(7200)}}
+
+#
+# Configuration of BuildBot
+# -------------------------
+#
+
+c = BuildmasterConfig = {}
+
+{% if (builds.singularity.enabled and builds.singularity.enable_portus_hook) | default(False) %}
+###############################################################################
+#
+# PortusHook
+# ----------
+#
+# This class parses the data provided by portus webhook into changes that
+# are understood by buildbot.
+#
+# Data provided by the hook is found here:
+# https://docs.docker.com/registry/notifications/
+#
+###############################################################################
+
+class PortusHook(webhooks.base):
+
+    def getChanges(self,request):
+
+        content_type = request.getHeader(b'Content-Type')
+
+        if content_type == b'application/json':
+            content = request.content.read()
+            content = bytes2unicode(content)
+            payload = json.loads(content)
+        else:
+            raise ValueError('Unknown content type: {}'.format(content_type))
+
+        payload = json.loads(content)
+
+        if payload['action'] == 'push':
+            properties = {
+                'portus_registry':payload['request']['host'],
+                'portus_repo':payload['target']['repository'],
+                'portus_tag':payload['target']['tag']
+            }
+            changes = [{
+                      #'repository': payload['target']['repository'],
+                      #'properties':payload['target']['tag'],
+                      'properties':properties,
+                      'when_timestamp':dateparse(payload['timestamp']),
+                      'author':payload['actor']['name'],
+                      'project':'Portus',
+                      'category':payload['action'],
+                      'comments':'Portus Push of {0}:{1}'.format(
+                        payload['target']['repository'],
+                        payload['target']['tag']
+                      )
+                     }]
+        log.msg(changes)
+        return changes,'git'
+
+# portusParameters
+#
+# This function gives a list with portus_registry, portus_repo and portus_tag, if they are available.
+# The reason behind this is that we want to provide this information to build-singularity-script when
+# build comes from Portus. The function FlattenList is used to remove empty list if these properties
+# are not available.
+#
+@util.renderer
+def portusParameters(props):
+    if props.getProperty("project") == "Portus":
+        return [
+                props.getProperty('portus_registry'),
+                props.getProperty('portus_repo'),
+                props.getProperty('portus_tag')
+                ]
+    return []
+{% endif %}
+
+####### Web page configuration
+
+c['title'] = "CI builds"
+c['titleURL'] = ""
+
+c['buildbotURL'] = "https://{{ buildbot_master.fqdn | default("localhost") }}/"
+
+c['protocols'] = {'pb': {'port': {{ buildbot_master.worker_port | default(9989) }} } }
+
+c['www'] = dict(
+    port={{ buildbot_master.web_port | default(8010) }},
+    plugins=dict(
+        waterfall_view={},
+        console_view={}
+    ),
+    change_hook_dialects={
+{% if 'gitlab_hook_secret' in buildbot_master %}
+        'gitlab' : {
+            'secret': '{{ buildbot_master.gitlab_hook_secret }}',
+        },
+{% endif %}
+{% if 'github_hook_secret' in buildbot_master %}
+        'github' : {
+            'secret': '{{ buildbot_master.github_hook_secret }}',
+        },
+{% endif %}
+{% if (builds.singularity.enabled and builds.singularity.enable_portus_hook) | default(False) %}
+        'base': {
+            'custom_class': PortusHook,
+        }
+{% endif %}
+     }
+)
+
+c['services'] = []
+
+{% if 'github_token_secret' in buildbot_master %}
+
+context = util.Interpolate("buildbot/%(prop:buildername)s")
+gs = reporters.GitHubStatusPush(token='{{ buildbot_master.github_token_secret }}',
+                                context=context,
+                                verbose=True,
+                                startDescription='Build started.',
+                                endDescription='Build done.')
+c['services'].append(gs)
+{% endif %}
+
+# Source change lookups
+
+c['change_source'] = []
+
+####### Status targets
+
+c['status'] = []
+
+# DB configuration
+
+c['db'] = {
+    'db_url' : os.environ.get("BUILDBOT_DB_URL", "sqlite://").format(**os.environ)
+}
+
+#################################################
+#
+# skipChecker which checks whether build concerns
+# this builder
+#
+
+def skipChecker(change, path):
+    build_skip_ci_re = re.compile('\[ci skip\]',re.I)
+    skip_match_ci = build_skip_ci_re.search(change.comments)
+    log.msg("Commit message was: {0}".format(change.comments))
+
+    if skip_match_ci is None:
+        log.msg("path = " + path)
+        build_skip_re = re.compile(path,re.I)
+
+        for modified_file in change.files:
+            log.msg("modified_file = " + modified_file)
+            skip_match = build_skip_re.search(modified_file)
+            if not skip_match is None:
+                log.msg("{0} has been modified => building.".format(path))
+                return True
+
+        log.msg("No changes in {0}, skipping build.".format(path))
+        return False
+
+    else:
+        log.msg("'ci skip' found => skipping build")
+        return False
+
+# Workers
+#
+
+c['workers'] = [
+    {% for worker in target_workers -%}
+    worker.Worker("worker_{{ worker.name }}", "{{ buildbot_master.worker_password }}"),
+    {% endfor -%}
+]
+
+# Builders
+#
+# Actual build logic is defined here.
+
+c['builders'] = []
+
+{% for worker in target_workers -%}
+{% if builds.singularity.enabled | default('false') -%}
+singularity_builder = util.BuildFactory()
+singularity_builder.addStep(steps.Git(
+    name='Singularity Git Sync',
+    repourl=rules_repo,
+    mode='full',
+    shallow=True,
+    haltOnFailure=True))
+singularity_builder.addStep(
+    steps.ShellCommand(
+        name='SingularityBuild - {{ worker.name }}',
+        command=util.FlattenList([
+            "echo",
+            "build-singularity",
+            portusParameters]),
+        interruptSignal='TERM',
+        sigtermTime=30,
+        timeout=buildbot_timeout,
+        haltOnFailure=True))
+c['builders'].append(
+    util.BuilderConfig(
+        name="Singularity - {{ worker.name }}"
+        workernames=["worker_{{ worker.name }}"],
+        factory=singularity_builder,
+        workerbuilddir='/build/singularity'
+    ))
+
+{% endif -%}
+{% if builds.spack.enabled | default('false') -%}
+spack_builder = util.BuildFactory()
+{% if 'github.com' in science_build_rules_repository -%}
+spack_builder.addStep(steps.GitHub(
+{% else -%}
+spack_builder.addStep(steps.Git(
+{% endif -%}
+    name='Spack Git Sync',
+    repourl=rules_repo,
+    mode='full',
+    shallow=True,
+    submodules=False,
+    haltOnFailure=True))
+spack_builder.addStep(steps.ShellCommand(
+    name='Check Spack submodule url',
+    command=[
+        "git",
+        "config",
+        "--file=.gitmodules",
+        "submodule.spack.url",
+        "{{ (worker.spack | default({}))['url'] | default('https://github.com/spack/spack.git') }}",
+    ]))
+spack_builder.addStep(steps.ShellCommand(
+    name='Check Spack submodule branch',
+    command=[
+        "git",
+        "config",
+        "--file=.gitmodules",
+        "submodule.spack.branch",
+        "{{ (worker.spack | default({}))['branch'] | default('develop') }}",
+    ]))
+{% if 'license_repo' in builds.spack %}
+spack_builder.addStep(steps.ShellCommand(
+    name='Adding license repo as submodule',
+    command=[
+        "git",
+        "submodule",
+        "add",
+        "--force",
+        "{{ builds.spack.license_repo }}",
+        "licenses",
+    ]))
+{% endif %}
+spack_builder.addStep(steps.ShellCommand(
+    name='Spack git submodule sync',
+    command=[
+        "git",
+        "submodule",
+        "sync",
+    ]))
+spack_builder.addStep(steps.ShellCommand(
+    name='Spack git submodule update',
+    command=['git',
+            'submodule',
+            'update',
+            '--init',
+            '--recursive',
+            '--force',
+            '--checkout',
+            '--remote',
+    ]))
+{% if 'license_repo' in builds.spack %}
+spack_builder.addStep(steps.RemoveDirectory(
+    name="Removing spack's default license folder",
+    dir='/build/spack/build/spack/etc/spack/licenses'))
+spack_builder.addStep(steps.CopyDirectory(
+    name="Copying licenses from license repo",
+    src='/build/spack/build/licenses/licenses/{{ worker.name }}',
+    dest='/build/spack/build/spack/etc/spack/licenses'))
+{% endif %}
+{%- set cleanup = (worker.spack | default({}))['cleanup'] | default('') %}
+{%- if cleanup %}
+spack_builder.addStep(
+    steps.ShellCommand(
+        name='SpackUninstall - {{ worker.name }}',
+        command=[
+                "spackbuilder",
+                "find"
+                ],
+        interruptSignal='TERM',
+        sigtermTime=30,
+        usePTY=True,
+        timeout=buildbot_timeout,
+{%- endif %}
+spack_builder.addStep(
+    steps.ShellCommand(
+        name='SpackDescribe - {{ worker.name }}',
+        command=[
+                "build-spack",
+                "describe"
+                ],
+        interruptSignal='TERM',
+        sigtermTime=30,
+        usePTY=True,
+        timeout=buildbot_timeout,
+        haltOnFailure=True))
+spack_builder.addStep(
+    steps.ShellCommand(
+        name='SpackBuild - {{ worker.name }}',
+        command=[
+                "build-spack",
+                "build"
+                ],
+        interruptSignal='TERM',
+        sigtermTime=30,
+        usePTY=True,
+        timeout=buildbot_timeout))
+c['builders'].append(
+    util.BuilderConfig(
+        name="Spack - {{ worker.name }}",
+        workernames=["worker_{{ worker.name }}"],
+        factory=spack_builder,
+        workerbuilddir='/build/spack'
+    ))
+
+{% endif -%}
+{% endfor -%}
+
+# Schedulers
+#
+# These schedulers define when builds should be kicked off.
+
+
+c['schedulers'] = [
+{%- for worker in target_workers -%}
+{%- if builds.singularity.enabled | default('false') %}
+{%- if worker.singularity.github_hook | default('true') %}
+    # Singularity schedulers for {{ worker.name }}
+    schedulers.SingleBranchScheduler(
+        name="SingularityGithub_{{ worker.name }}",
+        change_filter=util.ChangeFilter(
+            branch='master',
+            filter_fn=lambda change: skipChecker(
+                change,
+                "configs/{{ worker.name }}/singularity")
+        ),
+        treeStableTimer=None,
+        builderNames=["Singularity - {{ worker.name }}"]),
+{% endif %}
+{%- if builds.singularity.enable_portus_hook | default(False) %}
+    schedulers.SingleBranchScheduler(
+        name="SingularityPortus_{{ worker.name }}",
+        change_filter=util.ChangeFilter(
+            category='push'
+        ),
+        treeStableTimer=None,
+        builderNames=["Singularity - {{ worker.name }}"]),
+{% endif %}
+    schedulers.ForceScheduler(
+    name="SingularityForce_{{ worker.name }}",
+    builderNames=["Singularity - {{ worker.name }}"]),
+{% endif -%}
+{%- if builds.spack.enabled | default('false') %}
+{%- if worker.spack.github_hook | default('true') %}
+    # Spack schedulers for {{ worker.name }}
+    schedulers.SingleBranchScheduler(
+        name="SpackGithub_{{ worker.name }}",
+        change_filter=util.ChangeFilter(
+            branch='master',
+            filter_fn=lambda change: skipChecker(
+                change,
+                "configs/{{ worker.name }}/spack")
+        ),
+        treeStableTimer=None,
+        builderNames=["Spack - {{ worker.name }}"]),
+{%- endif %}
+{%- set schedule = (worker.spack | default({}))['schedule'] | default({}) %}
+{%- if schedule %}
+    schedulers.Nightly(
+        name="SpackNightly_{{ worker.name }}",
+        minute={{ schedule.minute | default(0) }},
+        hour={{ schedule.hour | default('"*"') }},
+        dayOfMonth={{ schedule.dayOfMonth | default('"*"') }},
+        month={{ schedule.month | default('"*"') }},
+        dayOfWeek={{ schedule.dayOfWeek | default('"*"') }},
+        builderNames=["Spack - {{ worker.name }}"]),
+{%- endif %}
+    schedulers.ForceScheduler(
+        name="SpackForce_{{ worker.name }}",
+        builderNames=["Spack - {{ worker.name }}"]),
+{%- endif %}
+{%- endfor %}
+]

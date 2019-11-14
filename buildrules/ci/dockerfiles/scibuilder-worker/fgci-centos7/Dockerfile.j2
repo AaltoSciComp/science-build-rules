@@ -1,0 +1,79 @@
+FROM centos:centos7
+
+RUN yum install -y epel-release           \
+  && yum update -y                        \
+  && yum clean all
+
+RUN yum groups mark install "Development Tools" \
+  && yum groups mark convert "Development Tools" \
+  && yum groupinstall -y "Development Tools" \
+  && yum clean all
+
+# Base dependencies
+RUN yum update -y && yum install -y       \
+  Lmod                                    \
+  bash-completion                         \
+  cmake                                   \
+  curl                                    \
+  git                                     \
+  libarchive-devel                        \
+  libnl3                                  \
+  libnl3-devel                            \
+  libuuid-devel                           \
+  openssh                                 \
+  openssl-devel                           \
+  python                                  \
+  python-devel                            \
+  python-jinja2                           \
+  python-pip                              \
+  python-yaml                             \
+  python36                                \
+  python36-coloredlogs                    \
+  python36-devel                          \
+  python36-jinja2                         \
+  python36-jsonschema                     \
+  python36-pip                            \
+  python36-requests                       \
+  python36-sh                             \
+  python36-yaml                           \
+  rsync                                   \
+  shadow-utils                            \
+  squashfs-tools                          \
+  sudo                                    \
+  tcl                                     \
+  unzip                                   \
+  wget                                    \
+  which                                   \
+  && yum clean all
+
+# Install singularity
+
+RUN yum update -y && yum install -y       \
+  singularity                             \
+  && yum clean all
+
+# Add Open HPC slurm
+
+ARG TARGET
+
+RUN yum install -y https://github.com/openhpc/ohpc/releases/download/v1.3.GA/ohpc-release-1.3-1.el7.x86_64.rpm
+
+RUN yum update -y && yum install -y       \
+  pmix                                    \
+  pmix-devel                              \
+  libibverbs                              \
+  libibverbs-devel                        \
+  ohpc-slurm-client                       \
+  slurm-devel-ohpc                        \
+  slurm-libpmi-ohpc                       \
+  && yum clean all
+
+# Add other packages
+
+RUN yum update -y && yum install -y       \
+  mesa-dri-drivers                        \
+  && yum clean all
+
+RUN echo 'buildbot ALL=(ALL) NOPASSWD:SETENV: /usr/local/bin/singularity, /bin/chown' >> /etc/sudoers
+
+{% include 'common/Dockerfile.j2' %}

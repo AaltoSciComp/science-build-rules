@@ -1,0 +1,11 @@
+/exports/cache 172.28.0.0/16(rw,no_root_squash)
+/exports/home/master 172.28.0.0/16(rw,no_root_squash)
+{%- for worker in target_workers %}
+/exports/home/{{ worker.name }} 172.28.0.0/16(rw,no_root_squash)
+{%- for build, build_args in builds.items() %}
+{%- if build_args.enabled | default(False) %}
+/exports/builds/{{ worker.name }}/{{ build }} 172.28.0.0/16(rw,no_root_squash)
+/exports/software/{{ worker.name }}/{{ build }} 172.28.0.0/16(rw,no_root_squash)
+{%- endif %}
+{%- endfor %}
+{%- endfor %}

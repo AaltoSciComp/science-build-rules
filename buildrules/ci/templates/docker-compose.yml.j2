@@ -1,0 +1,145 @@
+version: "3"
+
+services:
+  nginx:
+    image: library/nginx:alpine
+    volumes:
+      - ./configs/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/certs:ro
+    depends_on:
+      - buildbot
+    ports:
+      - 80:80
+      - 443:443
+    links:
+      - buildbot:buildbot
+
+  nfs_service:
+    image: aaltoscienceit/scibuilder-nfs-server:latest
+    volumes:
+      - ./nfs/buildbot_home:/exports/home
+      - ./nfs/cache:/exports/cache
+      - ./nfs/builds:/exports/builds
+      - ./nfs/software:/exports/software
+      - ./configs/nfs/exports.txt:/etc/exports:ro
+    privileged: true
+    networks:
+      net:
+        ipv4_address: 172.28.1.1
+
+  buildbot:
+    image: {{ buildbot_master.image }}
+    env_file:
+      - ./configs/buildbot/db.env
+    environment:
+      - POSTGRES_PASSWORD={{ buildbot_db.postgres_password }}
+      - BUILDBOT_CONFIG_DIR=config
+      - BUILDBOT_CONFIG_URL=file:///buildbot/master.cfg
+      - BUILDBOT_WORKER_PORT={{ buildbot_master.worker_port }}
+      - BUILDBOT_WEB_PORT=tcp:port={{ buildbot_master.web_port }}
+      - GITLAB_HOOK_SECRET={{ buildbot_master.gitlab_hook_secret }}
+      - WORKERPASS={{ buildbot_master.worker_password }}
+      - buildbot_db
+      - RULES_REPO={{ science_build_rules_repository }}
+      - WORKER_UID={{ buildbot_master.worker_uid }}
+      - TARGET_WORKERS={% for worker in target_workers -%}
+                           {{ worker.name }}{% if not loop.last %},{% endif %}
+                       {%- endfor %}
+    depends_on:
+      - buildbot_db
+      - nfs_service
+    ports:
+      - {{ buildbot_master.web_port | default(8010) }}:{{ buildbot_master.web_port | default(8010) }}
+    volumes:
+      - ./configs/buildbot/buildbot_master.cfg:/buildbot/master.cfg:ro
+      - master_home:/home/buildbot:rw
+    links:
+      - nfs_service
+
+  buildbot_db:
+    env_file:
+      - ./configs/buildbot/db.env
+    environment:
+      - POSTGRES_PASSWORD={{ buildbot_db.postgres_password }}
+    image: "postgres:9.4"
+    volumes:
+        - db_data:/var/lib/postgresql/data
+    expose:
+      - 5432
+  {% for worker in target_workers %}
+  worker_{{ worker.name }}:
+    image: {{ worker.image }}
+    environment:
+      HOME: /home/buildbot
+      BUILDMASTER: buildbot
+      BUILDMASTER_PORT: 9989
+      WORKERNAME: worker_{{ worker.name }}
+      WORKERPASS: {{ buildbot_master.worker_password }}
+      WORKER_ENVIRONMENT_BLACKLIST: DOCKER_BUILDBOT* BUILDBOT_ENV_* BUILDBOT_1* WORKER_ENVIRONMENT_BLACKLIST
+      COMPOSE_PROJECT_NAME: {{ compose_project_name }}
+      WORKER_UID: {{ buildbot_master.worker_uid }}
+    depends_on:
+      - buildbot
+      - nfs_service
+    links:
+      - buildbot
+      - nfs_service
+    volumes:
+      - {{ worker.name }}_home:/home/buildbot:rw
+      - cache:/cache
+  {%- for build, build_args in builds.items() %}
+  {%- if build_args.enabled | default(False) %}
+      - {{ worker.name }}_{{ build }}_software:{{ (worker[build] | default({}))["target_path"] | default("/opt/" ~ build)}}:rw
+      - {{ worker.name }}_{{ build }}_build:/build:rw
+  {%- endif %}
+  {%- endfor %}
+  {%- endfor %}
+
+volumes:
+  db_data:
+    driver: local
+  cache:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=172.28.1.1,nolock,noatime
+      device: ":/exports/cache"
+  master_home:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=172.28.1.1,nolock,noatime
+      device: ":/exports/home/master"
+  {%- for worker in target_workers %}
+  {{ worker.name }}_home:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=172.28.1.1,nolock,noatime
+      device: ":/exports/home/{{ worker.name }}"
+  {%- endfor %}
+  {%- for build, build_args in builds.items() %}
+  {%- if build_args.enabled | default(False) %}
+  {%- for worker in target_workers %}
+  {{ worker.name }}_{{ build }}_build:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=172.28.1.1,nolock,noatime
+      device: ":/exports/builds/{{ worker.name }}/{{ build }}"
+  {{ worker.name }}_{{ build }}_software:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=172.28.1.1,nolock,noatime
+      device: ":/exports/software/{{ worker.name }}/{{ build }}"
+  {%- endfor %}
+  {%- endif %}
+  {%- endfor %}
+
+networks:
+  net:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16

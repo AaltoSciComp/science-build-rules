@@ -1,0 +1,4 @@
+buildbot_home_nfs/*
+builds
+!buildbot_home_nfs/.spack
+!**/.gitignore
