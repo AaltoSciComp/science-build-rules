@@ -11,6 +11,13 @@ of `buildrules`-package that constains Builders for:
 After builds the software is deployed using a Deployer. Currently there's
 only one Deployer: `RsyncDeployer`.
 
+science-build-rules can be used for standalone installations, but they can
+also be run in
+[science-build-environment](https://github.com/AaltoScienceIT/science-build-environment)
+CI environment.
+
+The `ci`-buildrule can be used to build the CI environment.
+
 ## Quick installation
 
 ![](docs/images/install.gif)
