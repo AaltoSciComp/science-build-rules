@@ -8,6 +8,10 @@ which builds and deploys scientific software with:
 2. [Singularity](https://sylabs.io/singularity) (work-in-progress)
 3. [Anaconda](https://anaconda.org) (work-in-progress)
 
+# Build structure
+
+![](docs/build_timeline.png)
+
 ## Requirements
 
 science-build-environment requires `docker` and `docker-compose`.
