@@ -1,6 +1,15 @@
 #!/bin/bash
 #
-# This script sets up a science-build
+# This script sets up a science-build-rules and optionally
+# a science-build-environment to user defined location.
+#
+# This script should not be used for setting up production
+# environments, it is meant for testing out the features
+# of the build system.
+#
+# Copyright
+# Simo Tuomisto, Aalto University, 2019
+#
 
 set -e
 
