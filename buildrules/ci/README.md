@@ -5,7 +5,7 @@
 science-build-environment is a simple containerized CI/CD solution for 
 building and deploying software using 
 [science-build-rules](https://github.com/AaltoScienceIT/science-build-rules) framework. 
-Main component of this CI/CD is continuous integration framework [buildbot]/(https://buildbot.net/). 
+Main component of this CI/CD is continuous integration framework [buildbot](https://buildbot.net/). 
 It is configured to listen git-hooks and upon commit launches proper software build 
 container(s) that does the actual compilation.
 
