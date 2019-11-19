@@ -58,7 +58,7 @@ done
 # Build worker-images
 cd scibuilder-worker
 
-for TARGET in fgci-centos7 ; do
+for TARGET in fgci-centos7 aalto-ubuntu1804 ; do
 
   DOCKER_URL=$DOCKER_SERVER/$DOCKER_USER/scibuilder-worker:$TARGET
   BUILD_RESULT=1
@@ -89,5 +89,4 @@ EOF
     fi
   fi
 
-  cd ..
 done
