@@ -14,7 +14,6 @@ RUN apt-get update &&                     \
   cmake                                   \
   curl                                    \
   git                                     \
-  gosu                                    \
   grep                                    \
   libarchive-dev                          \
   libnl-3-200                             \
@@ -59,5 +58,9 @@ RUN apt-get update &&                     \
   && rm -rf /var/lib/apt/lists/*
 
 RUN echo 'buildbot ALL=(ALL) NOPASSWD:SETENV: /usr/bin/singularity, /bin/chown' >> /etc/sudoers
+
+# Fix gosu gpg key import error
+RUN mkdir ~/.gnupg
+RUN echo "disable-ipv6" >> ~/.gnupg/dirmngr.conf
 
 {% include 'common/Dockerfile.j2' %}
