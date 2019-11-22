@@ -15,7 +15,7 @@ compilers:
     variants:
       - '+piclibs'
     dependencies:
-      - '%gcc@4.8.5'
+      - '%gcc@7.4.0'
     flags:
       cflags: -O2 -g -march=westmere -ftree-vectorize
       cxxflags: -O2 -g -march=westmere -ftree-vectorize
