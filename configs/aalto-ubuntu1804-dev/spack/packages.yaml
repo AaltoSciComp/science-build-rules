@@ -4,7 +4,7 @@ packages:
   curl:
     variants: +libssh2 ~nghttp
   fontconfig:
-    version: [2.12.1]
+    version: [2.12.3]
   gcc:
     version: [9.2.0]
   go:
