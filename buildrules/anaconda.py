@@ -93,10 +93,13 @@ class AnacondaBuilder(Builder):
         source_cache = self._get_path('source_cache')
         self._installer_cache = os.path.join(source_cache, 'installers')
         self._pkg_cache = os.path.join(source_cache, 'pkgs')
+        self._pip_cache = os.path.join(source_cache, 'pip')
         self._tmpdir = self._get_path('tmpdir')
         self._install_path = self._get_path('install_path')
         self._module_path = self._get_path('module_path')
         self._installed_file = os.path.join(self._install_path, 'installed_environments.yml')
+        self.conda_install_cmd = ['conda', 'install', '--yes', '-n', 'base']
+        self.pip_install_cmd = ['pip', 'install', '--cache-dir', self._pip_cache]
 
     def _get_path(self, path_name):
         path_config = {
@@ -204,6 +207,33 @@ class AnacondaBuilder(Builder):
             config['name'])
         return module_path
 
+    def _write_modulefile(self, config, module_path, install_path):
+
+        moduleconfig = {
+            'modulehelp':'{name!s}-{version!s}'.format(**config),
+            'modulewhatis':'{name!s}-{version!s}'.format(**config),
+            'install_path':install_path,
+        }
+
+        moduleconfig.update(config)
+
+        template = """
+            help([[{modulehelp!s}]])
+
+            whatis([[{modulewhatis!s}]])
+
+            prepend_path("PATH", "{install_path!s}/bin")
+        """
+        module = template.format(**moduleconfig)
+        modulename = '{version!s}.lua'.format(**moduleconfig)
+
+        modulepath = os.path.join(module_path, modulename)
+
+        with open(modulepath, 'w') as modulefile:
+            modulefile.write(module)
+
+        os.chmod(modulepath, 0o644)
+
     def _clean_failed(self, install_path):
         if os.path.isdir(install_path):
             self._logger.info((
@@ -255,7 +285,8 @@ class AnacondaBuilder(Builder):
                     Dumper=yaml.SafeDumper
                 ))
 
-    def _verify_condarc(self, conda_path=None, env=None):
+    @classmethod
+    def _verify_condarc(cls, conda_path=None, env=None):
         config_json = sh.conda('info', '--json', _env=env).stdout.decode('utf-8')
         config = json.loads(config_json)
         conda_rc = os.path.join(conda_path, 'condarc')
@@ -294,7 +325,6 @@ class AnacondaBuilder(Builder):
             conda_env = {
                 'PATH': ':'.join([os.path.join(install_path, 'bin')] + env_path)
             }
-            conda_install_cmd = ['conda', 'install', '--yes', '-n', 'base']
 
             skip_install = False
             update_install = False
@@ -345,12 +375,21 @@ class AnacondaBuilder(Builder):
                 ),
             ])
             if update_install:
-                conda_install_cmd.append('--freeze-installed')
+                self.conda_install_cmd.append('--freeze-installed')
 
             if conda_packages:
                 rules.extend([
+                    LoggingRule('Installing conda packages.'),
                     SubprocessRule(
-                        conda_install_cmd + conda_packages,
+                        self.conda_install_cmd + conda_packages,
+                        env=conda_env,
+                        shell=True),
+                ])
+            if pip_packages:
+                rules.extend([
+                    LoggingRule('Installing pip packages.'),
+                    SubprocessRule(
+                        self.pip_install_cmd + pip_packages,
                         env=conda_env,
                         shell=True),
                 ])
@@ -365,7 +404,10 @@ class AnacondaBuilder(Builder):
                 LoggingRule('Creating module path.'),
                 PythonRule(
                     self._makedirs,
-                    [module_path, 0o755])
+                    [module_path, 0o755]),
+                PythonRule(
+                    self._write_modulefile,
+                    [config, module_path, install_path]),
             ])
             rules.append(
                 PythonRule(
