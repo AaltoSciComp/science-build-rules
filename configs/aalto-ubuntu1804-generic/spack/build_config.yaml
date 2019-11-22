@@ -1,0 +1,107 @@
+target_architecture:
+  platform: linux
+  os: ubuntu18.04
+  arch: westmere
+compilers:
+  - name: 'gcc'
+    version: 4.8.5
+    system_compiler: true
+    flags:
+      cflags: -O2 -g
+      cxxflags: -O2 -g
+      fflags: -O2 -g
+  - name: 'gcc'
+    version: 9.2.0
+    variants:
+      - '+piclibs'
+    dependencies:
+      - '%gcc@4.8.5'
+    flags:
+      cflags: -O2 -g -march=westmere -ftree-vectorize
+      cxxflags: -O2 -g -march=westmere -ftree-vectorize
+      fflags: -O2 -g -march=westmere -ftree-vectorize
+    target_architecture:
+      platform: linux
+      os: centos7
+      arch: x86_64
+  - name: 'intel-parallel-studio'
+    version: 'cluster.2019.3'
+    licenses:
+      - 'license.lic'
+    dependencies:
+      - '%gcc@9.2.0'
+    flags:
+      cflags: -O2 -g -march=westmere
+      cxxflags: -O2 -g -march=westmere
+      fflags: -O2 -g -march=westmere
+    target_architecture:
+      platform: linux
+      os: centos7
+      arch: x86_64
+packages:
+#  - name: 'llvm'
+#    version: 8.0.0
+  - name: 'boost'
+    version: 1.55.0
+#  - name: 'cairo'
+#    version: 1.16.0
+#  - name: 'ceres-solver'
+#    version: 1.12.0
+#  - name: 'chapel'
+#    version: 1.19.0
+#  - name: 'cuda'
+#    version: 10.1.243
+#  - name: 'go'
+#    version: 1.12.8
+#  - name: 'heaptrack'
+#    version: 1.1.0
+#  - name: 'miniconda2'
+#    version: 4.6.14
+#  - name: 'miniconda3'
+#    version: 4.6.14
+#  - name: 'opencv'
+#    version: 4.1.0
+#    variants:
+#      - '~cuda'
+#      - '~vtk'
+#      - '~openmp'
+#  - name: 'openfoam'
+#    version: '1812_190531'
+#    variants:
+#      - '+metis'
+#      - '+scotch'
+#      - '+mgridgen'
+#  - name: 'openfoam'
+#    version: '1906'
+#    variants:
+#      - '+metis'
+#      - '+scotch'
+#      - '+mgridgen'
+#  - name: 'openfoam-org'
+#    version: '7'
+#    variants:
+#      - '+metis'
+#  - name: 'openmpi'
+#    version: 3.1.4
+#  - name: 'python'
+#    version: 3.7.4
+#  - name: 'r'
+#    version: 3.6.1
+#  - name: 'py-gpaw'
+#    version: 1.3.0
+#    variants:
+#      - '+fftw'
+#      - '+mpi'
+#      - '+scalapack'
+#  - name: 'py-gpaw'
+#    version: 19.8.1
+#    variants:
+#      - '+fftw'
+#      - '+mpi'
+#      - '+scalapack'
+#  - name: 'texlive'
+#    version: 'live'
+#  - name: 'upcxx'
+#    version: 2019.3.2
+#  - name: 'valgrind'
+#    version: 3.15.0

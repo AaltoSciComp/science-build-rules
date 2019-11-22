@@ -1,0 +1,11 @@
+config:
+  install_tree: /m/work/modules/automatic/spack/envs/aalto-ubuntu1804-dev/software
+  install_path_scheme: '${PACKAGE}/${VERSION}/${HASH:7}'
+  module_roots:
+    tcl: /m/work/modules/automatic/spack/envs/aalto-ubuntu1804-dev/modules
+    lmod: /m/work/modules/automatic/spack/envs/aalto-ubuntu1804-dev/lmod
+  source_cache: /cache
+  misc_cache: /tmp/spack_misc_cache
+  build_stage:
+    - $spack/var/spack/stage
+  locks: false
