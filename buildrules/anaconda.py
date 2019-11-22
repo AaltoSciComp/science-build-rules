@@ -210,20 +210,20 @@ class AnacondaBuilder(Builder):
     def _write_modulefile(self, config, module_path, install_path):
 
         moduleconfig = {
-            'modulehelp':'{name!s}-{version!s}'.format(**config),
-            'modulewhatis':'{name!s}-{version!s}'.format(**config),
             'install_path':install_path,
         }
 
         moduleconfig.update(config)
 
-        template = """
-            help([[{modulehelp!s}]])
-
-            whatis([[{modulewhatis!s}]])
-
-            prepend_path("PATH", "{install_path!s}/bin")
-        """
+        template = ("-- -*- lua -*-\n"
+                    "--\n"
+                    "-- Module file created by anaconda builder\n"
+                    "--\n\n"
+                    "whatis([[Name : {name!s}]])\n"
+                    "whatis([[Version : {version!s}]])\n"
+                    "help([[This is an automatically created \n"
+                    "anaconda installation.]])\n\n"
+                    'prepend_path("PATH", "{install_path!s}/bin")\n')
         module = template.format(**moduleconfig)
         modulename = '{version!s}.lua'.format(**moduleconfig)
 
@@ -239,6 +239,14 @@ class AnacondaBuilder(Builder):
             self._logger.info((
                 "Cleaning previous failed installation: %s"), install_path)
             shutil.rmtree(install_path)
+
+    def _clean_modules(self):
+        if os.path.isdir(self._module_path):
+            modulefiles = glob(
+                os.path.join(self._module_path, '*', '*.lua')
+            )
+            for modulefile in modulefiles:
+                os.remove(modulefile)
 
     def _get_installed_environments(self):
         installed_dict = {
@@ -401,18 +409,38 @@ class AnacondaBuilder(Builder):
                         'conda_path': install_path,
                         'env': conda_env,
                     }),
-                LoggingRule('Creating module path.'),
-                PythonRule(
-                    self._makedirs,
-                    [module_path, 0o755]),
-                PythonRule(
-                    self._write_modulefile,
-                    [config, module_path, install_path]),
             ])
             rules.append(
                 PythonRule(
                     self._update_installed_environments,
                     [config['environment_name'], config]))
+
+        return rules
+
+    def _get_modulefile_install_rules(self):
+        rules = []
+
+        rules.extend([
+            LoggingRule("Cleaning previous modulefiles."),
+            PythonRule(self._clean_modules),
+            LoggingRule('Writing modulefiles.'),
+        ])
+
+        for environment in self._confreader['build_config']['environments']:
+
+            config = self._create_environment_config(environment)
+
+            install_path = self._get_install_path(config)
+            module_path = self._get_module_path(config)
+
+            rules.extend([
+                PythonRule(
+                    self._makedirs,
+                    [module_path, 0o755]),
+                PythonRule(
+                    self._write_modulefile,
+                    [config, module_path, install_path])
+            ])
 
         return rules
 
@@ -425,7 +453,8 @@ class AnacondaBuilder(Builder):
 
         rules = (
             self._get_directory_creation_rules() +
-            self._get_environment_install_rules()
+            self._get_environment_install_rules() +
+            self._get_modulefile_install_rules()
         )
         return rules
 
