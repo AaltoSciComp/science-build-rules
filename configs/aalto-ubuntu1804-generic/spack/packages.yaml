@@ -4,7 +4,7 @@ packages:
   curl:
     variants: +libssh2 ~nghttp
   fontconfig:
-    version: [2.12.1]
+    version: [2.12.3]
   gcc:
     version: [9.2.0]
   go:
@@ -17,10 +17,6 @@ packages:
     variants: +progress
   llvm:
     variants: +python
-  m4:
-    paths:
-      m4: /fake/path
-    buildable: False
   mesa:
     variants: +glx +llvm +opengl +osmesa swr=none
   netcdf:
@@ -32,9 +28,9 @@ packages:
     version: [3.1.4]
     variants: fabrics=none +thread_multiple schedulers=none +legacylaunchers
   openssl:
-    version: [1.0.2k]
+    version: [1.0.2n]
     paths:
-      openssl@1.0.2k: /usr
+      openssl@1.0.2n: /usr
     buildable: False
   pango:
     variants: +X
