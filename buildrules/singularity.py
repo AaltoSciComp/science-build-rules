@@ -4,13 +4,16 @@
 import sys
 import re
 import os
+from collections import defaultdict
 import shutil
+import textwrap
 import logging
 from glob import glob
 import yaml
 import copy
 import requests
 import sh
+from jinja2.environment import Environment
 
 from buildrules.common.builder import Builder
 from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule
@@ -31,14 +34,12 @@ class SingularityBuilder(Builder):
                 'config': {
                     'type': 'object',
                     'default': {},
+                    'additionalProperties': False,
                     'properties': {
-                        'install_tree': {'type': 'string'},
-                        'build_stage': {
-                            'oneOf': [
-                                {'type': 'string'},
-                                {'type': 'array',
-                                 'items': {'type': 'string'}}],
-                        },
+                        'sudo': {'type': 'boolean'},
+                        'fakeroot': {'type': 'boolean'},
+                        'install_path': {'type': 'string'},
+                        'build_stage': {'type': 'string'},
                         'module_path': {'type': 'string'},
                         'source_cache': {'type': 'string'},
                     },
@@ -50,6 +51,34 @@ class SingularityBuilder(Builder):
             'type': 'object',
             'additionalProperties': False,
             'patternProperties': {
+                'command_collections': {
+                    'type': 'object',
+                    'patternProperties': {
+                        '.*' : {
+                            'type': 'object',
+                            'additionalProperties': False,
+                            'patternProperties': {
+                                ('(environment|files|help|labels|'
+                                 'post|runscript|setup|'
+                                 'startscript|test)_commands'): {
+                                     'type': 'array',
+                                     'default': [],
+                                     'items': {'type': 'string'}
+                                 },
+                            },
+                        },
+                    },
+                },
+                'flag_collections': {
+                    'type': 'object',
+                    'patternProperties': {
+                        '.*' : {
+                            'type': 'array',
+                            'default': [],
+                            'items': {'type': 'string'}
+                        },
+                    },
+                },
                 'definitions': {
                     'type': 'array',
                     'default': [],
@@ -57,10 +86,23 @@ class SingularityBuilder(Builder):
                         'type': 'object',
                         'properties': {
                             'name': {'type': 'string'},
-                            'path': {'type': 'string'},
-                            'fakeroot': {'type': 'boolean', 'default': False},
+                            'docker_user': {'type': 'string'},
+                            'docker_image': {'type': 'string'},
+                            'fakeroot': {'type': 'boolean'},
+                            'tags': {
+                                'type': 'array',
+                                'items': {'type': 'string'},
+                            },
+                            'flag_collections': {
+                                'type': 'array',
+                                'items': {'type': 'string'}
+                            },
+                            'command_collections': {
+                                'type': 'array',
+                                'items': {'type': 'string'}
+                            }
                         },
-                        'required': ['name'],
+                        'required': ['name', 'tags'],
                     },
                 },
             },
@@ -75,6 +117,10 @@ class SingularityBuilder(Builder):
         self._install_path = self._get_path('install_path')
         self._module_path = self._get_path('module_path')
         self._installed_file = os.path.join(self._install_path, 'installed_images.yml')
+        self._command_collections = self._confreader['build_config'].get(
+            'command_collections', {})
+        self._flag_collections = self._confreader['build_config'].get(
+            'flag_collections', {})
 
     def _get_path(self, path_name):
         path_config = {
@@ -90,6 +136,7 @@ class SingularityBuilder(Builder):
         rules = []
 
         rules.extend([
+            PythonRule(self._makedirs, [self._source_cache, 0o755]),
             LoggingRule('Creating cache directory: %s' % self._source_cache),
             PythonRule(self._makedirs, [self._source_cache, 0o755]),
             LoggingRule('Creating stage directory: %s' % self._build_stage),
@@ -162,10 +209,12 @@ class SingularityBuilder(Builder):
         if not os.path.isdir(module_root):
             self._makedirs(module_root, 0o755)
 
+
     def _get_installed_images(self):
         imgdir = self._install_path
         images = glob(os.path.join(imgdir, '*.sif'))
         return images
+
 
     def _update_installed_images(self, image_name, installation_config):
         installed_dict = self._get_installed_images()
@@ -178,8 +227,113 @@ class SingularityBuilder(Builder):
                     Dumper=yaml.SafeDumper
                 ))
 
+
+    def _get_build_config(self, tag, definition_dict):
+        default_config = {
+            'registry': 'docker.io',
+            'docker_user': 'library',
+            'docker_image': definition_dict['name'],
+            'tag': tag,
+        }
+
+        config = copy.deepcopy(default_config)
+        config.update(definition_dict)
+
+        # Setting definition name
+        config['definition_name'] = '{name!s}/{tag!s}'.format(**config)
+
+        # Combining commands from all of the different command collections
+        commands = defaultdict(list)
+        for command_collection in config.pop('command_collections', []):
+            collection = self._command_collections[command_collection]
+            for key, item in collection.items():
+                keyname = re.sub('_commands', '', key)
+                commands[keyname] = commands[keyname] + item
+        config['commands'] = dict(commands)
+
+        # Combining flags from all of the different flag collections
+        flags = []
+        for flag_collection in config.pop('flag_collections', []):
+            flags = flags + self._flag_collections[flag_collection]
+        config['flags'] = ' '.join(flags)
+
+        config['checksum'] = self._calculate_dict_checksum(config)
+        config['checksum_small'] = config['checksum'][:8]
+        config['basename'] = '{name!s}-{tag!s}-{checksum_small!s}'.format(**config)
+        config['docker_url'] = '{docker_user!s}/{docker_image!s}:{tag!s}'.format(**config)
+
+        return config
+
+    @classmethod
+    def _get_definition_file(cls, config):
+
+        template_base = """
+            Bootstrap: docker
+            From: {{ docker_url }}
+            Registry: {{ registry }}
+
+            {% for command_collection, commands in commands.items() %}
+            %{{ command_collection }}
+            {% for command in commands %}
+                {{ command }}
+            {% endfor %}
+            {% endfor %}
+        """
+
+        template = Environment().from_string(textwrap.dedent(template_base))
+
+        return template.render(**config)
+
+    def _write_definition_file(self, definition_file, config):
+        contents = self._get_definition_file(config)
+        with open(definition_file, 'w') as def_file:
+            def_file.write(contents)
+
     def _get_image_install_rules(self):
+
         rules = []
+
+        buildenv = {
+            'SINGULARITY_CACHEDIR': self._source_cache
+        }
+
+        self._logger.warning(self._confreader['build_config'])
+        for definition in self._confreader['build_config']['definitions']:
+            self._logger.warning(definition)
+            for tag in definition.pop('tags'):
+                config = self._get_build_config(tag, definition)
+
+                definition_file = os.path.join(
+                    self._build_stage,
+                    '{basename!s}.def'.format(**config))
+
+                stage_image = os.path.join(
+                    self._build_stage,
+                    '{basename!s}.simg'.format(**config))
+
+                rules.append(PythonRule(
+                    self._write_definition_file,
+                    [definition_file, config]))
+
+                # Add --fakeroot parsing here later on
+
+                singularity_build_cmd = ['singularity', 'build']
+                sudo = (config.get('sudo', True) and
+                        self._confreader['config']['config'].get('sudo', False))
+                fakeroot = (config.get('fakeroot', True) and
+                            self._confreader['config']['config'].get(
+                                'fakeroot', False))
+                self._logger.warning(sudo)
+                self._logger.warning(fakeroot)
+                self._logger.warning(config.get('fakeroot', True))
+                self._logger.warning(self._confreader['config'].get('sudo', False))
+
+
+                rules.append(SubprocessRule(
+                    singularity_build_cmd + [stage_image, definition_file],
+                    env=buildenv,
+                    shell=True))
+        """
 
         installed_images = self._get_installed_images()
 
@@ -218,7 +372,7 @@ class SingularityBuilder(Builder):
             #    PythonRule(
             #        self._update_installed_images,
             #        [config['name'], config]))
-
+        """
         return rules
 
     def _get_rules(self):

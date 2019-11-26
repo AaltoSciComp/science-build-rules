@@ -3,4 +3,5 @@ config:
   module_path: $singularity/opt/singularity/modules
   source_cache: $singularity/var/singularity/cache
   build_stage: $singularity/var/singularity/stage
-  locks: false
+  sudo: True
+  fakeroot: False

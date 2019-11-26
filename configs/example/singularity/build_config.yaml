@@ -1,3 +1,17 @@
+command_collections:
+  common:
+    post_commands:
+      - 'mkdir -p /my_mount'
+flag_collections:
+  common:
+    - '-B /tmp:/my_mount'
 definitions:
-  - name: default
-    path: 'defs/*.def'
+  - name: ubuntu
+    docker_user: library
+    docker_image: ubuntu
+    tags:
+      - 'latest'
+    flag_collections:
+      - 'common'
+    command_collections:
+      - 'common'
