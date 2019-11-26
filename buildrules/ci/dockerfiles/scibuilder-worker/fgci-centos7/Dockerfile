@@ -118,6 +118,9 @@ RUN pip3 install /usr/src/buildbot/worker && \
 
 # Copy builder scripts
 
+COPY ./common/bin/build-anaconda.sh /usr/local/bin/build-anaconda
+RUN  chmod +x /usr/local/bin/build-anaconda
+
 COPY ./common/bin/build-singularity.sh /usr/local/bin/build-singularity
 RUN  chmod +x /usr/local/bin/build-singularity
 
