@@ -8,6 +8,7 @@ environments:
     installer_version: latest
     conda_packages:
       - numpy
+    pip_packages:
       - scipy
     condarc:
       channels:

@@ -16,6 +16,14 @@ import yaml
 from buildrules.common.builder import Builder
 from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule
 
+class YAMLDumper(yaml.SafeDumper):
+
+    def increase_indent(self, flow=False, indentless=False):
+        return super(YAMLDumper, self).increase_indent(flow, False)
+
+def remove_tabs(string):
+    return re.sub('\t', '  ', string)
+
 class AnacondaBuilder(Builder):
     """AnacondaBuilder extends on Builder and creates buildrules for Anaconda build.
     """
@@ -98,8 +106,6 @@ class AnacondaBuilder(Builder):
         self._install_path = self._get_path('install_path')
         self._module_path = self._get_path('module_path')
         self._installed_file = os.path.join(self._install_path, 'installed_environments.yml')
-        self.conda_install_cmd = ['conda', 'install', '--yes', '-n', 'base']
-        self.pip_install_cmd = ['pip', 'install', '--cache-dir', self._pip_cache]
 
     def _get_path(self, path_name):
         path_config = {
@@ -207,6 +213,9 @@ class AnacondaBuilder(Builder):
             config['name'])
         return module_path
 
+    def _get_environment_file_path(self, conda_path):
+        return os.path.join(conda_path, 'environment.yml')
+
     def _write_modulefile(self, config, module_path, install_path):
 
         moduleconfig = {
@@ -224,6 +233,7 @@ class AnacondaBuilder(Builder):
                     "help([[This is an automatically created \n"
                     "anaconda installation.]])\n\n"
                     'prepend_path("PATH", "{install_path!s}/bin")\n')
+
         module = template.format(**moduleconfig)
         modulename = '{version!s}.lua'.format(**moduleconfig)
 
@@ -262,36 +272,44 @@ class AnacondaBuilder(Builder):
         installed_dict['environments'][environment_name] = installation_config
         with open(self._installed_file, 'w') as installed_file:
             installed_file.write(
-                yaml.dump(
-                    installed_dict,
-                    default_flow_style=False,
-                    Dumper=yaml.SafeDumper
-                ))
+                remove_tabs(
+                    yaml.dump(
+                        installed_dict,
+                        default_flow_style=False,
+                        Dumper=YAMLDumper
+                )))
 
     def _update_condarc(self, conda_path, condarc):
         condarc_defaults = {
-            'pkgs_dirs': [self._pkg_cache]
+            'pkgs_dirs': [self._pkg_cache],
+            'always_yes': True,
+            'auto_update_conda': True,
         }
         condarc.update(condarc_defaults)
         with open(os.path.join(conda_path, '.condarc'), 'w') as condarc_file:
             condarc_file.write(
-                yaml.dump(
-                    condarc,
-                    default_flow_style=False,
-                    Dumper=yaml.SafeDumper
-                ))
+                remove_tabs(
+                    yaml.dump(
+                        condarc,
+                        default_flow_style=False,
+                        Dumper=YAMLDumper
+                )))
 
-    def _export_conda_environment(self, conda_path=None, env=None):
-        conda_env_json = sh.conda('env', 'export', '-n', 'base', '--json', _env=env)
+    def _export_conda_environment(self, conda_path):
+        conda_cmd = sh.Command(os.path.join(conda_path, 'bin', 'conda'))
+        conda_env_json = conda_cmd('env', 'export', '-n', 'base', '--json')
         conda_env_json = conda_env_json.stdout.decode('utf-8')
         conda_env = json.loads(conda_env_json)
-        with open(os.path.join(conda_path, 'environment.yml'), 'w') as conda_env_file:
+        self._logger.warning(conda_path)
+        self._logger.warning(conda_env)
+        with open(self._get_environment_file_path(conda_path), 'w') as conda_env_file:
             conda_env_file.write(
-                yaml.dump(
-                    conda_env,
-                    default_flow_style=False,
-                    Dumper=yaml.SafeDumper
-                ))
+                remove_tabs(
+                    yaml.dump(
+                        conda_env,
+                        default_flow_style=False,
+                        Dumper=YAMLDumper
+                )))
 
     @classmethod
     def _verify_condarc(cls, conda_path=None, env=None):
@@ -314,7 +332,7 @@ class AnacondaBuilder(Builder):
         installed_environments = self._get_installed_environments()['environments']
 
         env_path = list(filter(
-            lambda x: re.search('^/usr', x),
+            lambda x: re.search('^/(usr|bin|sbin)', x),
             os.getenv('PATH').split(':')))
 
         for environment in self._confreader['build_config']['environments']:
@@ -330,9 +348,17 @@ class AnacondaBuilder(Builder):
             install_path = self._get_install_path(config)
             module_path = self._get_module_path(config)
 
+            conda_install_cmd = ['conda', 'install', '--yes', '-n', 'base']
+            pip_install_cmd = ['pip', 'install', '--cache-dir', self._pip_cache]
+
+            config['environment_file'] = self._get_environment_file_path(install_path)
+
             conda_env = {
                 'PATH': ':'.join([os.path.join(install_path, 'bin')] + env_path)
             }
+            self._logger.warning(conda_env)
+
+            config['install_environment'] = conda_env
 
             skip_install = False
             update_install = False
@@ -344,6 +370,8 @@ class AnacondaBuilder(Builder):
                 install_msg = ("Environment {environment_name} "
                                "not installed. Starting installation.")
             elif installed_checksum != config['checksum']:
+                previous_environment = installed_environments.get(
+                    environment_name, {}).get('environment_file', None)
                 install_msg = ("Environment {environment_name} installed "
                                "but marked for update.")
                 update_install = True
@@ -357,9 +385,10 @@ class AnacondaBuilder(Builder):
             if skip_install:
                 continue
 
+            PythonRule(self._clean_failed, [install_path]),
+
             rules.extend([
                 PythonRule(self._download_installer, [config]),
-                PythonRule(self._clean_failed, [install_path]),
                 PythonRule(
                     self._makedirs,
                     [install_path, 0o755],
@@ -368,6 +397,7 @@ class AnacondaBuilder(Builder):
                     ['bash', installer, '-f', '-b', '-p', install_path],
                     shell=True),
             ])
+
             rules.extend([
                 LoggingRule('Verifying that only the environment condarc is utilized.'),
                 PythonRule(
@@ -382,34 +412,45 @@ class AnacondaBuilder(Builder):
                     [install_path, condarc],
                 ),
             ])
+
             if update_install:
-                self.conda_install_cmd.append('--freeze-installed')
+                rules.extend([
+                    SubprocessRule(
+                        ['conda', 'env', 'update',
+                        '--file', previous_environment,
+                        '--prefix', install_path],
+                        env=conda_env,
+                        shell=True)])
+
+                conda_install_cmd.append('--freeze-installed')
+                pip_install_cmd.extend([
+                    '--upgrade', '--upgrade-strategy', 'only-if-needed'])
 
             if conda_packages:
                 rules.extend([
                     LoggingRule('Installing conda packages.'),
                     SubprocessRule(
-                        self.conda_install_cmd + conda_packages,
+                        conda_install_cmd + conda_packages,
                         env=conda_env,
                         shell=True),
                 ])
+
             if pip_packages:
                 rules.extend([
                     LoggingRule('Installing pip packages.'),
                     SubprocessRule(
-                        self.pip_install_cmd + pip_packages,
+                        pip_install_cmd + pip_packages,
                         env=conda_env,
                         shell=True),
                 ])
+
             rules.extend([
                 LoggingRule('Creating environment.yml from newly built environment.'),
                 PythonRule(
                     self._export_conda_environment,
-                    kwargs={
-                        'conda_path': install_path,
-                        'env': conda_env,
-                    }),
+                    [install_path])
             ])
+
             rules.append(
                 PythonRule(
                     self._update_installed_environments,
