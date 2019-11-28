@@ -1,15 +1,25 @@
 installer_checksums:
-  'Miniconda3-latest-Linux-x86_64.sh': '8a324adcc9eaf1c09e22a992bb6234d91a94146840ee6b11c114ecadafc68121'
+  Miniconda3-latest-Linux-x86_64.sh: 'bfe34e1fa28d6d75a7ad05fd02fa5472275673d5f5621b77380898dee1be15d2'
+  Miniconda3-4.7.12.1-Linux-x86_64.sh: 'bfe34e1fa28d6d75a7ad05fd02fa5472275673d5f5621b77380898dee1be15d2'
+  Anaconda3-2019.10-Linux-x86_64.sh: '46d762284d252e51cd58a8ca6c8adc9da2eadc82c342927b2f66ed011d1d8b53'
 environments:
   - name: miniconda
     version: latest
     miniconda: True
     python_version: 3
-    installer_version: latest
+    installer_version: '4.7.12.1'
     conda_packages:
       - numpy
     pip_packages:
       - scipy
+    condarc:
+      channels:
+        - defaults
+  - name: anaconda
+    version: latest
+    miniconda: False
+    python_version: 3
+    installer_version: '2019.10'
     condarc:
       channels:
         - defaults

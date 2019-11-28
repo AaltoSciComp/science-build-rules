@@ -300,8 +300,6 @@ class AnacondaBuilder(Builder):
         conda_env_json = conda_cmd('env', 'export', '-n', 'base', '--json')
         conda_env_json = conda_env_json.stdout.decode('utf-8')
         conda_env = json.loads(conda_env_json)
-        self._logger.warning(conda_path)
-        self._logger.warning(conda_env)
         with open(self._get_environment_file_path(conda_path), 'w') as conda_env_file:
             conda_env_file.write(
                 remove_tabs(
@@ -356,7 +354,6 @@ class AnacondaBuilder(Builder):
             conda_env = {
                 'PATH': ':'.join([os.path.join(install_path, 'bin')] + env_path)
             }
-            self._logger.warning(conda_env)
 
             config['install_environment'] = conda_env
 
