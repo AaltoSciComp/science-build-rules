@@ -212,6 +212,7 @@ c['builders'] = []
 {% for worker in target_workers -%}
 
 {% if builds.anaconda.enabled | default('false') -%}
+{% if anaconda in worker -%}
 anaconda_builder = util.BuildFactory()
 {% if 'github.com' in science_build_rules_repository -%}
 anaconda_builder.addStep(steps.GitHub(
@@ -254,8 +255,10 @@ c['builders'].append(
         workerbuilddir='/build/anaconda'
     ))
 {% endif -%}
+{% endif -%}
 
 {% if builds.singularity.enabled | default('false') -%}
+{% if singularity in worker -%}
 singularity_builder = util.BuildFactory()
 singularity_builder.addStep(steps.Git(
     name='Singularity Git Sync',
@@ -282,8 +285,10 @@ c['builders'].append(
         workerbuilddir='/build/singularity'
     ))
 {% endif -%}
+{% endif -%}
 
 {% if builds.spack.enabled | default('false') -%}
+{% if spack in worker -%}
 spack_builder = util.BuildFactory()
 {% if 'github.com' in science_build_rules_repository -%}
 spack_builder.addStep(steps.GitHub(
@@ -398,6 +403,7 @@ c['builders'].append(
         workerbuilddir='/build/spack'
     ))
 {% endif -%}
+{% endif -%}
 {% endfor -%}
 
 # Schedulers
@@ -408,6 +414,7 @@ c['builders'].append(
 c['schedulers'] = [
 {%- for worker in target_workers -%}
 {%- if builds.anaconda.enabled | default('false') %}
+{%- if anaconda in worker %}
 {%- if worker.anaconda.github_hook | default('true') %}
     # Anaconda schedulers for {{ worker.name }}
     schedulers.SingleBranchScheduler(
@@ -436,7 +443,9 @@ c['schedulers'] = [
         name="AnacondaForce_{{ worker.name }}",
         builderNames=["Anaconda - {{ worker.name }}"]),
 {%- endif %}
+{%- endif %}
 {%- if builds.singularity.enabled | default('false') %}
+{%- if singularity in worker %}
 {%- if worker.singularity.github_hook | default('true') %}
     # Singularity schedulers for {{ worker.name }}
     schedulers.SingleBranchScheduler(
@@ -462,8 +471,10 @@ c['schedulers'] = [
     schedulers.ForceScheduler(
     name="SingularityForce_{{ worker.name }}",
     builderNames=["Singularity - {{ worker.name }}"]),
-{% endif -%}
+{%- endif %}
+{%- endif %}
 {%- if builds.spack.enabled | default('false') %}
+{%- if spack in worker %}
 {%- if worker.spack.github_hook | default('true') %}
     # Spack schedulers for {{ worker.name }}
     schedulers.SingleBranchScheduler(
@@ -491,6 +502,7 @@ c['schedulers'] = [
     schedulers.ForceScheduler(
         name="SpackForce_{{ worker.name }}",
         builderNames=["Spack - {{ worker.name }}"]),
+{%- endif %}
 {%- endif %}
 {%- endfor %}
 ]
