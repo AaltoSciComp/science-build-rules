@@ -436,7 +436,6 @@ c['schedulers'] = [
         name="AnacondaForce_{{ worker.name }}",
         builderNames=["Anaconda - {{ worker.name }}"]),
 {%- endif %}
-{%- endfor %}
 {%- if builds.singularity.enabled | default('false') %}
 {%- if worker.singularity.github_hook | default('true') %}
     # Singularity schedulers for {{ worker.name }}
