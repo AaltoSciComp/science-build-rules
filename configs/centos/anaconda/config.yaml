@@ -1,0 +1,5 @@
+config:
+  install_path: /share/apps/anaconda/production/software
+  module_path: /share/apps/anaconda/production/modules
+  source_cache: /cache/anaconda
+  tmpdir: /tmp/anaconda

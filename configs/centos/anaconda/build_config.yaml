@@ -1,0 +1,11 @@
+installer_checksums:
+  Miniconda3-4.7.12.1-Linux-x86_64.sh: 'bfe34e1fa28d6d75a7ad05fd02fa5472275673d5f5621b77380898dee1be15d2'
+environments:
+  - name: miniconda
+    version: '4.7.12.1'
+    miniconda: True
+    python_version: 3
+    installer_version: '4.7.12.1'
+    condarc:
+      channels:
+        - defaults
