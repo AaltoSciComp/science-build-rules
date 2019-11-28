@@ -216,8 +216,8 @@ anaconda_builder = util.BuildFactory()
 {% if 'github.com' in science_build_rules_repository -%}
 anaconda_builder.addStep(steps.GitHub(
 {% else -%}
-anaconda_builder = util.BuildFactory()
 anaconda_builder.addStep(steps.Git(
+{% endif -%}
     name='Anaconda Git Sync',
     repourl=rules_repo,
     mode='full',
