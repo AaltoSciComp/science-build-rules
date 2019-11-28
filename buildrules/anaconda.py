@@ -310,8 +310,9 @@ class AnacondaBuilder(Builder):
                 )))
 
     @classmethod
-    def _verify_condarc(cls, conda_path=None, env=None):
-        config_json = sh.conda('info', '--json', _env=env).stdout.decode('utf-8')
+    def _verify_condarc(cls, conda_path):
+        conda_cmd = sh.Command(os.path.join(conda_path, 'bin', 'conda'))
+        config_json = conda_cmd('info', '--json').stdout.decode('utf-8')
         config = json.loads(config_json)
         conda_rc = os.path.join(conda_path, 'condarc')
         if config['config_files']:
@@ -392,17 +393,16 @@ class AnacondaBuilder(Builder):
                 ),
                 SubprocessRule(
                     ['bash', installer, '-f', '-b', '-p', install_path],
-                    shell=True),
+                    shell=True
+                ),
             ])
 
             rules.extend([
                 LoggingRule('Verifying that only the environment condarc is utilized.'),
                 PythonRule(
                     self._verify_condarc,
-                    kwargs={
-                        'conda_path': install_path,
-                        'env': conda_env
-                    }),
+                    [install_path]
+                ),
                 LoggingRule('Creating condarc for environment.'),
                 PythonRule(
                     self._update_condarc,
