@@ -383,9 +383,9 @@ class AnacondaBuilder(Builder):
             if skip_install:
                 continue
 
-            PythonRule(self._clean_failed, [install_path]),
 
             rules.extend([
+                PythonRule(self._clean_failed, [install_path]),
                 PythonRule(self._download_installer, [config]),
                 PythonRule(
                     self._makedirs,
