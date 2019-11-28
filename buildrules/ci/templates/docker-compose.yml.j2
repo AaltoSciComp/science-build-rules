@@ -89,8 +89,10 @@ services:
       - cache:/cache
   {%- for build, build_args in builds.items() %}
   {%- if build_args.enabled | default(False) %}
+  {%- if build in worker %}
       - {{ worker.name }}_{{ build }}_software:{{ (worker[build] | default({}))["target_path"] | default("/opt/" ~ build)}}:rw
-      - {{ worker.name }}_{{ build }}_build:/build:rw
+      - {{ worker.name }}_{{ build }}_build:/build/{{ build }}:rw
+  {%- endif %}
   {%- endif %}
   {%- endfor %}
   {%- endfor %}
@@ -121,6 +123,7 @@ volumes:
   {%- for build, build_args in builds.items() %}
   {%- if build_args.enabled | default(False) %}
   {%- for worker in target_workers %}
+  {%- if build in worker %}
   {{ worker.name }}_{{ build }}_build:
     driver: local
     driver_opts:
@@ -133,6 +136,7 @@ volumes:
       type: nfs
       o: addr=172.28.1.1,nolock,noatime
       device: ":/exports/software/{{ worker.name }}/{{ build }}"
+  {%- endif %}
   {%- endfor %}
   {%- endif %}
   {%- endfor %}
