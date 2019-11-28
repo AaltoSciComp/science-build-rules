@@ -4,7 +4,7 @@ config:
   module_roots:
     tcl: /share/apps/spack/envs/fgci-centos7-dev/modules
     lmod: /share/apps/spack/envs/fgci-centos7-dev/lmod
-  source_cache: /cache
+  source_cache: /cache/spack
   misc_cache: /tmp/spack_misc_cache
   build_stage:
     - $spack/var/spack/stage
