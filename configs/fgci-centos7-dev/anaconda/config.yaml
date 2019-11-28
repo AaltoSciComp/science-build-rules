@@ -1,0 +1,5 @@
+config:
+  install_path: /share/apps/anaconda-ci/fgci-centos7-dev/software
+  module_path: /share/apps/anaconda-ci/fgci-centos7-dev/modules
+  source_cache: /cache/anaconda
+  tmpdir: /tmp/anaconda
