@@ -17,6 +17,7 @@ from jinja2.environment import Environment
 
 from buildrules.common.builder import Builder
 from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule
+from buildrules.common.confreader import ConfReader
 
 class SingularityBuilder(Builder):
     """SingularityBuilder extends on Builder and creates buildrules for Singularity build.
@@ -121,6 +122,7 @@ class SingularityBuilder(Builder):
             'command_collections', {})
         self._flag_collections = self._confreader['build_config'].get(
             'flag_collections', {})
+        self._auths = self._get_auths()
 
     def _get_path(self, path_name):
         path_config = {
@@ -131,6 +133,36 @@ class SingularityBuilder(Builder):
         }
         path_config.update(self._confreader['config']['config'])
         return re.sub('\$singularity', self._singularity_path, path_config[path_name])
+
+    def _get_auths(self):
+        auth_file = os.path.expanduser(os.path.join('~', 'singularity_auths.yml'))
+        auth_schema = {
+            '$schema': 'http://json-schema.org/schema#',
+            'title': 'Singularity auth file schema',
+            'type': 'object',
+            'additionalProperties': False,
+            'patternProperties': {
+                'auths': {
+                    'type': 'object',
+                    'default': {},
+                    'patternProperties': {
+                        '.*' : {
+                            'type': 'object',
+                            'additionalProperties': False,
+                            'properties': {
+                                'username': {'type': 'string'},
+                                'password': {'type': 'string'},
+                            },
+                        },
+                    },
+                },
+            },
+        }
+        auths = defaultdict(dict)
+        if os.path.isfile(auth_file):
+            auths = ConfReader([auth_file],[auth_schema])
+
+        return auths
 
     def _get_directory_creation_rules(self):
         rules = []
@@ -230,7 +262,6 @@ class SingularityBuilder(Builder):
 
     def _get_build_config(self, tag, definition_dict):
         default_config = {
-            'registry': 'docker.io',
             'docker_user': 'library',
             'docker_image': definition_dict['name'],
             'tag': tag,
@@ -270,14 +301,16 @@ class SingularityBuilder(Builder):
         template_base = """
             Bootstrap: docker
             From: {{ docker_url }}
+            {% if registry is defined -%}
             Registry: {{ registry }}
+            {% endif -%}
 
-            {% for command_collection, commands in commands.items() %}
+            {% for command_collection, commands in commands.items() -%}
             %{{ command_collection }}
-            {% for command in commands %}
+            {% for command in commands -%}
                 {{ command }}
-            {% endfor %}
-            {% endfor %}
+            {% endfor -%}
+            {% endfor -%}
         """
 
         template = Environment().from_string(textwrap.dedent(template_base))
@@ -317,18 +350,15 @@ class SingularityBuilder(Builder):
 
                 # Add --fakeroot parsing here later on
 
-                singularity_build_cmd = ['singularity', 'build']
+                singularity_build_cmd = ['singularity', '-d', 'build']
                 sudo = (config.get('sudo', True) and
                         self._confreader['config']['config'].get('sudo', False))
                 fakeroot = (config.get('fakeroot', True) and
                             self._confreader['config']['config'].get(
                                 'fakeroot', False))
-                self._logger.warning(sudo)
-                self._logger.warning(fakeroot)
-                self._logger.warning(config.get('fakeroot', True))
-                self._logger.warning(self._confreader['config'].get('sudo', False))
 
-
+                if sudo:
+                    singularity_build_cmd.insert(0, 'sudo')
                 rules.append(SubprocessRule(
                     singularity_build_cmd + [stage_image, definition_file],
                     env=buildenv,
