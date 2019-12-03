@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""Deployer deploys software..
+"""Deployer deploys software.
 
-This module contains Deployer-classes that deploy software and a 
+This module contains Deployer-classes that deploy software and a
 deployer_factory function used by Builder to choose between deployment
 strategies.
 """
@@ -105,10 +105,9 @@ class RsyncDeployer(Deployer):
 
         target = '{0}:"{1}"'.format(rsync_deployer_config['target_host'],rsync_deployer_config['dest'])
         src = '"{0}/"'.format(src)
-        
+
         return SubprocessRule(cmd + [src, target], shell=True, cwd=rsync_cwd)
 
-        
 
 def deployer_factory(confreader):
     """This function creates instances of subclasses of Deployer based on
