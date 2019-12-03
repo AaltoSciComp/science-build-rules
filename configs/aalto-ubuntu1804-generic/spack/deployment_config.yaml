@@ -3,6 +3,6 @@
   source: /m/work/modules/automatic/spack/envs/aalto-ubuntu1804-generic
   dest: spack/envs/aalto-ubuntu1804-generic
   working_directory: /m/work/modules/automatic
-  rsync_flags: '-nvrlpt'
+  rsync_flags: '-vrlpt'
   ssh_command: '"ssh -oHostKeyAlgorithms=+ssh-dss -i ~/.ssh/aalto_spack_rsa"'
   delete: false
