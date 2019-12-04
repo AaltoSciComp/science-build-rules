@@ -1,6 +1,6 @@
 # science-build-rules
 
-![](docs/wheel.gif)
+![](docs/images/wheel.gif)
 
 In data analytics and high performance computing users often need very recent software that OS repositories do not provide or those are too old. Furhermore in 
 multiuser system several versions of the same software are sometimes needed. science-build-rules is a python framework to fulfill these needs and to automate 
