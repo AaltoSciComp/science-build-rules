@@ -1,22 +1,21 @@
 # science-build-rules
 
-science-build-rules is a framework for doing consistent builds of
-scientific software and deploying them to target systems. It consists
-of `buildrules`-package that constains Builders for:
+![](docs/wheel.gif)
+
+In data analytics and high performance computing users often need very recent software that OS repositories do not provide or those are too old. Furhermore in 
+multiuser system several versions of the same software are sometimes needed. science-build-rules is a python framework to fulfill these needs and to automate 
+this deployment process in Linux systems. Different sofware version are automatically made available via [modules system](https://lmod.readthedocs.io).
+
+science-build-rules can be used for standalone, but for full CI/CD we have written git-based pipeline 
+[science-build-environment](https://github.com/AaltoScienceIT/science-build-environment) that uses science-build-rules as an engine.
+
+This science-build-rules framwork has a `buildrules`-package that constains Builders for:
 
 1. [Spack](https://spack.io)
 2. [Singularity](https://sylabs.io/singularity) (work-in-progress)
 3. [Anaconda](https://anaconda.org) (work-in-progress)
 
-After builds the software is deployed using a Deployer. Currently there's
-only one Deployer: `RsyncDeployer`.
-
-science-build-rules can be used for standalone installations, but they can
-also be run in
-[science-build-environment](https://github.com/AaltoScienceIT/science-build-environment)
-CI environment.
-
-The `ci`-buildrule can be used to build the CI environment.
+After the software is build successfully it is deployed using a Deployer. Currently there's only one Deployer: `RsyncDeployer`.
 
 ## Quick installation
 
