@@ -19,8 +19,7 @@ After the software is build successfully it is deployed using a Deployer. Curren
 
 ## Quick installation
 
-Quick installation can be done by running the following commands:
-
+Installation can be done by running the following commands
 
 ### 1. Install the python package 
 
@@ -34,18 +33,11 @@ cd science-build-rules
 
 This does the following things:
 
-1. Clones both the science-build-rules repo and the latest spack upstream repo.
-2. Installs miniconda to science-build-rules/conda
-3. Installs an environment called `buildrules` to the conda environment.
+   1. Clones both the science-build-rules repo and the latest spack upstream repo.
+   2. Installs miniconda to science-build-rules/conda
+   3. Installs an environment called `buildrules` to the conda environment.
 
-Activating the environment:
-```
-export PATH=$(pwd)/conda/bin:$PATH
-source activate buildrules
-source spack/share/spack/setup-env.sh
-```
-
-#### 1b (optional) Use your own python env
+### 1.b (optional) Use your own python env
 
 If you have your own `anaconda` setup you can run
 ```sh
@@ -53,9 +45,20 @@ conda env create -f environment.yaml
 ```
 to create the environment.
 
-#### 1c (optional) setup singularity
+
+### 2. Activating the environment:
+```
+export PATH=$(pwd)/conda/bin:$PATH
+source activate buildrules
+source spack/share/spack/setup-env.sh
+```
+
+### 2.b (optional) setup singularity
 
 If you plan to build singularity images, make sure your user has right to singularity build.
+
+### 3. All set, you are ready to build software
+
 
 ## Creating documentation
 
