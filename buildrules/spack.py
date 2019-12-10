@@ -714,6 +714,9 @@ class SpackBuilder(Builder):
         4. Copying license files
         5. Re-creating lmod modules to check for name clashes
         6. Creating flat lmod structure
+
+        Returns:
+            list: List of build rules.
         """
 
         rules = (
