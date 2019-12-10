@@ -11,18 +11,10 @@ import json
 import copy
 import requests
 import sh
-import yaml
 
 from buildrules.common.builder import Builder
 from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule
-
-class YAMLDumper(yaml.SafeDumper):
-
-    def increase_indent(self, flow=False, indentless=False):
-        return super(YAMLDumper, self).increase_indent(flow, False)
-
-def remove_tabs(string):
-    return re.sub('\t', '  ', string)
+from buildrules.common.utils import load_yaml, write_yaml
 
 class AnacondaBuilder(Builder):
     """AnacondaBuilder extends on Builder and creates buildrules for Anaconda build.
@@ -263,21 +255,13 @@ class AnacondaBuilder(Builder):
             'environments': {}
         }
         if os.path.isfile(self._installed_file):
-            with open(self._installed_file, 'r') as installed_file:
-                installed_dict = yaml.load(installed_file, Loader=yaml.SafeLoader)
+            installed_dict = load_yaml(self._installed_file)
         return installed_dict
 
     def _update_installed_environments(self, environment_name, installation_config):
         installed_dict = self._get_installed_environments()
         installed_dict['environments'][environment_name] = installation_config
-        with open(self._installed_file, 'w') as installed_file:
-            installed_file.write(
-                remove_tabs(
-                    yaml.dump(
-                        installed_dict,
-                        default_flow_style=False,
-                        Dumper=YAMLDumper
-                )))
+        write_yaml(self._installed_file, installed_dict)
 
     def _update_condarc(self, conda_path, condarc):
         condarc_defaults = {
@@ -286,28 +270,15 @@ class AnacondaBuilder(Builder):
             'auto_update_conda': True,
         }
         condarc.update(condarc_defaults)
-        with open(os.path.join(conda_path, '.condarc'), 'w') as condarc_file:
-            condarc_file.write(
-                remove_tabs(
-                    yaml.dump(
-                        condarc,
-                        default_flow_style=False,
-                        Dumper=YAMLDumper
-                )))
+        condarc_file = os.path.join(conda_path, '.condarc')
+        write_yaml(condarc_file, condarc)
 
     def _export_conda_environment(self, conda_path):
         conda_cmd = sh.Command(os.path.join(conda_path, 'bin', 'conda'))
         conda_env_json = conda_cmd('env', 'export', '-n', 'base', '--json')
         conda_env_json = conda_env_json.stdout.decode('utf-8')
         conda_env = json.loads(conda_env_json)
-        with open(self._get_environment_file_path(conda_path), 'w') as conda_env_file:
-            conda_env_file.write(
-                remove_tabs(
-                    yaml.dump(
-                        conda_env,
-                        default_flow_style=False,
-                        Dumper=YAMLDumper
-                )))
+        write_yaml(self._get_environment_file_path(conda_path), conda_env)
 
     @classmethod
     def _verify_condarc(cls, conda_path):
