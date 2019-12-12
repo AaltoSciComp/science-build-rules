@@ -18,6 +18,8 @@ auths:
 buildbot_db: 
   postgres_password: postgrespass
 builds:
+  anaconda:
+    enabled: False
   singularity:
     enabled: False
   spack:

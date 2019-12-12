@@ -3,3 +3,4 @@ config:
   module_path: $conda/opt/conda/modules
   source_cache: $conda/var/conda/cache
   tmpdir: $conda/var/conda/tmp
+  remove_after_update: false

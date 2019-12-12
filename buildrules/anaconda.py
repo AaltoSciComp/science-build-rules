@@ -37,6 +37,7 @@ class AnacondaBuilder(Builder):
                         'module_path': {'type': 'string'},
                         'source_cache': {'type': 'string'},
                         'tmpdir': {'type': 'string'},
+                        'remove_after_update': {'type': 'boolean'},
                     },
                 },
             },
@@ -313,11 +314,11 @@ class AnacondaBuilder(Builder):
 
         os.chmod(modulepath, 0o644)
 
-    def _clean_failed(self, install_path):
-        """ This function clears failed installation from install_path.
+    def _remove_environment(self, install_path):
+        """ This function removes installation situated in install_path.
 
         Args:
-            install_path (str): Path to the failed installation.
+            install_path (str): Path to the environment.
         """
 
         if os.path.isdir(install_path):
@@ -393,6 +394,9 @@ class AnacondaBuilder(Builder):
         conda_cmd = sh.Command(os.path.join(conda_path, 'bin', 'conda'))
         conda_env_json = conda_cmd('env', 'export', '-n', 'base', '--json')
         conda_env_json = conda_env_json.stdout.decode('utf-8')
+        # Remove conda packages as they break updating the installation
+        conda_env_json = re.sub('^.*conda.*=.*=.*\n', '',
+                                conda_env_json, flags=re.MULTILINE)
         conda_env = json.loads(conda_env_json)
         write_yaml(self._get_environment_file_path(conda_path), conda_env)
 
@@ -435,11 +439,15 @@ class AnacondaBuilder(Builder):
         # Obtain already installed environments
         installed_environments = self._get_installed_environments()['environments']
 
+        remove_after_update = self._confreader['config']['config'].get(
+                'remove_after_update',
+                False)
+        self._logger.warning(remove_after_update)
+
         # Only use system paths during installations
         env_path = list(filter(
             lambda x: re.search('^/(usr|bin|sbin)', x),
             os.getenv('PATH').split(':')))
-
         for environment in self._confreader['build_config']['environments']:
 
             environment_config = self._create_environment_config(environment)
@@ -455,14 +463,13 @@ class AnacondaBuilder(Builder):
             conda_install_cmd = ['conda', 'install', '--yes', '-n', 'base']
             pip_install_cmd = ['pip', 'install', '--cache-dir', self._pip_cache]
 
+            environment_config['install_path'] = install_path
             environment_config['environment_file'] = self._get_environment_file_path(install_path)
 
             # Add new installation path to PATH
             conda_env = {
                 'PATH': ':'.join([os.path.join(install_path, 'bin')] + env_path)
             }
-
-            environment_config['install_environment'] = conda_env
 
             skip_install = False
             update_install = False
@@ -475,8 +482,8 @@ class AnacondaBuilder(Builder):
                 install_msg = ("Environment {environment_name} "
                                "not installed. Starting installation.")
             elif installed_checksum != environment_config['checksum']:
-                previous_environment = installed_environments.get(
-                    environment_name, {}).get('environment_file', None)
+                previous_environment = installed_environments[environment_name]['environment_file']
+                previous_install_path = installed_environments[environment_name]['install_path']
                 install_msg = ("Environment {environment_name} installed "
                                "but marked for update.")
                 update_install = True
@@ -492,7 +499,7 @@ class AnacondaBuilder(Builder):
 
             # Install base environment
             rules.extend([
-                PythonRule(self._clean_failed, [install_path]),
+                PythonRule(self._remove_environment, [install_path]),
                 PythonRule(self._download_installer, [environment_config]),
                 PythonRule(
                     self._makedirs,
@@ -565,6 +572,12 @@ class AnacondaBuilder(Builder):
                 PythonRule(
                     self._update_installed_environments,
                     [environment_config['environment_name'], environment_config]))
+
+            if update_install and remove_after_update:
+                rules.extend([
+                    LoggingRule(('Removing old environment from '
+                                 '{0}').format(previous_install_path)),
+                    PythonRule(self._remove_environment, [previous_install_path])])
 
         return rules
 
