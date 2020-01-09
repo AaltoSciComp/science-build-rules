@@ -330,6 +330,8 @@ class SingularityBuilder(Builder):
             'SINGULARITY_CACHEDIR': self._source_cache
         }
 
+        uid = os.getuid()
+
         self._logger.warning(self._confreader['build_config'])
         for definition in self._confreader['build_config']['definitions']:
             self._logger.warning(definition)
@@ -351,6 +353,8 @@ class SingularityBuilder(Builder):
                 # Add --fakeroot parsing here later on
 
                 singularity_build_cmd = ['singularity', '-d', 'build']
+                chown_cmd = ['chown', '{0}:{0}'.format(uid)]
+
                 sudo = (config.get('sudo', True) and
                         self._confreader['config']['config'].get('sudo', False))
                 fakeroot = (config.get('fakeroot', True) and
@@ -359,10 +363,17 @@ class SingularityBuilder(Builder):
 
                 if sudo:
                     singularity_build_cmd.insert(0, 'sudo')
-                rules.append(SubprocessRule(
-                    singularity_build_cmd + [stage_image, definition_file],
-                    env=buildenv,
-                    shell=True))
+                    chown_cmd.insert(0, 'sudo')
+                rules.extend([
+                    SubprocessRule(
+                        singularity_build_cmd + [stage_image, definition_file],
+                        env=buildenv,
+                        shell=True),
+                    SubprocessRule(
+                        chown_cmd + [stage_image],
+                        shell=True)
+                ])
+
         """
 
         installed_images = self._get_installed_images()

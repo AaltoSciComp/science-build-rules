@@ -124,7 +124,7 @@ class Builder:
         copy2(src, target)
         if chmod:
             os.chmod(target, chmod)
-    
+
     @classmethod
     def _copy_dir(cls, src, target, chmod=None):
         """ This function copies a folder from src to target with required
