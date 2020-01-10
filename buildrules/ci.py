@@ -311,18 +311,19 @@ class CIBuilder(Builder):
             LoggingRule('Creating build directories')
         ]
 
-        workers = [{'name':'master', 'builds': {}}]
+        master = [{'name':'master'}]
 
-        workers.extend(self._confreader['build_config']['target_workers'])
+        workers = self._confreader['build_config']['target_workers']
 
-        for worker in workers:
+        def _get_home_creation_rules(workers):
+
             worker_home_folder = os.path.join(
                 self._mountpoints['home'],
                 worker['name'])
             worker_ssh_folder = os.path.join(
                 worker_home_folder,
                 '.ssh')
-            rules.extend([
+            home_creation_rules = [
                 LoggingRule(
                     ('Creating nfs home directory '
                      'for worker %s') % worker['name']
@@ -345,11 +346,18 @@ class CIBuilder(Builder):
                         ),
                     ]
                 ),
+            ]
+            return home_creation_rules
+
+        for worker in master + workers:
+            rules.extend(_get_home_creation_rules(worker))
+
+
+        for worker in workers:
+            rules.append(
                 LoggingRule(
                     ('Creating build and software '
-                     'directories for worker %s') % worker['name'])
-            ])
-            self._logger.warning(worker)
+                     'directories for worker %s') % worker['name']))
             for builder_name, builder_opts in self._confreader['build_config']['builds'].items():
                 if builder_opts.get('enabled', False):
                     rules.extend([
