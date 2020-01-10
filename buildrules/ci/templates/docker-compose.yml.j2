@@ -17,10 +17,9 @@ services:
   nfs_service:
     image: aaltoscienceit/scibuilder-nfs-server:latest
     volumes:
-      - ./nfs/buildbot_home:/exports/home
-      - ./nfs/cache:/exports/cache
-      - ./nfs/builds:/exports/builds
-      - ./nfs/software:/exports/software
+{%- for key in ('home', 'cache', 'builds', 'software') %}
+      - {{ (mountpoints | default({}))[key] | default('./nfs/' ~ key) }}:/exports/{{ key }}
+{%- endfor %}
       - ./configs/nfs/exports.txt:/etc/exports:ro
     privileged: true
     networks:
