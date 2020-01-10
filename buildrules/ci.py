@@ -85,6 +85,15 @@ class CIBuilder(Builder):
                     'postgres_password': {'type': 'string'},
                 },
             },
+            'mountpoints': {
+                'type': 'object',
+                'properties': {
+                    'home': {'type': 'string'},
+                    'cache': {'type': 'string'},
+                    'builds': {'type': 'string'},
+                    'software': {'type': 'string'},
+                },
+            },
             'builds': {
                 'type': 'object',
                 'properties': {
@@ -180,14 +189,28 @@ class CIBuilder(Builder):
         super().__init__(conf_folder)
         self._build_folder = self._confreader['build_config']['build_folder']
         self._conf_folder = os.path.join(
-            self._confreader['build_config']['build_folder'],
+            self._build_folder,
             'configs')
         self._templates_folder = os.path.join(
-            self._confreader['build_config']['build_folder'],
+            self._build_folder,
             'templates')
-        self._nfs_folder = os.path.join(
-            self._confreader['build_config']['build_folder'],
+        nfs_folder = os.path.join(
+            self._build_folder,
             'nfs')
+        mountpoints = self._confreader['build_config'].get('mountpoints', {})
+        self._mountpoints = {}
+        for key in ('home', 'cache', 'builds', 'software'):
+            if key in mountpoints:
+                mountpoint = mountpoints[key]
+                if os.path.isabs(mountpoint):
+                    self._mountpoints[key] = mountpoint
+                else:
+                    self._mountpoints[key] = os.path.abspath(
+                        os.path.join(self._build_folder, mountpoint))
+            else:
+                self._mountpoints[key] = os.path.abspath(
+                    os.path.join(nfs_folder, key))
+        self._logger.warning(self._mountpoints)
 
     def _get_clone_build_environment_rule(self):
         """Clones build environment into a temporary directory"""
@@ -273,7 +296,20 @@ class CIBuilder(Builder):
 
     def _get_directory_creation_rules(self):
         """Creates directories for nfs"""
-        rules = [LoggingRule('Creating build directories')]
+
+        rules = [
+            LoggingRule('Creating home directory'),
+            PythonRule(
+                self._makedirs,
+                args=[self._mountpoints['home']],
+                kwargs={'chmod':0o700}),
+            LoggingRule('Creating cache directory'),
+            PythonRule(
+                self._makedirs,
+                args=[self._mountpoints['cache']],
+                kwargs={'chmod':0o700}),
+            LoggingRule('Creating build directories')
+        ]
 
         workers = [{'name':'master', 'builds': {}}]
 
@@ -281,8 +317,7 @@ class CIBuilder(Builder):
 
         for worker in workers:
             worker_home_folder = os.path.join(
-                self._nfs_folder,
-                'buildbot_home',
+                self._mountpoints['home'],
                 worker['name'])
             worker_ssh_folder = os.path.join(
                 worker_home_folder,
@@ -314,6 +349,7 @@ class CIBuilder(Builder):
                     ('Creating build and software '
                      'directories for worker %s') % worker['name'])
             ])
+            self._logger.warning(worker)
             for builder_name, builder_opts in self._confreader['build_config']['builds'].items():
                 if builder_opts.get('enabled', False):
                     rules.extend([
@@ -321,8 +357,7 @@ class CIBuilder(Builder):
                             self._makedirs,
                             args=[
                                 os.path.join(
-                                    self._nfs_folder,
-                                    'builds',
+                                    self._mountpoints['builds'],
                                     worker['name'],
                                     builder_name
                                 ),
@@ -332,8 +367,7 @@ class CIBuilder(Builder):
                             self._makedirs,
                             args=[
                                 os.path.join(
-                                    self._nfs_folder,
-                                    'software',
+                                    self._mountpoints['software'],
                                     worker['name'],
                                     builder_name
                                 ),
@@ -413,9 +447,7 @@ class CIBuilder(Builder):
         for worker in workers:
 
             ssh_folder = os.path.join(
-                self._build_folder,
-                'nfs',
-                'buildbot_home',
+                self._mountpoints['home'],
                 worker['name'],
                 '.ssh')
 
