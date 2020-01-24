@@ -80,3 +80,5 @@ dependencies:
   - pip:
     - j2cli
     - jinja2-cli
+    - python-swiftclient
+    - python-keystoneclient

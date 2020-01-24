@@ -2,7 +2,8 @@ config:
   install_path: $singularity/opt/singularity/software
   module_path: $singularity/opt/singularity/modules
   source_cache: $singularity/var/singularity/cache
+  tmpdir: $singularity/var/singularity/tmpdir
   build_stage: $singularity/var/singularity/stage
   sudo: False
   fakeroot: True
-  debug: True
+  debug: False

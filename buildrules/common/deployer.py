@@ -7,8 +7,11 @@ strategies.
 """
 import logging
 import os
+import yaml
 from jsonschema import validate
-from buildrules.common.rule import SubprocessRule, LoggingRule
+from buildrules.common.rule import SubprocessRule, LoggingRule, PythonRule
+from swiftclient.multithreading import OutputManager
+from swiftclient.service import SwiftError, SwiftService, SwiftUploadObject
 
 DEPLOYMENTCONFIG_SCHEMA = {
     "$schema" : "http://json-schema.org/draft-07/schema#",
@@ -42,21 +45,9 @@ class Deployer:
     """
 
     def __init__(self, deployer_config):
-        validate(deployer_config, self.DEPLOYER_SCHEMA) 
+        self._logger = logging.getLogger(self.__class__.__name__)
+        validate(deployer_config, self.DEPLOYER_SCHEMA)
         self._deployer_config = deployer_config
-        self._deployment_command=self.deployment_command()
-
-    def __str__(self):
-        return "sp_function: {0}".format(self._deployment_command)
-
-    def deployment_command(self):
-        pass
-
-    def get_rules(self):
-        rules = []
-        rules.append(LoggingRule('Deploying software'))
-        rules.append(self._deployment_command)
-        return rules
 
 class RsyncDeployer(Deployer):
 
@@ -85,7 +76,7 @@ class RsyncDeployer(Deployer):
         "working_directory": None
     }
 
-    def deployment_command(self, dry_run=False):
+    def _get_rsync_deployment_command(self, dry_run=False):
         rsync_deployer_config = self.DEFAULT_CONFIGS.copy()
         rsync_deployer_config.update(**self._deployer_config)
 
@@ -108,16 +99,76 @@ class RsyncDeployer(Deployer):
 
         return SubprocessRule(cmd + [src, target], shell=True, cwd=rsync_cwd)
 
+    def get_rules(self):
+        rules = []
+        rules.append(LoggingRule('Deploying software with rsync deployer:'))
+        rules.append(self._get_rsync_deployment_command())
+        return rules
+
+
+class SwiftDeployer(Deployer):
+
+    DEPLOYER_SCHEMA = {
+        "$schema" : "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties" : {
+            "method": {"type" : "string"},
+            "dest_container": {"type" : "string"},
+            "source": {"type" : "string"},
+            "os_secrets_file": {"type": "string"},
+        },
+        "required": ["method", "dest_container", "source", "os_secrets_file"]
+    }
+
+    OS_SECRETS_SCHEMA = {
+        "$schema" : "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties" : {
+            "os_username": {"type" : "string"},
+            "os_password": {"type": "string"},
+            "os_project_name": {"type" : "string"},
+            "os_auth_url": {"type" : "string"},
+        },
+        "required": ["os_username", "os_password", "os_project_name", "os_auth_url"]
+    }
+
+    def __init__(self, deployer_config):
+
+        super().__init__(deployer_config)
+
+        with open(self._deployer_config['os_secrets_file'], 'r') as yaml_f:
+            os_secrets = yaml.load(yaml_f.read(), Loader=yaml.Loader)
+        validate(os_secrets, self.OS_SECRETS_SCHEMA)
+        self._os_secrets = os_secrets
+
+    def _swift_deploy(self):
+
+        swift_options = {
+            'auth_version': '3'
+        }
+        swift_options.update(self._os_secrets)
+
+        with SwiftService(options=swift_options) as swift:
+            self._logger.warning(swift.stat(self._deployer_config['dest_container']))
+
+    def get_rules(self):
+        rules = []
+        rules.append(LoggingRule('Deploying software with swift deployer:'))
+        rules.append(PythonRule(self._swift_deploy))
+        return rules
 
 def deployer_factory(confreader):
     """This function creates instances of subclasses of Deployer based on
-    deployment_config. The configurations passed to the deployers class are validated 
+    deployment_config. The configurations passed to the deployers class are validated
     again against the specific schema of each class.
     """
 
     confreader.validate('deployment_config', DEPLOYMENTCONFIG_SCHEMA)
 
-    deployer_classes = {'rsync' : RsyncDeployer}
+    deployer_classes = {
+        'rsync': RsyncDeployer,
+        'swift': SwiftDeployer
+    }
 
     deployers = []
     for deployer_config in confreader['deployment_config']:

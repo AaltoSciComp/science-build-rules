@@ -44,6 +44,7 @@ class SingularityBuilder(Builder):
                         'build_stage': {'type': 'string'},
                         'module_path': {'type': 'string'},
                         'source_cache': {'type': 'string'},
+                        'tmpdir': {'type': 'string'},
                     },
                 },
             },
@@ -117,6 +118,7 @@ class SingularityBuilder(Builder):
         self._singularity_path = os.path.join(os.getcwd(), 'singularity')
         super().__init__(conf_folder)
         self._source_cache = self._get_path('source_cache')
+        self._tmpdir = self._get_path('tmpdir')
         self._build_stage = self._get_path('build_stage')
         self._install_path = self._get_path('install_path')
         self._module_path = self._get_path('module_path')
@@ -132,6 +134,7 @@ class SingularityBuilder(Builder):
             'install_path': '$singularity/opt/singularity/software',
             'module_path': '$singularity/opt/singularity/modules',
             'source_cache': '$singularity/var/singularity/cache',
+            'tmpdir': '$singularity/var/singularity/tmpdir',
             'build_stage': '$singularity/var/singularity/stage',
         }
         path_config.update(self._confreader['config']['config'])
@@ -171,10 +174,11 @@ class SingularityBuilder(Builder):
         rules = []
 
         rules.extend([
-            PythonRule(self._makedirs, [self._source_cache, 0o755]),
+            LoggingRule('Creating tmpdir directory: %s' % self._tmpdir),
+            PythonRule(self._makedirs, [self._tmpdir, 0o755]),
             LoggingRule('Creating cache directory: %s' % self._source_cache),
             PythonRule(self._makedirs, [self._source_cache, 0o755]),
-            LoggingRule('Creating stage directory: %s' % self._build_stage),
+            LoggingRule('Creating build stage directory: %s' % self._build_stage),
             PythonRule(self._makedirs, [self._build_stage, 0o755]),
             LoggingRule('Creating installation directory: %s' % self._install_path),
             PythonRule(self._makedirs, [self._install_path, 0o755]),
@@ -330,7 +334,8 @@ class SingularityBuilder(Builder):
         rules = []
 
         buildenv = {
-            'SINGULARITY_CACHEDIR': self._source_cache
+            'SINGULARITY_CACHEDIR': self._source_cache,
+            'SINGULARITY_TMPDIR': self._tmpdir
         }
 
         uid = os.getuid()
@@ -353,16 +358,14 @@ class SingularityBuilder(Builder):
                     self._write_definition_file,
                     [definition_file, config]))
 
-                # Add --fakeroot parsing here later on
-
                 singularity_build_cmd = ['singularity', 'build', '-F']
                 chown_cmd = ['chown', '{0}:{0}'.format(uid)]
 
-                debug = (config.get('debug', False) and
+                debug = (config.get('debug', False) or
                         self._confreader['config']['config'].get('debug', False))
-                sudo = (config.get('sudo', True) and
+                sudo = (config.get('sudo', False) or
                         self._confreader['config']['config'].get('sudo', False))
-                fakeroot = (config.get('fakeroot', True) and
+                fakeroot = (config.get('fakeroot', False) or
                             self._confreader['config']['config'].get(
                                 'fakeroot', False))
                 if debug:
@@ -372,11 +375,11 @@ class SingularityBuilder(Builder):
                     chown_cmd.insert(0, 'sudo')
                 if fakeroot:
                     singularity_build_cmd.append('--fakeroot')
-                rules.append(
-                    SubprocessRule(
-                        singularity_build_cmd + [stage_image, definition_file],
-                        env=buildenv,
-                        shell=True))
+                #rules.append(
+                #    SubprocessRule(
+                #        singularity_build_cmd + [stage_image, definition_file],
+                #        env=buildenv,
+                #        shell=True))
                 if sudo:
                     rules.append(
                     SubprocessRule(
