@@ -354,6 +354,10 @@ class SingularityBuilder(Builder):
                     self._build_stage,
                     '{basename!s}.simg'.format(**config))
 
+                install_image = os.path.join(
+                    self._install_path,
+                    os.path.basename(stage_image))
+
                 rules.append(PythonRule(
                     self._write_definition_file,
                     [definition_file, config]))
@@ -375,17 +379,22 @@ class SingularityBuilder(Builder):
                     chown_cmd.insert(0, 'sudo')
                 if fakeroot:
                     singularity_build_cmd.append('--fakeroot')
-                #rules.append(
-                #    SubprocessRule(
-                #        singularity_build_cmd + [stage_image, definition_file],
-                #        env=buildenv,
-                #        shell=True))
+                rules.append(
+                    SubprocessRule(
+                        singularity_build_cmd + [stage_image, definition_file],
+                        env=buildenv,
+                        shell=True))
                 if sudo:
                     rules.append(
                     SubprocessRule(
                         chown_cmd + [stage_image],
                         shell=True)
                     )
+                rules.extend([
+                    LoggingRule('Copying staged image to installation directory'),
+                    PythonRule(
+                        self._copy_file, [stage_image, install_image])
+                ])
 
         """
 

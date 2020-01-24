@@ -10,7 +10,6 @@ import os
 import yaml
 from jsonschema import validate
 from buildrules.common.rule import SubprocessRule, LoggingRule, PythonRule
-from swiftclient.multithreading import OutputManager
 from swiftclient.service import SwiftError, SwiftService, SwiftUploadObject
 
 DEPLOYMENTCONFIG_SCHEMA = {
@@ -115,6 +114,7 @@ class SwiftDeployer(Deployer):
             "method": {"type" : "string"},
             "dest_container": {"type" : "string"},
             "source": {"type" : "string"},
+            "source_replacement": {"type" : "string"},
             "os_secrets_file": {"type": "string"},
         },
         "required": ["method", "dest_container", "source", "os_secrets_file"]
@@ -149,7 +149,55 @@ class SwiftDeployer(Deployer):
         swift_options.update(self._os_secrets)
 
         with SwiftService(options=swift_options) as swift:
-            self._logger.warning(swift.stat(self._deployer_config['dest_container']))
+
+            container = self._deployer_config['dest_container']
+            self._logger.info('Verifying access to destination container: %s.', container)
+            container_stat = swift.stat(container)
+
+            source_dir = self._deployer_config['source']
+            objects = []
+            for root_dir, subdirectories, file_list in os.walk(source_dir):
+                if not (subdirectories + file_list):
+                    objects.append({
+                        'path': None,
+                        'name': root_dir,
+                        'options': {'dir_marker': True},
+                    })
+                else:
+                    for filename in file_list:
+                        file_path = os.path.join(root_dir, filename)
+                        objects.append({
+                            'path': file_path,
+                            'name': file_path,
+                            'options': None,
+                        })
+
+            source_replacement = self._deployer_config.get('source_replacement', None)
+            if source_replacement:
+                for obj in objects:
+                    obj['name'] = obj['name'].replace(source_dir, source_replacement, 1)
+
+            swift_objects = [ SwiftUploadObject(obj['path'], obj['name'], options=obj['options'])
+                for obj in objects
+            ]
+
+            self._logger.info(
+                'Uploading following objects into container %s:\n%s',
+                container, '\n'.join([obj['name'] for obj in objects]))
+            upload_results = list(swift.upload(container, swift_objects))
+            for upload_result in upload_results:
+                if upload_result['action'] == 'create_container':
+                    self._logger.info(
+                        'Creating container: %s', container)
+                elif upload_result['action'] == 'create_dir_marker':
+                    self._logger.info(
+                        'Creating directory marker: %s', upload_result['object'])
+                elif upload_result['action'] == 'upload_object':
+                    self._logger.info(
+                        'Uploading object: %s', upload_result['object'])
+
+                if not upload_result['success']:
+                    raise Exception('Failed to upload file! Full error: %s' % upload_result)
 
     def get_rules(self):
         rules = []
