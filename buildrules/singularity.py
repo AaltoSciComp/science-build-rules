@@ -37,6 +37,7 @@ class SingularityBuilder(Builder):
                     'default': {},
                     'additionalProperties': False,
                     'properties': {
+                        'debug': {'type': 'boolean'},
                         'sudo': {'type': 'boolean'},
                         'fakeroot': {'type': 'boolean'},
                         'install_path': {'type': 'string'},
@@ -89,6 +90,8 @@ class SingularityBuilder(Builder):
                             'name': {'type': 'string'},
                             'docker_user': {'type': 'string'},
                             'docker_image': {'type': 'string'},
+                            'debug': {'type': 'boolean'},
+                            'sudo': {'type': 'boolean'},
                             'fakeroot': {'type': 'boolean'},
                             'tags': {
                                 'type': 'array',
@@ -352,27 +355,34 @@ class SingularityBuilder(Builder):
 
                 # Add --fakeroot parsing here later on
 
-                singularity_build_cmd = ['singularity', '-d', 'build']
+                singularity_build_cmd = ['singularity', 'build', '-F']
                 chown_cmd = ['chown', '{0}:{0}'.format(uid)]
 
+                debug = (config.get('debug', False) and
+                        self._confreader['config']['config'].get('debug', False))
                 sudo = (config.get('sudo', True) and
                         self._confreader['config']['config'].get('sudo', False))
                 fakeroot = (config.get('fakeroot', True) and
                             self._confreader['config']['config'].get(
                                 'fakeroot', False))
-
+                if debug:
+                    singularity_build_cmd.insert(1, '-d')
                 if sudo:
                     singularity_build_cmd.insert(0, 'sudo')
                     chown_cmd.insert(0, 'sudo')
-                rules.extend([
+                if fakeroot:
+                    singularity_build_cmd.append('--fakeroot')
+                rules.append(
                     SubprocessRule(
                         singularity_build_cmd + [stage_image, definition_file],
                         env=buildenv,
-                        shell=True),
+                        shell=True))
+                if sudo:
+                    rules.append(
                     SubprocessRule(
                         chown_cmd + [stage_image],
                         shell=True)
-                ])
+                    )
 
         """
 
