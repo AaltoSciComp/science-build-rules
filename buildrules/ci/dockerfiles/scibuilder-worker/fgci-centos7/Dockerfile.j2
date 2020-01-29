@@ -75,6 +75,12 @@ RUN yum update -y && yum install -y       \
   xorg-x11-xbitmaps                       \
   && yum clean all
 
+# Installing dependencies for Swift deployer
+
+RUN pip3 install                          \
+  python-swiftclient                      \
+  python-keystoneclient
+
 RUN echo 'buildbot ALL=(ALL) NOPASSWD:SETENV: /usr/local/bin/singularity, /bin/chown' >> /etc/sudoers
 
 {% include 'common/Dockerfile.j2' %}
