@@ -24,9 +24,9 @@ from dateutil.parser import parse as dateparse
 #
 ###############################################################################
 
-rules_repo = "{{ science_build_rules_repository }}"
+rules_repo = "{{ science_build_rules_repository }}"
 
-buildbot_timeout    = {{ buildbot_master.timeout | default(7200)}}
+buildbot_timeout    = {{ buildbot_master.timeout | default(7200)}}
 
 #
 # Configuration of BuildBot
@@ -35,7 +35,7 @@ buildbot_timeout    = {{ buildbot_master.timeout | default(7200)}}
 
 c = BuildmasterConfig = {}
 
-{% if (builds.singularity.enabled and builds.singularity.enable_portus_hook) | default(False) %}
+{% if (builds.singularity.enabled and builds.singularity.enable_portus_hook) | default(False) %}
 ###############################################################################
 #
 # PortusHook
@@ -122,15 +122,15 @@ c['www'] = dict(
     change_hook_dialects={
 {% if 'gitlab_hook_secret' in buildbot_master %}
         'gitlab' : {
-            'secret': '{{ buildbot_master.gitlab_hook_secret }}',
+            'secret': '{{ buildbot_master.gitlab_hook_secret }}',
         },
 {% endif %}
 {% if 'github_hook_secret' in buildbot_master %}
         'github' : {
-            'secret': '{{ buildbot_master.github_hook_secret }}',
+            'secret': '{{ buildbot_master.github_hook_secret }}',
         },
 {% endif %}
-{% if (builds.singularity.enabled and builds.singularity.enable_portus_hook) | default(False) %}
+{% if (builds.singularity.enabled and builds.singularity.enable_portus_hook) | default(False) %}
         'base': {
             'custom_class': PortusHook,
         }
@@ -143,7 +143,7 @@ c['services'] = []
 {% if 'github_token_secret' in buildbot_master %}
 
 context = util.Interpolate("buildbot/%(prop:buildername)s")
-gs = reporters.GitHubStatusPush(token='{{ buildbot_master.github_token_secret }}',
+gs = reporters.GitHubStatusPush(token='{{ buildbot_master.github_token_secret }}',
                                 context=context,
                                 verbose=True,
                                 startDescription='Build started.',
@@ -210,7 +210,55 @@ c['workers'] = [
 c['builders'] = []
 
 {% for worker in target_workers -%}
+
+{% if builds.anaconda.enabled | default('false') -%}
+{% if 'anaconda' in worker -%}
+anaconda_builder = util.BuildFactory()
+{% if 'github.com' in science_build_rules_repository -%}
+anaconda_builder.addStep(steps.GitHub(
+{% else -%}
+anaconda_builder.addStep(steps.Git(
+{% endif -%}
+    name='Anaconda Git Sync',
+    repourl=rules_repo,
+    mode='full',
+    shallow=True,
+    haltOnFailure=True))
+anaconda_builder.addStep(
+    steps.ShellCommand(
+        name='AnacondaDescribe - {{ worker.name }}',
+        command=[
+                "build-anaconda",
+                "describe"
+                ],
+        interruptSignal='TERM',
+        sigtermTime=30,
+        usePTY=True,
+        timeout=buildbot_timeout,
+        haltOnFailure=True))
+anaconda_builder.addStep(
+    steps.ShellCommand(
+        name='AnacondaBuild - {{ worker.name }}',
+        command=[
+                "build-anaconda",
+                "build"
+                ],
+        interruptSignal='TERM',
+        sigtermTime=30,
+        usePTY=True,
+        timeout=buildbot_timeout))
+c['builders'].append(
+    util.BuilderConfig(
+        name="Anaconda - {{ worker.name }}",
+        workernames=["worker_{{ worker.name }}"],
+        factory=anaconda_builder,
+        workerbuilddir='/build/anaconda'
+    ))
+{% endif -%}
+{% endif -%}
+
 {% if builds.singularity.enabled | default('false') -%}
+{% if 'singularity' in worker -%}
 singularity_builder = util.BuildFactory()
 singularity_builder.addStep(steps.Git(
     name='Singularity Git Sync',
@@ -236,9 +284,11 @@ c['builders'].append(
         factory=singularity_builder,
         workerbuilddir='/build/singularity'
     ))
-
 {% endif -%}
+{% endif -%}
+
 {% if builds.spack.enabled | default('false') -%}
+{% if 'spack' in worker -%}
 spack_builder = util.BuildFactory()
 {% if 'github.com' in science_build_rules_repository -%}
 spack_builder.addStep(steps.GitHub(
@@ -352,7 +402,7 @@ c['builders'].append(
         factory=spack_builder,
         workerbuilddir='/build/spack'
     ))
-
+{% endif -%}
 {% endif -%}
 {% endfor -%}
 
@@ -363,9 +413,41 @@ c['builders'].append(
 
 c['schedulers'] = [
 {%- for worker in target_workers -%}
+{%- if builds.anaconda.enabled | default('false') %}
+{%- if 'anaconda' in worker %}
+{%- if worker.anaconda.github_hook | default('true') %}
+    # Anaconda schedulers for {{ worker.name }}
+    schedulers.SingleBranchScheduler(
+        name="AnacondaGithub_{{ worker.name }}",
+        change_filter=util.ChangeFilter(
+            branch='master',
+            filter_fn=lambda change: skipChecker(
+                change,
+                "configs/{{ worker.name }}/anaconda")
+        ),
+        treeStableTimer=None,
+        builderNames=["Anaconda - {{ worker.name }}"]),
+{%- endif %}
+{%- set schedule = (worker.anaconda | default({}))['schedule'] | default({}) %}
+{%- if schedule %}
+    schedulers.Nightly(
+        name="AnacondaNightly_{{ worker.name }}",
+        minute={{ schedule.minute | default(0) }},
+        hour={{ schedule.hour | default('"*"') }},
+        dayOfMonth={{ schedule.dayOfMonth | default('"*"') }},
+        month={{ schedule.month | default('"*"') }},
+        dayOfWeek={{ schedule.dayOfWeek | default('"*"') }},
+        builderNames=["Anaconda - {{ worker.name }}"]),
+{%- endif %}
+    schedulers.ForceScheduler(
+        name="AnacondaForce_{{ worker.name }}",
+        builderNames=["Anaconda - {{ worker.name }}"]),
+{%- endif %}
+{%- endif %}
 {%- if builds.singularity.enabled | default('false') %}
+{%- if 'singularity' in worker %}
 {%- if worker.singularity.github_hook | default('true') %}
-    # Singularity schedulers for {{ worker.name }}
+    # Singularity schedulers for {{ worker.name }}
     schedulers.SingleBranchScheduler(
         name="SingularityGithub_{{ worker.name }}",
         change_filter=util.ChangeFilter(
@@ -377,9 +459,9 @@ c['schedulers'] = [
         treeStableTimer=None,
         builderNames=["Singularity - {{ worker.name }}"]),
 {% endif %}
-{%- if builds.singularity.enable_portus_hook | default(False) %}
+{%- if builds.singularity.enable_portus_hook | default(False) %}
     schedulers.SingleBranchScheduler(
-        name="SingularityPortus_{{ worker.name }}",
+        name="SingularityPortus_{{ worker.name }}",
         change_filter=util.ChangeFilter(
             category='push'
         ),
@@ -387,19 +469,21 @@ c['schedulers'] = [
         builderNames=["Singularity - {{ worker.name }}"]),
 {% endif %}
     schedulers.ForceScheduler(
-    name="SingularityForce_{{ worker.name }}",
+    name="SingularityForce_{{ worker.name }}",
     builderNames=["Singularity - {{ worker.name }}"]),
-{% endif -%}
+{%- endif %}
+{%- endif %}
 {%- if builds.spack.enabled | default('false') %}
+{%- if 'spack' in worker %}
 {%- if worker.spack.github_hook | default('true') %}
-    # Spack schedulers for {{ worker.name }}
+    # Spack schedulers for {{ worker.name }}
     schedulers.SingleBranchScheduler(
         name="SpackGithub_{{ worker.name }}",
         change_filter=util.ChangeFilter(
             branch='master',
             filter_fn=lambda change: skipChecker(
                 change,
-                "configs/{{ worker.name }}/spack")
+                "configs/{{ worker.name }}/spack")
         ),
         treeStableTimer=None,
         builderNames=["Spack - {{ worker.name }}"]),
@@ -416,8 +500,9 @@ c['schedulers'] = [
         builderNames=["Spack - {{ worker.name }}"]),
 {%- endif %}
     schedulers.ForceScheduler(
-        name="SpackForce_{{ worker.name }}",
+        name="SpackForce_{{ worker.name }}",
         builderNames=["Spack - {{ worker.name }}"]),
+{%- endif %}
 {%- endif %}
 {%- endfor %}
 ]

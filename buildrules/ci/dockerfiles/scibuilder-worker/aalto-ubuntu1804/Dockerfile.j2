@@ -65,4 +65,9 @@ RUN echo 'buildbot ALL=(ALL) NOPASSWD:SETENV: /usr/bin/singularity, /bin/chown' 
 RUN mkdir ~/.gnupg
 RUN echo "disable-ipv6" >> ~/.gnupg/dirmngr.conf
 
+RUN apt-get update &&                     \
+  apt-get -y install -q                   \
+  cpio                                    \
+  && rm -rf /var/lib/apt/lists/*
+
 {% include 'common/Dockerfile.j2' %}
