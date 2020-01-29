@@ -7,6 +7,7 @@ import tempfile
 
 from buildrules.common.builder import Builder
 from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule, RuleError
+from buildrules.common.utils import makedirs, copy_file, write_template
 
 class CIBuilder(Builder):
 
@@ -231,11 +232,14 @@ class CIBuilder(Builder):
             ]
         return []
 
+    def _template_config(self, src, dest):
+        write_template(src, self._confreader['build_config'], dest)
+
     def _get_config_creation_rules(self):
         return [
             LoggingRule('Creating buildbot_master.cfg'),
             PythonRule(
-                self._write_template,
+                self._template_config,
                 args=[
                     os.path.join(
                         self._conf_folder,
@@ -250,7 +254,7 @@ class CIBuilder(Builder):
             ),
             LoggingRule('Creating docker-compose.yml'),
             PythonRule(
-                self._write_template,
+                self._template_config,
                 args=[
                     os.path.join(
                         self._build_folder,
@@ -264,7 +268,7 @@ class CIBuilder(Builder):
             ),
             LoggingRule('Creating nginx.conf'),
             PythonRule(
-                self._write_template,
+                self._template_config,
                 args=[
                     os.path.join(
                         self._conf_folder,
@@ -279,7 +283,7 @@ class CIBuilder(Builder):
             ),
             LoggingRule('Creating exports.txt'),
             PythonRule(
-                self._write_template,
+                self._template_config,
                 args=[
                     os.path.join(
                         self._conf_folder,
@@ -300,12 +304,12 @@ class CIBuilder(Builder):
         rules = [
             LoggingRule('Creating home directory'),
             PythonRule(
-                self._makedirs,
+                makedirs,
                 args=[self._mountpoints['home']],
                 kwargs={'chmod':0o700}),
             LoggingRule('Creating cache directory'),
             PythonRule(
-                self._makedirs,
+                makedirs,
                 args=[self._mountpoints['cache']],
                 kwargs={'chmod':0o700}),
             LoggingRule('Creating build directories')
@@ -329,12 +333,12 @@ class CIBuilder(Builder):
                      'for worker %s') % worker['name']
                 ),
                 PythonRule(
-                    self._makedirs,
+                    makedirs,
                     args=[worker_ssh_folder],
                     kwargs={'chmod':0o700}),
                 LoggingRule('Creating .bashrc'),
                 PythonRule(
-                    self._write_template,
+                    self._template_config,
                     args=[
                         os.path.join(
                             worker_home_folder,
@@ -352,7 +356,6 @@ class CIBuilder(Builder):
         for worker in master + workers:
             rules.extend(_get_home_creation_rules(worker))
 
-
         for worker in workers:
             rules.append(
                 LoggingRule(
@@ -362,7 +365,7 @@ class CIBuilder(Builder):
                 if builder_opts.get('enabled', False):
                     rules.extend([
                         PythonRule(
-                            self._makedirs,
+                            makedirs,
                             args=[
                                 os.path.join(
                                     self._mountpoints['builds'],
@@ -372,7 +375,7 @@ class CIBuilder(Builder):
                             ],
                         ),
                         PythonRule(
-                            self._makedirs,
+                            makedirs,
                             args=[
                                 os.path.join(
                                     self._mountpoints['software'],
@@ -399,14 +402,14 @@ class CIBuilder(Builder):
             rules.extend([
                 LoggingRule('Copying certs'),
                 PythonRule(
-                    self._copy_file,
+                    copy_file,
                     args=[
                         self._confreader['build_config']['buildbot_master']['private_key'],
                         key
                     ]
                 ),
                 PythonRule(
-                    self._copy_file,
+                    copy_file,
                     args=[
                         self._confreader['build_config']['buildbot_master']['public_cert'],
                         cert
@@ -467,7 +470,7 @@ class CIBuilder(Builder):
                 ssh_config_target = os.path.join(ssh_folder, 'config')
                 rules.extend([
                     PythonRule(
-                        self._copy_file,
+                        copy_file,
                         args=[
                             ssh_config_src,
                             ssh_config_target
@@ -478,7 +481,7 @@ class CIBuilder(Builder):
                 known_hosts_target = os.path.join(ssh_folder, 'known_hosts')
                 rules.extend([
                     PythonRule(
-                        self._copy_file,
+                        copy_file,
                         args=[
                             known_hosts_src,
                             known_hosts_target
@@ -494,7 +497,7 @@ class CIBuilder(Builder):
                     )
                     rules.extend([
                         PythonRule(
-                            self._copy_file,
+                            copy_file,
                             args=[
                                 public_key_src,
                                 public_key_target
@@ -510,7 +513,7 @@ class CIBuilder(Builder):
                     )
                     rules.extend([
                         PythonRule(
-                            self._copy_file,
+                            copy_file,
                             args=[
                                 private_key_src,
                                 private_key_target

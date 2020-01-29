@@ -12,6 +12,7 @@ import sh
 
 from buildrules.common.builder import Builder
 from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule
+from buildrules.common.utils import makedirs, copy_file
 
 class SpackBuilder(Builder):
     """SpackBuilder extends on Builder and creates buildrules for Spack build.
@@ -564,7 +565,7 @@ class SpackBuilder(Builder):
                     "License target path: '%s':",
                     license_file)
                 os.remove(license_file)
-                self._copy_file(real_path, license_file)
+                copy_file(real_path, license_file)
 
     def _get_license_copy_rules(self):
 
@@ -642,7 +643,7 @@ class SpackBuilder(Builder):
                 '(?P<version>[^/]+).lua'))
 
             all_folder = os.path.join(arch_folder, 'all')
-            self._makedirs(all_folder, 0o755)
+            makedirs(all_folder, 0o755)
 
             corefiles = glob(os.path.join(arch_folder, 'Core', '*', '*.lua'))
             mpifiles = glob(os.path.join(arch_folder, '*', '*', 'Core', '*', '*.lua'))
@@ -662,7 +663,7 @@ class SpackBuilder(Builder):
                          'copied from modulefile {2}').format(
                              modulefile, modulefile_new, copied_modules[modulefile_new]))
 
-                self._makedirs(modulefolder_new, 0o755)
+                makedirs(modulefolder_new, 0o755)
                 write_module_file_without_modulepath(modulefile, modulefile_new)
 
                 copied_modules[modulefile_new] = match

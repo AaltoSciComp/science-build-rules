@@ -7,10 +7,7 @@ actually build software.
 import os
 import sys
 import logging
-import hashlib
-from shutil import copy2, copytree
 import json
-from jinja2 import Template
 
 from buildrules.common.errors import log_error_and_quit
 from buildrules.common.confreader import ConfReader
@@ -95,92 +92,3 @@ class Builder:
         self._logger.info('Deployment descriptions:')
         for rule in deployer_rules:
             self._logger.info(rule)
-
-    @classmethod
-    def _makedirs(cls, path, chmod=None):
-        """ This function creates a folder with requested permissions
-
-        Args:
-            path (str): Folder to create.
-            chmod (str): Chmod permissions. Default is None.
-        """
-        try:
-            os.makedirs(path)
-            if chmod:
-                os.chmod(path, chmod)
-        except FileExistsError:
-            pass
-
-    @classmethod
-    def _copy_file(cls, src, target, chmod=None):
-        """ This function copies a file from src to target with required
-        permissions.
-
-        Args:
-            src (str): File that will be copied.
-            target (str): Target folder / file.
-            chmod (str): Chmod permissions. Default is None.
-        """
-        copy2(src, target)
-        if chmod:
-            os.chmod(target, chmod)
-
-    @classmethod
-    def _copy_dir(cls, src, target, chmod=None):
-        """ This function copies a folder from src to target with required
-        permissions.
-
-        Args:
-            src (str): Folder that will be copied.
-            target (str): Target folder.
-            chmod (str): Chmod permissions. Default is None.
-        """
-        copytree(src, target, symlinks=True)
-        if chmod:
-            os.chmod(target, chmod)
-
-    def _write_template(self, target_path, template_path=None, template=None):
-        """Writes a file based on jinja2-template.
-
-        Args:
-            target_path (str): Target path to fill.
-            template_path (str): Template file to use. Default None.
-            template (str): jinja2-template as a string. Default None.
-        """
-        if not template:
-            with open(template_path, 'r') as template_file:
-                template = ''.join(template_file.readlines())
-        filled_template = self._fill_template(template)
-        with open(target_path, 'w') as target_file:
-            target_file.write(filled_template)
-
-    def _fill_template(self, template):
-        """Fills a jinja2-template based on build_config.
-
-        Args:
-            template (str): jinja2-template as a string.
-        Returns:
-            str: Filled template.
-        """
-        return Template(template).render(self._confreader['build_config'])
-
-    def _calculate_file_checksum(self, filename, hash_function='sha256'):
-        hash_functions = {
-            'sha256': hashlib.sha256
-        }
-        hash_function = hash_functions[hash_function]()
-        with open(filename, "rb") as input_file:
-            for byte_block in iter(lambda: input_file.read(4096), b""):
-                hash_function.update(byte_block)
-
-        return hash_function.hexdigest()
-
-    def _calculate_dict_checksum(self, dict_object, hash_function='sha256'):
-        hash_functions = {
-            'sha256': hashlib.sha256
-        }
-        hash_function = hash_functions[hash_function]()
-        json_dump = json.dumps(dict_object, ensure_ascii=False, sort_keys=True)
-        hash_function.update(json_dump.encode('utf-8'))
-
-        return hash_function.hexdigest()

@@ -6,18 +6,18 @@ import re
 import os
 from collections import defaultdict
 import shutil
-import textwrap
 import logging
 from glob import glob
 import yaml
 import copy
 import requests
 import sh
-from jinja2.environment import Environment
 
 from buildrules.common.builder import Builder
 from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule
 from buildrules.common.confreader import ConfReader
+from buildrules.common.utils import (load_yaml, write_yaml, makedirs, copy_file,
+        write_template, calculate_dict_checksum)
 
 class SingularityBuilder(Builder):
     """SingularityBuilder extends on Builder and creates buildrules for Singularity build.
@@ -175,15 +175,15 @@ class SingularityBuilder(Builder):
 
         rules.extend([
             LoggingRule('Creating tmpdir directory: %s' % self._tmpdir),
-            PythonRule(self._makedirs, [self._tmpdir, 0o755]),
+            PythonRule(makedirs, [self._tmpdir, 0o755]),
             LoggingRule('Creating cache directory: %s' % self._source_cache),
-            PythonRule(self._makedirs, [self._source_cache, 0o755]),
+            PythonRule(makedirs, [self._source_cache, 0o755]),
             LoggingRule('Creating build stage directory: %s' % self._build_stage),
-            PythonRule(self._makedirs, [self._build_stage, 0o755]),
+            PythonRule(makedirs, [self._build_stage, 0o755]),
             LoggingRule('Creating installation directory: %s' % self._install_path),
-            PythonRule(self._makedirs, [self._install_path, 0o755]),
+            PythonRule(makedirs, [self._install_path, 0o755]),
             LoggingRule('Creating module directory: %s' % self._module_path),
-            PythonRule(self._makedirs, [self._module_path, 0o755]),
+            PythonRule(makedirs, [self._module_path, 0o755]),
         ])
 
         return rules
@@ -231,7 +231,7 @@ class SingularityBuilder(Builder):
         stage_root = os.path.join(
             self._build_stage, module_name)
         if not os.path.isdir(stage_root):
-            self._makedirs(stage_root, 0o755)
+            makedirs(stage_root, 0o755)
         stage_path = os.path.join(stage_root, module_version)
         if os.path.isdir(stage_path):
             self._logger.info((
@@ -241,21 +241,36 @@ class SingularityBuilder(Builder):
         install_root = os.path.join(
             self._install_path, module_name)
         if not os.path.isdir(install_root):
-            self._makedirs(install_root, 0o755)
+            makedirs(install_root, 0o755)
 
         module_root = os.path.join(
             self._module_path, module_name)
         if not os.path.isdir(module_root):
-            self._makedirs(module_root, 0o755)
-
+            makedirs(module_root, 0o755)
 
     def _get_installed_images(self):
-        imgdir = self._install_path
-        images = glob(os.path.join(imgdir, '*.sif'))
-        return images
+        """ This function returns a dictionary that contains information on
+        already installed images.
 
+        Returns:
+            dict: Dictionary of previously installed images.
+        """
+
+        installed_dict = {
+            'images': {}
+        }
+        if os.path.isfile(self._installed_file):
+            installed_dict = load_yaml(self._installed_file)
+        return installed_dict
 
     def _update_installed_images(self, image_name, installation_config):
+        """ This function updates the file that contains information on the
+        previously installed environments.
+
+        Args:
+            environment_name (str): Name of the environment.
+            environment_config (dict): Anaconda environment config.
+        """
         installed_dict = self._get_installed_images()
         installed_dict['images'][image_name] = installation_config
         with open(self._installed_file, 'w') as installed_file:
@@ -295,17 +310,16 @@ class SingularityBuilder(Builder):
             flags = flags + self._flag_collections[flag_collection]
         config['flags'] = ' '.join(flags)
 
-        config['checksum'] = self._calculate_dict_checksum(config)
+        config['checksum'] = calculate_dict_checksum(config)
         config['checksum_small'] = config['checksum'][:8]
         config['basename'] = '{name!s}-{tag!s}-{checksum_small!s}'.format(**config)
         config['docker_url'] = '{docker_user!s}/{docker_image!s}:{tag!s}'.format(**config)
 
         return config
 
-    @classmethod
-    def _get_definition_file(cls, config):
+    def _write_definition_file(self, definition_file, config):
 
-        template_base = """
+        template = """
             Bootstrap: docker
             From: {{ docker_url }}
             {% if registry is defined -%}
@@ -320,14 +334,8 @@ class SingularityBuilder(Builder):
             {% endfor -%}
         """
 
-        template = Environment().from_string(textwrap.dedent(template_base))
+        write_template(definition_file, config, template=template)
 
-        return template.render(**config)
-
-    def _write_definition_file(self, definition_file, config):
-        contents = self._get_definition_file(config)
-        with open(definition_file, 'w') as def_file:
-            def_file.write(contents)
 
     def _get_image_install_rules(self):
 
@@ -339,6 +347,8 @@ class SingularityBuilder(Builder):
         }
 
         uid = os.getuid()
+
+        installed_images = self._get_installed_images()['images']
 
         self._logger.warning(self._confreader['build_config'])
         for definition in self._confreader['build_config']['definitions']:
@@ -386,14 +396,13 @@ class SingularityBuilder(Builder):
                         shell=True))
                 if sudo:
                     rules.append(
-                    SubprocessRule(
-                        chown_cmd + [stage_image],
-                        shell=True)
-                    )
+                        SubprocessRule(
+                            chown_cmd + [stage_image],
+                            shell=True))
                 rules.extend([
                     LoggingRule('Copying staged image to installation directory'),
                     PythonRule(
-                        self._copy_file, [stage_image, install_image])
+                        copy_file, [stage_image, install_image])
                 ])
 
         """

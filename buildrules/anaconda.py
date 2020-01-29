@@ -13,7 +13,9 @@ import sh
 
 from buildrules.common.builder import Builder
 from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule
-from buildrules.common.utils import load_yaml, write_yaml
+from buildrules.common.utils import (load_yaml, write_yaml, makedirs,
+    copy_file, write_template, calculate_file_checksum,
+    calculate_dict_checksum)
 
 class AnacondaBuilder(Builder):
     """AnacondaBuilder extends Builder and creates build
@@ -129,15 +131,15 @@ class AnacondaBuilder(Builder):
 
         rules.extend([
             LoggingRule('Creating installer cache directory: %s' % self._installer_cache),
-            PythonRule(self._makedirs, [self._installer_cache, 0o755]),
+            PythonRule(makedirs, [self._installer_cache, 0o755]),
             LoggingRule('Creating package cache directory: %s' % self._pkg_cache),
-            PythonRule(self._makedirs, [self._pkg_cache, 0o755]),
+            PythonRule(makedirs, [self._pkg_cache, 0o755]),
             LoggingRule('Creating temporary directory: %s' % self._tmpdir),
-            PythonRule(self._makedirs, [self._tmpdir]),
+            PythonRule(makedirs, [self._tmpdir]),
             LoggingRule('Creating installation directory: %s' % self._install_path),
-            PythonRule(self._makedirs, [self._install_path, 0o755]),
+            PythonRule(makedirs, [self._install_path, 0o755]),
             LoggingRule('Creating module directory: %s' % self._module_path),
-            PythonRule(self._makedirs, [self._module_path, 0o755]),
+            PythonRule(makedirs, [self._module_path, 0o755]),
         ])
 
         return rules
@@ -166,7 +168,7 @@ class AnacondaBuilder(Builder):
         environment_config['environment_name'] = '{name}/{version}'.format(**environment_config)
 
         # Calculate checksum based on the current state of the environment_config
-        environment_config['checksum'] = self._calculate_dict_checksum(environment_config)
+        environment_config['checksum'] = calculate_dict_checksum(environment_config)
         environment_config['checksum_small'] = environment_config['checksum'][:8]
 
         return environment_config
@@ -219,7 +221,7 @@ class AnacondaBuilder(Builder):
         if checksum:
             self._logger.info(
                 "Calculating checksum for installer '%s'", installer)
-            calculated_checksum = self._calculate_file_checksum(cached_installer)
+            calculated_checksum = calculate_file_checksum(cached_installer)
             if calculated_checksum != checksum:
                 self._logger.error(
                     ("The checksum for installer file '%s' "
@@ -294,25 +296,24 @@ class AnacondaBuilder(Builder):
 
         moduleconfig.update(environment_config)
 
-        template = ("-- -*- lua -*-\n"
-                    "--\n"
-                    "-- Module file created by Anaconda builder\n"
-                    "--\n\n"
-                    "whatis([[Name : {name!s}]])\n"
-                    "whatis([[Version : {version!s}]])\n"
-                    "help([[This is an automatically created \n"
-                    "Anaconda installation.]])\n\n"
-                    'prepend_path("PATH", "{install_path!s}/bin")\n')
+        template = """
+            -- -*- lua -*-
+            --
+            -- Module file created by Anaconda builder
+            --
 
-        module = template.format(**moduleconfig)
+            whatis([[Name : {{ name }}]])
+            whatis([[Version : {{ version }}]])
+            help([[This is an automatically created Anaconda installation.]])
+
+            prepend_path("PATH", "{{ install_path }}/bin")
+        """
+
         modulename = '{version!s}.lua'.format(**moduleconfig)
 
-        modulepath = os.path.join(module_path, modulename)
+        modulefile = os.path.join(module_path, modulename)
 
-        with open(modulepath, 'w') as modulefile:
-            modulefile.write(module)
-
-        os.chmod(modulepath, 0o644)
+        write_template(modulefile, moduleconfig, template=template, chmod=0o644)
 
     def _remove_environment(self, install_path):
         """ This function removes installation situated in install_path.
@@ -442,7 +443,6 @@ class AnacondaBuilder(Builder):
         remove_after_update = self._confreader['config']['config'].get(
                 'remove_after_update',
                 False)
-        self._logger.warning(remove_after_update)
 
         # Only use system paths during installations
         env_path = list(filter(
@@ -502,7 +502,7 @@ class AnacondaBuilder(Builder):
                 PythonRule(self._remove_environment, [install_path]),
                 PythonRule(self._download_installer, [environment_config]),
                 PythonRule(
-                    self._makedirs,
+                    makedirs,
                     [install_path, 0o755],
                 ),
                 SubprocessRule(
@@ -607,7 +607,7 @@ class AnacondaBuilder(Builder):
 
             rules.extend([
                 PythonRule(
-                    self._makedirs,
+                    makedirs,
                     [module_path, 0o755]),
                 PythonRule(
                     self._write_modulefile,
