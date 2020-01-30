@@ -12,7 +12,7 @@ environments:
       channels:
         - defaults
   - name: anaconda3
-    version: '2019-12-gpu'
+    version: '2020-01-gpu'
     miniconda: False
     python_version: 3
     installer_version: '2019.10'
