@@ -11,8 +11,8 @@ environments:
     condarc:
       channels:
         - defaults
-  - name: anaconda3
-    version: '2020-01-gpu'
+  - name: anaconda
+    version: '2020-01-tf1'
     miniconda: False
     python_version: 3
     installer_version: '2019.10'
@@ -381,7 +381,7 @@ environments:
         - tbb
         - tblib
         - tensorboard
-        - tensorflow
+        - tensorflow=1.15.0
         - tensorflow-base
         - tensorflow-estimator
         - tensorflow-gpu
