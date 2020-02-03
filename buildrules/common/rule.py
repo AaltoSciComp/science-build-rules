@@ -131,6 +131,11 @@ class SubprocessRule(Rule):
             from command. Default is logging.info.
         stderr_writer (function, optional): Function to use for logging stderr
             from command. Default is logging.warning.
+        cdw (string, optional): Working directory for the command. Default
+            is None.
+        silent_env (boolean, optional): Flag that specifies whether environment
+            variables should be excluded from rule descriptions. Default
+            is False.
 
     Returns:
         return_code (int): Return code of the subprocess call.
@@ -144,7 +149,8 @@ class SubprocessRule(Rule):
                  check=True,
                  stdout_writer=None,
                  stderr_writer=None,
-                 cwd=None):
+                 cwd=None,
+                 silent_env=False):
         self._sp_command = sp_command
         self._orig_env = env
         if env is not None:
@@ -155,6 +161,7 @@ class SubprocessRule(Rule):
         self._shell = shell
         self._check = check
         self._cwd = cwd
+        self._silent_env = silent_env
         super().__init__(stdout_writer, stderr_writer)
 
     @rule_error_wrapper
@@ -211,10 +218,18 @@ class SubprocessRule(Rule):
         return 0
 
     def __str__(self):
-        return 'SubprocessRule: {{ sp_function: {0}, env: {1}, shell: {2} }}'.format(
-            ' '.join(self._sp_command),
-            self._orig_env,
-            self._shell)
+        if not self._silent_env:
+            message = ('SubprocessRule: {{ sp_function: {0}, '
+                    'env: {1}, shell: {2} }}').format(
+                        ' '.join(self._sp_command),
+                        self._orig_env,
+                        self._shell)
+        else:
+            message = ('SubprocessRule: {{ sp_function: {0}, '
+                    'shell: {1} }}').format(
+                        ' '.join(self._sp_command),
+                        self._shell)
+        return message
 
 class LoggingRule(Rule):
     """LoggingRule is a simple logger that outputs a message at desired step.

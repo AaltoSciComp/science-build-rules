@@ -45,6 +45,7 @@ class SingularityBuilder(Builder):
                         'module_path': {'type': 'string'},
                         'source_cache': {'type': 'string'},
                         'tmpdir': {'type': 'string'},
+                        'auths_file': {'type': 'string'},
                     },
                 },
             },
@@ -98,6 +99,10 @@ class SingularityBuilder(Builder):
                                 'type': 'array',
                                 'items': {'type': 'string'},
                             },
+                            'module_versions': {
+                                'type': 'array',
+                                'items': {'type': 'string'},
+                            },
                             'flag_collections': {
                                 'type': 'array',
                                 'items': {'type': 'string'}
@@ -141,7 +146,12 @@ class SingularityBuilder(Builder):
         return re.sub('\$singularity', self._singularity_path, path_config[path_name])
 
     def _get_auths(self):
-        auth_file = os.path.expanduser(os.path.join('~', 'singularity_auths.yml'))
+
+        auths_file = os.path.expanduser(
+            self._confreader['config']['config'].get(
+                'auths_file',
+                os.path.join('~', 'singularity_auths.yml')))
+
         auth_schema = {
             '$schema': 'http://json-schema.org/schema#',
             'title': 'Singularity auth file schema',
@@ -164,9 +174,9 @@ class SingularityBuilder(Builder):
                 },
             },
         }
-        auths = defaultdict(dict)
-        if os.path.isfile(auth_file):
-            auths = ConfReader([auth_file],[auth_schema])
+        auths = {}
+        if os.path.isfile(auths_file):
+            auths.update(ConfReader([auths_file],[auth_schema])['singularity_auths']['auths'])
 
         return auths
 
@@ -188,66 +198,6 @@ class SingularityBuilder(Builder):
 
         return rules
 
-    def _create_image_config(self, image_dict):
-        default_config = {
-            'installer_version': 'latest',
-        }
-
-        config = copy.deepcopy(default_config)
-        config.update(image_dict)
-        if 'module_name' not in config:
-            config['module_name'] = config['name']
-        if 'module_version' not in config:
-            config['module_version'] = '{name}-{installer_version}'.format(**config)
-        config['image_name'] = '{module_name}/{module_version}'.format(**config)
-
-        return config
-
-    def _get_installer_path(self, install_config):
-
-        installer_fmt = "singularity-{installer_version}.tar.gz"
-
-        installer = os.path.join(self._source_cache, installer_fmt.format(**install_config))
-
-        return installer
-
-
-    def _get_stage_path(self, stage_config):
-        stage_path = os.path.join(
-            self._build_stage,
-            stage_config['module_name'],
-            stage_config['module_version'])
-        return stage_path
-
-    def _get_install_path(self, install_config):
-        install_path = os.path.join(
-            self._install_path,
-            install_config['module_name'],
-            install_config['module_version'])
-        return install_path
-
-    def _prepare_installation_paths(self, module_name, module_version):
-
-        stage_root = os.path.join(
-            self._build_stage, module_name)
-        if not os.path.isdir(stage_root):
-            makedirs(stage_root, 0o755)
-        stage_path = os.path.join(stage_root, module_version)
-        if os.path.isdir(stage_path):
-            self._logger.info((
-                "Cleaning previous stage path: %s"), stage_path)
-            shutil.rmtree(stage_path)
-
-        install_root = os.path.join(
-            self._install_path, module_name)
-        if not os.path.isdir(install_root):
-            makedirs(install_root, 0o755)
-
-        module_root = os.path.join(
-            self._module_path, module_name)
-        if not os.path.isdir(module_root):
-            makedirs(module_root, 0o755)
-
     def _get_installed_images(self):
         """ This function returns a dictionary that contains information on
         already installed images.
@@ -268,8 +218,8 @@ class SingularityBuilder(Builder):
         previously installed environments.
 
         Args:
-            environment_name (str): Name of the environment.
-            environment_config (dict): Anaconda environment config.
+            image_name (str): Name of the image.
+            image_config (dict): Anaconda environment config.
         """
         installed_dict = self._get_installed_images()
         installed_dict['images'][image_name] = installation_config
@@ -282,8 +232,9 @@ class SingularityBuilder(Builder):
                 ))
 
 
-    def _get_build_config(self, tag, definition_dict):
+    def _get_image_config(self, tag, definition_dict):
         default_config = {
+            'registry': 'docker.io',
             'docker_user': 'library',
             'docker_image': definition_dict['name'],
             'tag': tag,
@@ -293,7 +244,7 @@ class SingularityBuilder(Builder):
         config.update(definition_dict)
 
         # Setting definition name
-        config['definition_name'] = '{name!s}/{tag!s}'.format(**config)
+        config['module_name'] = '{name!s}/{tag!s}'.format(**config)
 
         # Combining commands from all of the different command collections
         commands = defaultdict(list)
@@ -317,14 +268,12 @@ class SingularityBuilder(Builder):
 
         return config
 
-    def _write_definition_file(self, definition_file, config):
+    def _write_definition_file(self, definition_file, registry=None, docker_url=None, commands=None):
 
         template = """
             Bootstrap: docker
             From: {{ docker_url }}
-            {% if registry is defined -%}
             Registry: {{ registry }}
-            {% endif -%}
 
             {% for command_collection, commands in commands.items() -%}
             %{{ command_collection }}
@@ -334,14 +283,20 @@ class SingularityBuilder(Builder):
             {% endfor -%}
         """
 
-        write_template(definition_file, config, template=template)
+        definition_config = {
+            'registry': registry,
+            'docker_url': docker_url,
+            'commands': commands,
+        }
+
+        write_template(definition_file, definition_config, template=template)
 
 
     def _get_image_install_rules(self):
 
         rules = []
 
-        buildenv = {
+        default_env = {
             'SINGULARITY_CACHEDIR': self._source_cache,
             'SINGULARITY_TMPDIR': self._tmpdir
         }
@@ -350,36 +305,62 @@ class SingularityBuilder(Builder):
 
         installed_images = self._get_installed_images()['images']
 
-        self._logger.warning(self._confreader['build_config'])
         for definition in self._confreader['build_config']['definitions']:
-            self._logger.warning(definition)
             for tag in definition.pop('tags'):
-                config = self._get_build_config(tag, definition)
+                image_config = self._get_image_config(tag, definition)
 
-                definition_file = os.path.join(
+                basename = image_config.pop('basename')
+                commands = image_config.pop('commands')
+                module_name = image_config.pop('module_name')
+
+                stage_definition = os.path.join(
                     self._build_stage,
-                    '{basename!s}.def'.format(**config))
+                    '{0}.def'.format(basename))
+
+                install_definition = os.path.join(
+                    self._install_path,
+                    os.path.basename(stage_definition))
 
                 stage_image = os.path.join(
                     self._build_stage,
-                    '{basename!s}.simg'.format(**config))
+                    '{0}.def'.format(basename))
 
                 install_image = os.path.join(
                     self._install_path,
                     os.path.basename(stage_image))
 
-                rules.append(PythonRule(
-                    self._write_definition_file,
-                    [definition_file, config]))
+                image_config['definition_file'] = install_definition
+                image_config['image_file'] = install_image
+
+                buildenv = copy.deepcopy(default_env)
+                auths = self._auths.get(image_config['registry'], None)
+                if auths:
+                    buildenv.update({
+                        'SINGULARITY_DOCKER_USERNAME': auths['username'],
+                        'SINGULARITY_DOCKER_PASSWORD': auths['password']
+                    })
+
+                rules.extend([
+                    LoggingRule(
+                        'Writing definition file for %s' % module_name),
+                    PythonRule(
+                        self._write_definition_file,
+                        args=[stage_definition],
+                        kwargs={
+                            'registry': image_config['registry'],
+                            'docker_url': image_config['docker_url'],
+                            'commands': commands
+                    }),
+                ])
 
                 singularity_build_cmd = ['singularity', 'build', '-F']
                 chown_cmd = ['chown', '{0}:{0}'.format(uid)]
 
-                debug = (config.get('debug', False) or
+                debug = (image_config.get('debug', False) or
                         self._confreader['config']['config'].get('debug', False))
-                sudo = (config.get('sudo', False) or
+                sudo = (image_config.get('sudo', False) or
                         self._confreader['config']['config'].get('sudo', False))
-                fakeroot = (config.get('fakeroot', False) or
+                fakeroot = (image_config.get('fakeroot', False) or
                             self._confreader['config']['config'].get(
                                 'fakeroot', False))
                 if debug:
@@ -389,62 +370,41 @@ class SingularityBuilder(Builder):
                     chown_cmd.insert(0, 'sudo')
                 if fakeroot:
                     singularity_build_cmd.append('--fakeroot')
-                rules.append(
+                rules.extend([
+                    LoggingRule(
+                        'Building image for %s' % module_name),
                     SubprocessRule(
-                        singularity_build_cmd + [stage_image, definition_file],
+                        singularity_build_cmd + [stage_image, stage_definition],
                         env=buildenv,
-                        shell=True))
+                        shell=True)
+                ])
                 if sudo:
                     rules.append(
                         SubprocessRule(
                             chown_cmd + [stage_image],
                             shell=True))
                 rules.extend([
-                    LoggingRule('Copying staged image to installation directory'),
+                    LoggingRule(
+                        'Copying staged image to installation directory'),
                     PythonRule(
-                        copy_file, [stage_image, install_image])
+                        copy_file, [stage_image, install_image]),
                 ])
 
-        """
-
-        installed_images = self._get_installed_images()
-
-        env_path = list(filter(
-            lambda x: re.search('^/usr',x),
-            os.getenv('PATH').split(':')))
-
-        for definition in self._confreader['build_config']['definitions']:
-            config = self._create_image_config(definition)
-
-            installer = self._get_installer_path(config)
-            stage_path = self._get_stage_path(config)
-            install_path = self._get_install_path(config)
-
-            if config['name'] not in installed_images:
-                env_path_image = {
-                    'PATH': ':'.join([os.path.join(stage_path, 'bin')] + env_path)
-                }
                 rules.extend([
-                    LoggingRule((
-                        "Image {{name}} not found.\n"
-                        "Installing singularity image '{name}' with "
-                        "module '{image_name}'").format(**config)),
+                    LoggingRule(
+                        'Copying definition file to installation directory'),
                     PythonRule(
-                        self._prepare_installation_paths,
-                        [config['module_name'], config['module_version']]),
-                    SubprocessRule(['bash', installer, '-b', '-p', stage_path], shell=True),
+                        copy_file, [stage_definition, install_definition]),
                 ])
+
                 rules.extend([
-                    SubprocessRule(
-                        ['singularity', 'list'],
-                        env=env_path_image,
-                        shell=True)
+                    LoggingRule(
+                        'Updating installed images'),
+                    PythonRule(
+                        self._update_installed_images,
+                        [module_name, image_config])
                 ])
-            #rules.append(
-            #    PythonRule(
-            #        self._update_installed_images,
-            #        [config['name'], config]))
-        """
+
         return rules
 
     def _get_rules(self):
