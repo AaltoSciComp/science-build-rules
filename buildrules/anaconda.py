@@ -489,7 +489,7 @@ class AnacondaBuilder(Builder):
             # Add new installation path to PATH
             conda_env = {
                 'PATH': ':'.join([os.path.join(install_path, 'bin')] + env_path),
-                'PYTHONUNBUFFERED': '1'
+                'PYTHONUNBUFFERED': '1',
             }
 
             environment_config['install_path'] = install_path
