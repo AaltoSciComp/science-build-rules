@@ -14,8 +14,9 @@ import sh
 from buildrules.common.builder import Builder
 from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule
 from buildrules.common.utils import (load_yaml, write_yaml, makedirs,
-    copy_file, write_template, calculate_file_checksum,
-    calculate_dict_checksum)
+                                     copy_file, write_template,
+                                     calculate_file_checksum,
+                                     calculate_dict_checksum)
 
 class AnacondaBuilder(Builder):
     """AnacondaBuilder extends Builder and creates build
@@ -53,6 +54,24 @@ class AnacondaBuilder(Builder):
                     'type': 'object',
                     'default': {},
                 },
+                'collections': {
+                    'type': 'object',
+                    'additionalProperties': False,
+                    'patternProperties': {
+                        '.*': {
+                            'type': 'object',
+                            'additionalProperties': False,
+                            'patternProperties': {
+                                ('(conda|pip)'
+                                 '_packages'): {
+                                     'type': 'array',
+                                     'default': [],
+                                     'items': {'type': 'string'}
+                                },
+                            },
+                        },
+                    },
+                },
                 'environments': {
                     'type': 'array',
                     'default': [],
@@ -82,6 +101,10 @@ class AnacondaBuilder(Builder):
                                 'default' : {},
                                 'type': 'object',
                             },
+                            'collections': {
+                                'type': 'array',
+                                'items': {'type': 'string'}
+                            },
                         },
                         'required': ['name', 'version'],
                     },
@@ -101,6 +124,8 @@ class AnacondaBuilder(Builder):
         self._install_path = self._get_path('install_path')
         self._module_path = self._get_path('module_path')
         self._installed_file = os.path.join(self._install_path, 'installed_environments.yml')
+        self._collections = self._confreader['build_config'].get(
+            'collections', {})
 
     def _get_path(self, path_name):
         """ This function returns proper values of builder paths. All
@@ -166,6 +191,17 @@ class AnacondaBuilder(Builder):
         environment_config = copy.deepcopy(default_config)
         environment_config.update(environment_dict)
         environment_config['environment_name'] = '{name}/{version}'.format(**environment_config)
+
+        # Combining packages from all of the different collections
+        for collection in environment_config.pop('collections', []):
+            conda_packages = self._collections[collection].get('conda_packages', [])
+            pip_packages = self._collections[collection].get('pip_packages', [])
+
+            environment_config['conda_packages'].extend(conda_packages)
+            environment_config['pip_packages'].extend(pip_packages)
+
+        environment_config['conda_packages'].sort()
+        environment_config['pip_packages'].sort()
 
         # Calculate checksum based on the current state of the environment_config
         environment_config['checksum'] = calculate_dict_checksum(environment_config)
@@ -443,8 +479,8 @@ class AnacondaBuilder(Builder):
         installed_environments = self._get_installed_environments()['environments']
 
         remove_after_update = self._confreader['config']['config'].get(
-                'remove_after_update',
-                False)
+            'remove_after_update',
+            False)
 
         # Only use system paths during installations
         env_path = list(filter(
