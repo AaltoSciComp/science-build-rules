@@ -82,6 +82,7 @@ class AnacondaBuilder(Builder):
                             'version': {'type': 'string'},
                             'miniconda': {'type': 'boolean'},
                             'installer_version': {'type': 'string'},
+                            'freeze': {'type': 'boolean'},
                             'python_version': {
                                 'type': 'integer',
                                 'minimum': 2,
@@ -500,6 +501,7 @@ class AnacondaBuilder(Builder):
 
             skip_install = False
             update_install = False
+            freeze = environment_config.get('freeze', False)
 
             # Check if same kind of an environment is already installed
             installed_checksum = installed_environments.get(
@@ -508,7 +510,7 @@ class AnacondaBuilder(Builder):
             if not installed_checksum:
                 install_msg = ("Environment {environment_name} "
                                "not installed. Starting installation.")
-            elif installed_checksum != environment_config['checksum']:
+            elif installed_checksum != environment_config['checksum'] and not freeze:
                 previous_environment = installed_environments[environment_name]['environment_file']
                 previous_install_path = installed_environments[environment_name]['install_path']
                 install_msg = ("Environment {environment_name} installed "
