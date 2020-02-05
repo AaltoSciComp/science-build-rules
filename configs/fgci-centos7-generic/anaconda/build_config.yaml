@@ -23,7 +23,6 @@ environments:
         - gurobi
         - IBMDecisionOptimization
         - anaconda
-        - brainiak
         - mosek
         - conda-forge
     pip_packages:
@@ -86,7 +85,6 @@ environments:
         - boto3
         - botocore
         - bottleneck
-        - brainiak
         - bz2file
         - bzip2
         - c-ares
