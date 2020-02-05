@@ -4,6 +4,7 @@ config:
   source_cache: $singularity/var/singularity/cache
   tmpdir: $singularity/var/singularity/tmpdir
   build_stage: $singularity/var/singularity/stage
+  remove_after_update: True
   sudo: False
   fakeroot: True
   debug: False

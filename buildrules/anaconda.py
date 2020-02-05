@@ -124,8 +124,12 @@ class AnacondaBuilder(Builder):
         self._install_path = self._get_path('install_path')
         self._module_path = self._get_path('module_path')
         self._installed_file = os.path.join(self._install_path, 'installed_environments.yml')
+        self.remove_after_update = self._confreader['config']['config'].get(
+            'remove_after_update',
+            False)
         self._collections = self._confreader['build_config'].get(
             'collections', {})
+
 
     def _get_path(self, path_name):
         """ This function returns proper values of builder paths. All
@@ -478,10 +482,6 @@ class AnacondaBuilder(Builder):
         # Obtain already installed environments
         installed_environments = self._get_installed_environments()['environments']
 
-        remove_after_update = self._confreader['config']['config'].get(
-            'remove_after_update',
-            False)
-
         # Only use system paths during installations
         env_path = list(filter(
             lambda x: re.search('^/(usr|bin|sbin)', x),
@@ -612,7 +612,7 @@ class AnacondaBuilder(Builder):
                     self._update_installed_environments,
                     [environment_config['environment_name'], environment_config]))
 
-            if update_install and remove_after_update:
+            if update_install and self.remove_after_update:
                 rules.extend([
                     LoggingRule(('Removing old environment from '
                                  '{0}').format(previous_install_path)),

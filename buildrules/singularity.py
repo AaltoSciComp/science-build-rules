@@ -40,6 +40,7 @@ class SingularityBuilder(Builder):
                         'debug': {'type': 'boolean'},
                         'sudo': {'type': 'boolean'},
                         'fakeroot': {'type': 'boolean'},
+                        'remove_after_update': {'type': 'boolean'},
                         'install_path': {'type': 'string'},
                         'build_stage': {'type': 'string'},
                         'module_path': {'type': 'string'},
@@ -303,7 +304,12 @@ class SingularityBuilder(Builder):
 
         uid = os.getuid()
 
+        # Obtain already installed images
         installed_images = self._get_installed_images()['images']
+
+        remove_after_update = self._confreader['config']['config'].get(
+            'remove_after_update',
+            False)
 
         for definition in self._confreader['build_config']['definitions']:
             for tag in definition.pop('tags'):
@@ -375,7 +381,7 @@ class SingularityBuilder(Builder):
                     install_msg = ("Image {0} is "
                                    "not installed. Starting installation.")
                 elif installed_checksum != image_config['checksum']:
-                    previous_image = installed_images[module_name]['image_file']
+                    previous_image_path = installed_images[module_name]['image_file']
                     install_msg = ("Image {0} installed "
                                    "but marked for update.")
                     update_install = True
@@ -461,14 +467,63 @@ class SingularityBuilder(Builder):
                         self._update_installed_images,
                         [module_name, image_config])
                 ])
+
             if update_install and remove_after_update:
                 rules.extend([
                     LoggingRule(('Removing old environment from '
-                                 '{0}').format(previous_install_path)),
-                    PythonRule(self._remove_environment, [previous_install_path])])
-
+                                 '{0}').format(previous_image_path)),
+                    PythonRule(os.remove, [previous_image_path])])
 
         return rules
+
+    def _get_modulefile_install_rules(self):
+        """ This function creates build rules that install modulefiles.
+
+        Returns:
+            list: List of build rules.
+        """
+
+        rules = []
+
+        # Clean up modulefiles
+        rules.extend([
+            LoggingRule("Cleaning previous modulefiles."),
+            PythonRule(self._clean_modules),
+            LoggingRule('Writing modulefiles.'),
+        ])
+
+        # Create new modulefiles
+        for environment in self._confreader['build_config']['environments']:
+
+            environment_config = self._create_environment_config(environment)
+
+            module_path = os.path.join(
+                self._module_path,
+                image_config['name'])
+            install_path = self._get_install_path(environment_config)
+            module_path = self._get_module_path(environment_config)
+
+            rules.extend([
+                PythonRule(
+                    makedirs,
+                    [module_path, 0o755]),
+                PythonRule(
+                    self._write_modulefile,
+                    [environment_config, module_path, install_path])
+            ])
+
+        return rules
+
+    def _clean_modules(self):
+        """ This function removes all existing modulefiles.
+        """
+
+        if os.path.isdir(self._module_path):
+            modulefiles = glob(
+                os.path.join(self._module_path, '*', '*.lua')
+            )
+            for modulefile in modulefiles:
+                os.remove(modulefile)
 
     def _get_rules(self):
         """_get_rules provides build rules for the builder.
