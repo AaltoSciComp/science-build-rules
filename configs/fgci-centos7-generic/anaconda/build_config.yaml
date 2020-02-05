@@ -24,6 +24,7 @@ environments:
         - IBMDecisionOptimization
         - anaconda
         - brainiak
+        - mosek
         - conda-forge
     pip_packages:
         - bash-kernel
@@ -243,6 +244,7 @@ environments:
         - mkl_random
         - mock
         - more-itertools
+        - mosek
         - mpc
         - mpfr
         - mpi4py
