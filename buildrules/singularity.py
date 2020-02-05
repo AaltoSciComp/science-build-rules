@@ -263,7 +263,7 @@ class SingularityBuilder(Builder):
 
         config['checksum'] = calculate_dict_checksum(config)
         config['checksum_small'] = config['checksum'][:8]
-        config['basename'] = '{name!s}-{tag!s}-{checksum_small!s}'.format(**config)
+        config['nameformat'] = '{name!s}-{tag!s}-{checksum_small!s}'.format(**config)
         config['docker_url'] = '{docker_user!s}/{docker_image!s}:{tag!s}'.format(**config)
 
         return config
@@ -309,24 +309,48 @@ class SingularityBuilder(Builder):
             for tag in definition.pop('tags'):
                 image_config = self._get_image_config(tag, definition)
 
-                basename = image_config.pop('basename')
+                nameformat = image_config.pop('nameformat')
                 commands = image_config.pop('commands')
                 module_name = image_config.pop('module_name')
 
-                stage_definition = os.path.join(
+                build_path = os.path.join(
                     self._build_stage,
-                    '{0}.def'.format(basename))
+                    image_config['name'])
 
-                install_definition = os.path.join(
-                    self._install_path,
-                    os.path.basename(stage_definition))
+                build_definition_path = os.path.join(
+                    build_path,
+                    'definitions')
+
+                build_image_path = os.path.join(
+                    build_path,
+                    'images')
+
+                stage_definition = os.path.join(
+                    build_definition_path,
+                    '{0}.def'.format(nameformat))
 
                 stage_image = os.path.join(
-                    self._build_stage,
-                    '{0}.def'.format(basename))
+                    build_image_path,
+                    '{0}.def'.format(nameformat))
+
+                install_path = os.path.join(
+                    self._install_path,
+                    image_config['name'])
+
+                install_definition_path = os.path.join(
+                    install_path,
+                    'definitions')
+
+                install_image_path = os.path.join(
+                    install_path,
+                    'images')
+
+                install_definition = os.path.join(
+                    install_definition_path,
+                    os.path.basename(stage_definition))
 
                 install_image = os.path.join(
-                    self._install_path,
+                    install_image_path,
                     os.path.basename(stage_image))
 
                 image_config['definition_file'] = install_definition
@@ -339,6 +363,39 @@ class SingularityBuilder(Builder):
                         'SINGULARITY_DOCKER_USERNAME': auths['username'],
                         'SINGULARITY_DOCKER_PASSWORD': auths['password']
                     })
+
+                skip_install = False
+                update_install = False
+
+                # Check if same kind of an image is already installed
+                installed_checksum = installed_images.get(
+                    module_name, {}).get('checksum', '')
+
+                if not installed_checksum:
+                    install_msg = ("Image {0} is "
+                                   "not installed. Starting installation.")
+                elif installed_checksum != image_config['checksum']:
+                    previous_image = installed_images[module_name]['image_file']
+                    install_msg = ("Image {0} installed "
+                                   "but marked for update.")
+                    update_install = True
+                else:
+                    install_msg = ("Image {0} is already installed. "
+                                   "Skipping installation.")
+                    skip_install = True
+
+                rules.append(LoggingRule(install_msg.format(module_name)))
+
+                if skip_install:
+                    continue
+
+                rules.extend([
+                    PythonRule(makedirs, [build_definition_path]),
+                    PythonRule(makedirs, [build_image_path]),
+                    PythonRule(makedirs, [install_definition_path]),
+                    PythonRule(makedirs, [install_image_path]),
+                ])
+
 
                 rules.extend([
                     LoggingRule(
@@ -353,7 +410,7 @@ class SingularityBuilder(Builder):
                     }),
                 ])
 
-                singularity_build_cmd = ['singularity', 'build', '-F']
+                singularity_build_cmd = ['singularity', 'build']
                 chown_cmd = ['chown', '{0}:{0}'.format(uid)]
 
                 debug = (image_config.get('debug', False) or
@@ -404,6 +461,12 @@ class SingularityBuilder(Builder):
                         self._update_installed_images,
                         [module_name, image_config])
                 ])
+            if update_install and remove_after_update:
+                rules.extend([
+                    LoggingRule(('Removing old environment from '
+                                 '{0}').format(previous_install_path)),
+                    PythonRule(self._remove_environment, [previous_install_path])])
+
 
         return rules
 

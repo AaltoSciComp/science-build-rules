@@ -173,17 +173,20 @@ class AnacondaBuilder(Builder):
 
         return environment_config
 
-    def _get_installer_path(self, environment_config):
+    def _get_installer_path(self, environment_config, update_installer=False):
         """ This function returns a path to an installer file based on
         an environment_config.
 
         Args:
             environment_config (dict): Anaconda environment config.
+            update_installer (boolean): Give installer for updating an environment.
         Returns:
             str: Path to installer file.
         """
 
-        if environment_config['miniconda']:
+        if update_installer:
+            installer_fmt = "Miniconda{python_version}-latest-Linux-x86_64.sh"
+        elif environment_config['miniconda']:
             installer_fmt = "Miniconda{python_version}-{installer_version}-Linux-x86_64.sh"
         else:
             installer_fmt = "Anaconda{python_version}-{installer_version}-Linux-x86_64.sh"
@@ -192,28 +195,27 @@ class AnacondaBuilder(Builder):
 
         return installer
 
-    def _download_installer(self, environment_config):
+    def _download_installer(self, installer_path):
         """ This function downloads an installer and calculates its checksum
-        based on an environment_config.
+        based on an installer path.
 
         Args:
-            environment_config (dict): Anaconda environment config.
+            installer_path (str): Path for the installer.
         """
 
-        cached_installer = self._get_installer_path(environment_config)
-        installer = os.path.basename(cached_installer)
+        installer = os.path.basename(installer_path)
 
-        if environment_config['miniconda']:
+        if 'Miniconda' in installer_path:
             installer_url = "https://repo.anaconda.com/miniconda/{0}".format(installer)
         else:
             installer_url = "https://repo.anaconda.com/archive/{0}".format(installer)
 
-        if not os.path.isfile(cached_installer):
+        if not os.path.isfile(installer_path):
             self._logger.info((
                 "Installer '%s' was not found in the cache directory. "
                 "Downloading it."), installer)
             download_request = requests.get(installer_url)
-            with open(cached_installer, 'wb') as installer_file:
+            with open(installer_path, 'wb') as installer_file:
                 installer_file.write(download_request.content)
 
         checksum = self._confreader['build_config'].get(
@@ -221,7 +223,7 @@ class AnacondaBuilder(Builder):
         if checksum:
             self._logger.info(
                 "Calculating checksum for installer '%s'", installer)
-            calculated_checksum = calculate_file_checksum(cached_installer)
+            calculated_checksum = calculate_file_checksum(installer_path)
             if calculated_checksum != checksum:
                 self._logger.error(
                     ("The checksum for installer file '%s' "
@@ -457,19 +459,8 @@ class AnacondaBuilder(Builder):
             conda_packages = environment_config.pop('conda_packages', [])
             condarc = environment_config.pop('condarc', {})
 
-            installer = self._get_installer_path(environment_config)
-            install_path = self._get_install_path(environment_config)
-
             conda_install_cmd = ['conda', 'install', '--yes', '-n', 'base']
             pip_install_cmd = ['pip', 'install', '--cache-dir', self._pip_cache]
-
-            environment_config['install_path'] = install_path
-            environment_config['environment_file'] = self._get_environment_file_path(install_path)
-
-            # Add new installation path to PATH
-            conda_env = {
-                'PATH': ':'.join([os.path.join(install_path, 'bin')] + env_path)
-            }
 
             skip_install = False
             update_install = False
@@ -492,6 +483,18 @@ class AnacondaBuilder(Builder):
                                "Skipping installation.")
                 skip_install = True
 
+            installer = self._get_installer_path(environment_config, update_installer=update_install)
+            install_path = self._get_install_path(environment_config)
+
+            # Add new installation path to PATH
+            conda_env = {
+                'PATH': ':'.join([os.path.join(install_path, 'bin')] + env_path),
+                'PYTHONUNBUFFERED': '1'
+            }
+
+            environment_config['install_path'] = install_path
+            environment_config['environment_file'] = self._get_environment_file_path(install_path)
+
             rules.append(LoggingRule(install_msg.format(**environment_config)))
 
             if skip_install:
@@ -500,7 +503,7 @@ class AnacondaBuilder(Builder):
             # Install base environment
             rules.extend([
                 PythonRule(self._remove_environment, [install_path]),
-                PythonRule(self._download_installer, [environment_config]),
+                PythonRule(self._download_installer, [installer]),
                 PythonRule(
                     makedirs,
                     [install_path, 0o755],

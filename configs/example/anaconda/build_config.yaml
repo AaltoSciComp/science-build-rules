@@ -23,3 +23,6 @@ environments:
     condarc:
       channels:
         - defaults
+        - mosek
+    conda_packages:
+        - mosek
