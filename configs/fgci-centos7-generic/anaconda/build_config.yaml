@@ -202,6 +202,7 @@ collections:
       - importlib_metadata
       - incremental
       - intel-openmp
+      - ipdb
       - ipykernel
       - ipyparallel
       - ipython
