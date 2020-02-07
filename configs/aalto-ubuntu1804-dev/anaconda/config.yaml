@@ -1,0 +1,6 @@
+config:
+  install_path: /m/work/modules/automatic/anaconda/envs/aalto-ubuntu1804-dev/software
+  module_path: /m/work/modules/automatic/anaconda/envs/aalto-ubuntu1804-dev/modules
+  source_cache: /cache/anaconda
+  tmpdir: /tmp/anaconda
+  remove_after_update: True

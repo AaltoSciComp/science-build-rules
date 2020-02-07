@@ -1,0 +1,8 @@
+- method: rsync
+  target_host: push-it
+  source: /m/work/modules/automatic/anaconda/envs/aalto-ubuntu1804-dev
+  dest: anaconda/envs/aalto-ubuntu1804-dev
+  working_directory: /m/work/modules/automatic
+  rsync_flags: '-vrlpt'
+  ssh_command: '"ssh -oHostKeyAlgorithms=+ssh-dss -i ~/.ssh/aalto_spack_ed25519"'
+  delete: false
