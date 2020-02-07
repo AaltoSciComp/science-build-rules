@@ -42,6 +42,7 @@ class SingularityBuilder(Builder):
                         'fakeroot': {'type': 'boolean'},
                         'remove_after_update': {'type': 'boolean'},
                         'install_path': {'type': 'string'},
+                        'wrapper_path': {'type': 'string'},
                         'build_stage': {'type': 'string'},
                         'module_path': {'type': 'string'},
                         'source_cache': {'type': 'string'},
@@ -321,7 +322,8 @@ class SingularityBuilder(Builder):
 
                 build_path = os.path.join(
                     self._build_stage,
-                    image_config['name'])
+                    image_config['name'],
+                    tag)
 
                 build_definition_path = os.path.join(
                     build_path,
@@ -337,11 +339,12 @@ class SingularityBuilder(Builder):
 
                 stage_image = os.path.join(
                     build_image_path,
-                    '{0}.def'.format(nameformat))
+                    '{0}.simg'.format(nameformat))
 
                 install_path = os.path.join(
                     self._install_path,
-                    image_config['name'])
+                    image_config['name'],
+                    tag)
 
                 install_definition_path = os.path.join(
                     install_path,
@@ -485,6 +488,8 @@ class SingularityBuilder(Builder):
 
         rules = []
 
+        # Obtain already installed images
+
         # Clean up modulefiles
         rules.extend([
             LoggingRule("Cleaning previous modulefiles."),
@@ -493,15 +498,11 @@ class SingularityBuilder(Builder):
         ])
 
         # Create new modulefiles
-        for environment in self._confreader['build_config']['environments']:
-
-            environment_config = self._create_environment_config(environment)
+        for module_name, image_config in self._get_installed_images()['images'].items():
 
             module_path = os.path.join(
                 self._module_path,
                 image_config['name'])
-            install_path = self._get_install_path(environment_config)
-            module_path = self._get_module_path(environment_config)
 
             rules.extend([
                 PythonRule(
@@ -509,10 +510,44 @@ class SingularityBuilder(Builder):
                     [module_path, 0o755]),
                 PythonRule(
                     self._write_modulefile,
-                    [environment_config, module_path, install_path])
+                    [module_path, image_config])
             ])
 
         return rules
+
+    def _write_modulefile(self, module_path, image_config):
+        """ This function writes a modulefile that points to Singularity
+        images constructed from image_config to module_path.
+
+        Args:
+            module_path (str): Directory for the modulefile.
+            image_config (dict): Anaconda environment config.
+        """
+
+        moduleconfig = {
+            'wrapper_path': self._wrapper_path
+        }
+
+        moduleconfig.update(image_config)
+
+        template = """
+            -- -*- lua -*-
+            --
+            -- Module file created by Singularity builder
+            --
+
+            whatis([[Name : {{ name }}]])
+            whatis([[Version : {{ tag }}]])
+            help([[This is an automatically created Singularity image.]])
+
+            prepend_path("PATH", "{{ install_path }}/bin")
+        """
+
+        modulename = '{version!s}.lua'.format(**moduleconfig)
+
+        modulefile = os.path.join(module_path, modulename)
+
+        write_template(modulefile, moduleconfig, template=template, chmod=0o644)
 
     def _clean_modules(self):
         """ This function removes all existing modulefiles.
@@ -534,7 +569,8 @@ class SingularityBuilder(Builder):
 
         rules = (
             self._get_directory_creation_rules() +
-            self._get_image_install_rules()
+            self._get_image_install_rules() + 
+            self._get_modulefile_install_rules()
         )
         return rules
 
