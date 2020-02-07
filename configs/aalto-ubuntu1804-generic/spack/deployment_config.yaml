@@ -5,4 +5,4 @@
   working_directory: /m/work/modules/automatic
   rsync_flags: '-vrlpt'
   ssh_command: '"ssh -oHostKeyAlgorithms=+ssh-dss -i ~/.ssh/aalto_spack_ed25519"'
-  delete: false
+  delete: true
