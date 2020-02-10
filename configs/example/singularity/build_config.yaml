@@ -6,7 +6,7 @@ flag_collections:
   common:
     - '-B /tmp:/my_mount'
 definitions:
-  - name: ubuntu
+  - name: singularity-ubuntu
     docker_user: library
     docker_image: ubuntu
     tags:

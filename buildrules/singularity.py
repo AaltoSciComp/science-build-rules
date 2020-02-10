@@ -129,6 +129,7 @@ class SingularityBuilder(Builder):
         self._build_stage = self._get_path('build_stage')
         self._install_path = self._get_path('install_path')
         self._module_path = self._get_path('module_path')
+        self._wrapper_path = self._get_path('wrapper_path')
         self._installed_file = os.path.join(self._install_path, 'installed_images.yml')
         self._command_collections = self._confreader['build_config'].get(
             'command_collections', {})
@@ -143,6 +144,7 @@ class SingularityBuilder(Builder):
             'source_cache': '$singularity/var/singularity/cache',
             'tmpdir': '$singularity/var/singularity/tmpdir',
             'build_stage': '$singularity/var/singularity/stage',
+            'wrapper_path': '$singularity/opt/singularity/bin',
         }
         path_config.update(self._confreader['config']['config'])
         return re.sub('\$singularity', self._singularity_path, path_config[path_name])
@@ -540,10 +542,13 @@ class SingularityBuilder(Builder):
             whatis([[Version : {{ tag }}]])
             help([[This is an automatically created Singularity image.]])
 
-            prepend_path("PATH", "{{ install_path }}/bin")
+            prepend_path("PATH", "{{ wrapper_path }}")
+
+            setenv("SING_IMAGE", "{{ image_file }}")
+            setenv("SING_FLAGS", " {{ flags }} ")
         """
 
-        modulename = '{version!s}.lua'.format(**moduleconfig)
+        modulename = '{tag!s}.lua'.format(**moduleconfig)
 
         modulefile = os.path.join(module_path, modulename)
 
