@@ -29,6 +29,8 @@ compilers:
     variants:
       - '+piclibs'
       - '+nvptx'
+    extra_flags:
+      - '-j 1'
     dependencies:
       - '%gcc@4.8.5'
     flags:
