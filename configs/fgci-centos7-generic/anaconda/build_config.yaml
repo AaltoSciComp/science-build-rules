@@ -163,6 +163,7 @@ collections:
       - et_xmlfile
       - expat
       - fastcache
+      - fastparquet
       - flask
       - flask-cors
       - fontconfig
@@ -202,6 +203,7 @@ collections:
       - importlib_metadata
       - incremental
       - intel-openmp
+      - ipdb
       - ipykernel
       - ipyparallel
       - ipython
@@ -337,6 +339,7 @@ collections:
       - ptyprocess
       - py
       - py-xgboost
+      - pyarrow
       - pyasn1
       - pyasn1-modules
       - pybind11
@@ -368,6 +371,7 @@ collections:
       - python
       - python-dateutil
       - python-libarchive-c
+      - python-snappy
       - pytorch
       - pytz
       - pywavelets
@@ -420,6 +424,7 @@ collections:
       - terminado
       - testpath
       - theano
+      - thrift
       - tk
       - toolz
       - torchvision
