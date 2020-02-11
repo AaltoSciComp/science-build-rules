@@ -64,26 +64,16 @@ collections:
     pip_packages:
       - bash-kernel
       - cdlib
-      - demon
       - docopt
-      - gym
-      - leidenalg
       - matlab-kernel
       - mne
-      - nf1
       - numpy
-      - omega-index-py3
-      - pquality
-      - pulp
-      - pyglet
       - pymanopt
       - pymvpa2
       - python-igraph
-      - python-louvain
       - roboschool
       - sphinx
       - sphinx-rtd-theme
-      - tqdm
     conda_packages:
       - absl-py
       - alabaster
