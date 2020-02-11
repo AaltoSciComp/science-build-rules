@@ -55,6 +55,7 @@ modules:
         '+osmesa'        : 'osmesa'
         '+mesa'          : 'mesa'
         '+metis'         : 'metis'
+        '+nvptx'         : 'nvptx'
         '+sprayfix'      : 'sprayfix'
         '+ucs4'          : 'ucs4'
         '^ucx'           : 'ucx'
