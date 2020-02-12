@@ -65,8 +65,12 @@ collections:
       - bash-kernel
       - cdlib
       - docopt
+      - ipymd
+      - jupyterlab-git
+      - jupyter-matplotlib
       - matlab-kernel
       - mne
+      - nbzip
       - numpy
       - pymanopt
       - pymvpa2
@@ -119,6 +123,7 @@ collections:
       - hdf5
       - heapdict
       - html5lib
+      - importnb
       - ipdb
       - ipykernel
       - ipyparallel
@@ -126,8 +131,10 @@ collections:
       - ipywidgets
       - joblib
       - jupyter
+      - jupyter_contrib_nbextensions
       - jupyterlab
       - jupyterlab_server
+      - jupytext
       - keras
       - keyring
       - llvmlite
@@ -146,6 +153,9 @@ collections:
       - mpich2
       - navigator-updater
       - nbconvert
+      - nbdime
+      - nbstripout
+      - nbval
       - nccl
       - networkx
       - nitime
