@@ -97,6 +97,7 @@ collections:
       - colorama
       - conda
       - conda-env
+      - conda-tree
       - contextlib2
       - coverage
       - cplex
@@ -164,6 +165,7 @@ collections:
       - phonopy
       - pillow
       - pip
+      - pipdeptree
       - pixman
       - plotly
       - ply
