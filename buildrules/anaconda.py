@@ -492,9 +492,9 @@ class AnacondaBuilder(Builder):
             environment_config = self._create_environment_config(environment)
 
             environment_name = environment_config['environment_name']
-            pip_packages = environment_config.pop('pip_packages', [])
-            conda_packages = environment_config.pop('conda_packages', [])
-            condarc = environment_config.pop('condarc', {})
+            pip_packages = environment_config.get('pip_packages', [])
+            conda_packages = environment_config.get('conda_packages', [])
+            condarc = environment_config.get('condarc', {})
 
             conda_install_cmd = ['conda', 'install', '--yes', '-n', 'base']
             pip_install_cmd = ['pip', 'install', '--cache-dir', self._pip_cache]
