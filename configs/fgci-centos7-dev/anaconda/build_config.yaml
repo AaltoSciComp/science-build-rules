@@ -63,7 +63,6 @@ collections:
   triton-generic:
     pip_packages:
       - bash-kernel
-      - cdlib
       - docopt
       - matlab-kernel
       - mne
