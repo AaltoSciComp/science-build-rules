@@ -12,7 +12,7 @@ environments:
       channels:
         - defaults
   - name: anaconda
-    version: '2020-01-tf1'
+    version: '2020-02-tf1'
     miniconda: False
     python_version: 3
     installer_version: '2019.10'
@@ -29,7 +29,7 @@ environments:
       - tensorflow-v1
       - triton-generic
   - name: anaconda
-    version: '2020-01-tf2'
+    version: '2020-02-tf2'
     miniconda: False
     python_version: 3
     installer_version: '2019.10'

@@ -16,6 +16,7 @@ environments:
     miniconda: False
     python_version: 3
     installer_version: '2019.10'
+    freeze: True
     condarc:
       channels:
         - defaults
@@ -33,6 +34,7 @@ environments:
     miniconda: False
     python_version: 3
     installer_version: '2019.10'
+    freeze: True
     condarc:
       channels:
         - defaults
@@ -63,7 +65,6 @@ collections:
   triton-generic:
     pip_packages:
       - bash-kernel
-      - cdlib
       - docopt
       - matlab-kernel
       - mne
@@ -97,6 +98,7 @@ collections:
       - colorama
       - conda
       - conda-env
+      - conda-tree
       - contextlib2
       - coverage
       - cplex
@@ -164,6 +166,7 @@ collections:
       - phonopy
       - pillow
       - pip
+      - pipdeptree
       - pixman
       - plotly
       - ply
