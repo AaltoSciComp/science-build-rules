@@ -130,7 +130,7 @@ class SingularityBuilder(Builder):
         self._install_path = self._get_path('install_path')
         self._module_path = self._get_path('module_path')
         self._wrapper_path = self._get_path('wrapper_path')
-        self._installed_file = os.path.join(self._install_path, 'installed_images.yml')
+        self._installed_file = os.path.join(self._install_path, 'installed_images.yaml')
         self._command_collections = self._confreader['build_config'].get(
             'command_collections', {})
         self._flag_collections = self._confreader['build_config'].get(
@@ -154,7 +154,7 @@ class SingularityBuilder(Builder):
         auths_file = os.path.expanduser(
             self._confreader['config']['config'].get(
                 'auths_file',
-                os.path.join('~', 'singularity_auths.yml')))
+                os.path.join('~', 'singularity_auths.yaml')))
 
         auth_schema = {
             '$schema': 'http://json-schema.org/schema#',

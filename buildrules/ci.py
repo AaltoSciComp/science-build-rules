@@ -74,8 +74,16 @@ class CIBuilder(Builder):
                     },
                     'singularity': {
                         'type': 'object',
-                        'properties': {
-                            'config_file': {'type': 'string'},
+                        'default': {},
+                        'patternProperties': {
+                            '.*' : {
+                                'type': 'object',
+                                'additionalProperties': False,
+                                'properties': {
+                                    'username': {'type': 'string'},
+                                    'password': {'type': 'string'},
+                                },
+                            },
                         },
                     },
                 },
@@ -552,12 +560,34 @@ class CIBuilder(Builder):
 
         return rules
 
+    def _create_singularity_auths(self):
+
+        """Copies or creates ssh keys based on configuration"""
+
+        rules = []
+
+        workers = [{'name':'master', 'builds': {}}]
+
+        workers.extend(self._confreader['build_config']['target_workers'])
+
+        auth_singularity_conf = self._confreader['build_config'].get('auths', {}).get('singularity', {})
+
+        for worker in workers:
+
+            singularity_auths_file = os.path.join(
+                self._mountpoints['home'],
+                worker['name'],
+                '~/singularity_auths.yml')
+
+        return rules
+
     def _get_rules(self):
         rules = []
         rules.extend(self._get_clone_build_environment_rule())
         rules.extend(self._get_directory_creation_rules())
         rules.extend(self._copy_certs())
         rules.extend(self._copy_ssh())
+        rules.extend(self._create_singularity_auths())
         rules.extend(self._get_config_creation_rules())
         return rules
 
