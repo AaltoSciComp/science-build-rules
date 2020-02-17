@@ -54,10 +54,45 @@ RUN apt-get update &&                     \
 
 RUN apt-get update &&                     \
   apt-get -y install -q                   \
-  singularity-container                   \
   libgl1-mesa-dri                         \
   xbitmaps                                \
   && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update &&                     \
+  apt-get install -y                      \
+  build-essential                         \
+  libssl-dev                              \
+  uuid-dev                                \
+  libgpgme-dev                            \
+  squashfs-tools                          \
+  libseccomp-dev                          \
+  wget                                    \
+  pkg-config                              \
+  git                                     \
+  cryptsetup-bin                          \
+  && rm -rf /var/lib/apt/lists/*
+
+ARG GO_VERSION=1.13.8
+
+RUN cd /tmp &&                            \
+  wget https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz && \
+  tar -C /opt -xzvf go${GO_VERSION}.linux-amd64.tar.gz && \
+  rm go${GO_VERSION}.linux-amd64.tar.gz
+
+ARG SING_VERSION=3.5.2
+
+RUN export GOPATH=/opt/go-modules &&      \
+  mkdir ${GOPATH} &&                      \
+  export PATH=/opt/go/bin:${GOPATH}/bin:$PATH && \
+  cd /tmp &&                              \
+  git clone https://github.com/sylabs/singularity.git && \
+  cd singularity &&                       \
+  git checkout v${SING_VERSION}  &&       \
+  ./mconfig --prefix=/opt/singularity &&  \
+  make -C ./builddir &&                   \
+  make -C ./builddir install &&           \
+  cd /tmp &&                              \
+  rm -r singularity
 
 RUN echo 'buildbot ALL=(ALL) NOPASSWD:SETENV: /usr/bin/singularity, /bin/chown' >> /etc/sudoers
 
