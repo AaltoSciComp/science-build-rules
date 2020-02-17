@@ -222,7 +222,7 @@ class CIBuilder(Builder):
         self._logger.warning(self._mountpoints)
 
     def _get_clone_build_environment_rule(self):
-        """Clones build environment into a temporary directory"""
+        """Clones science-build-environment-repository"""
         if not os.path.isdir(self._build_folder):
             src = self._confreader['build_config']['build_environment_repository']
             dest = self._build_folder
@@ -570,16 +570,19 @@ class CIBuilder(Builder):
 
         workers.extend(self._confreader['build_config']['target_workers'])
 
-        singularity_auths = self._confreader['build_config'].get('auths', {}).get('singularity', {})
+        singularity_auths = {
+            'auths': self._confreader['build_config'].get('auths', {}).get('singularity', {})
+        }
 
         for worker in workers:
 
             singularity_auths_file = os.path.join(
                 self._mountpoints['home'],
                 worker['name'],
-                '~/singularity_auths.yml')
+                'singularity_auths.yml')
 
-            write_yaml(singularity_auths_file, singularity_auths)
+            rules.append(PythonRule(
+                write_yaml, [singularity_auths_file, singularity_auths]))
 
         return rules
 

@@ -15,11 +15,16 @@ auths:
   ssh:
     config_file: configs/ci/ssh_config
     known_hosts_file: configs/ci/ssh_known_hosts
+#  Auths for docker registries
+#  singularity:
+#    my_registry:
+#      username: 'username'
+#      password: 'password'
 buildbot_db: 
   postgres_password: postgrespass
 builds:
   anaconda:
-    enabled: False
+    enabled: True
   singularity:
     enabled: False
   spack:
@@ -28,6 +33,8 @@ target_workers:
   - name: centos
     image: aaltoscienceit/scibuilder-worker:fgci-centos7
     spack:
-      target_path: /share/apps/spack/production
+      target_path: /share/apps/spack/dev
       url: https://github.com/AaltoScienceIT/spack.git
       branch: develop
+    anaconda:
+      target_path: /share/apps/anaconda/dev
