@@ -7,7 +7,7 @@ import tempfile
 
 from buildrules.common.builder import Builder
 from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule, RuleError
-from buildrules.common.utils import makedirs, copy_file, write_template
+from buildrules.common.utils import makedirs, copy_file, write_template, write_yaml
 
 class CIBuilder(Builder):
 
@@ -570,7 +570,7 @@ class CIBuilder(Builder):
 
         workers.extend(self._confreader['build_config']['target_workers'])
 
-        auth_singularity_conf = self._confreader['build_config'].get('auths', {}).get('singularity', {})
+        singularity_auths = self._confreader['build_config'].get('auths', {}).get('singularity', {})
 
         for worker in workers:
 
@@ -578,6 +578,8 @@ class CIBuilder(Builder):
                 self._mountpoints['home'],
                 worker['name'],
                 '~/singularity_auths.yml')
+
+            write_yaml(singularity_auths_file, singularity_auths)
 
         return rules
 

@@ -504,7 +504,7 @@ class SingularityBuilder(Builder):
 
             module_path = os.path.join(
                 self._module_path,
-                image_config['name'])
+                module_name)
 
             rules.extend([
                 PythonRule(
