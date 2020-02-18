@@ -64,6 +64,7 @@ collections:
     pip_packages:
       - bash-kernel
       - docopt
+      - gym
       - matlab-kernel
       - mne
       - numpy
