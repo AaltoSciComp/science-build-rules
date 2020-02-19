@@ -208,9 +208,14 @@ class AnacondaBuilder(Builder):
         environment_config['conda_packages'].sort()
         environment_config['pip_packages'].sort()
 
+        # Remove freeze temporarily from configuration as that should not be included in checksum calculation
+        freeze = environment_config.pop('freeze', False)
+
         # Calculate checksum based on the current state of the environment_config
         environment_config['checksum'] = calculate_dict_checksum(environment_config)
         environment_config['checksum_small'] = environment_config['checksum'][:8]
+
+        environment_config['freeze'] = freeze
 
         return environment_config
 
@@ -399,6 +404,10 @@ class AnacondaBuilder(Builder):
         }
         if os.path.isfile(self._installed_file):
             installed_dict = load_yaml(self._installed_file)
+        # Remove old environments that have been removed from the installation path
+        for environment in installed_dict['environments']:
+            if not os.path.isdir(installed_dict['environments'][environment]['install_path']):
+                del installed_dict['environments'][environment]
         return installed_dict
 
     def _update_installed_environments(self, environment_name, environment_config):
@@ -414,7 +423,7 @@ class AnacondaBuilder(Builder):
         installed_dict['environments'][environment_name] = environment_config
         write_yaml(self._installed_file, installed_dict)
 
-    def _update_condarc(self, conda_path, condarc):
+    def _update_condarc(self, conda_path, condarc, install_time=True):
         """ This function updates the .condarc-file located in conda_path
         based on condarc.
 
@@ -428,7 +437,8 @@ class AnacondaBuilder(Builder):
             'always_yes': True,
             'auto_update_conda': True,
         }
-        condarc.update(condarc_defaults)
+        if install_time:
+            condarc.update(condarc_defaults)
         condarc_file = os.path.join(conda_path, '.condarc')
         write_yaml(condarc_file, condarc)
 
@@ -619,11 +629,19 @@ class AnacondaBuilder(Builder):
                     self._update_installed_environments,
                     [environment_config['environment_name'], environment_config]))
 
+            # Create modulefile for the environment
             rules.extend([
                 LoggingRule('Creating modulefile for environment: %s' % environment_name),
                 PythonRule(
                     self._write_modulefile,
                     [environment_config['name'], environment_config['version'], install_path, module_path])
+            ])
+            rules.extend([
+                  LoggingRule('Creating condarc for environment.'),
+                  PythonRule(
+                      self._update_condarc,
+                      [install_path, condarc],
+                      {'install_time': False})
             ])
 
 
