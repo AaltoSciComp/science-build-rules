@@ -72,6 +72,8 @@ RUN apt-get update &&                     \
   cryptsetup-bin                          \
   && rm -rf /var/lib/apt/lists/*
 
+
+# Install Go for singularity
 ARG GO_VERSION=1.13.8
 
 RUN cd /tmp &&                            \
@@ -81,6 +83,7 @@ RUN cd /tmp &&                            \
 
 ARG SING_VERSION=3.5.2
 
+# Install singularity
 RUN export GOPATH=/opt/go-modules &&      \
   mkdir ${GOPATH} &&                      \
   export PATH=/opt/go/bin:${GOPATH}/bin:$PATH && \
@@ -88,7 +91,7 @@ RUN export GOPATH=/opt/go-modules &&      \
   git clone https://github.com/sylabs/singularity.git && \
   cd singularity &&                       \
   git checkout v${SING_VERSION}  &&       \
-  ./mconfig --prefix=/opt/singularity &&  \
+  ./mconfig &&                            \
   make -C ./builddir &&                   \
   make -C ./builddir install &&           \
   cd /tmp &&                              \
@@ -105,7 +108,7 @@ RUN apt-get update &&                     \
   cpio                                    \
   && rm -rf /var/lib/apt/lists/*
 
-# Fixing lua posix bug https://bugs.launchpad.net/ubuntu/+source/lua-posix/+bug/1752082
+# Fix lua posix bug https://bugs.launchpad.net/ubuntu/+source/lua-posix/+bug/1752082
 RUN ln -s /usr/lib/x86_64-linux-gnu/lua/5.2/posix_c.so /usr/lib/x86_64-linux-gnu/lua/5.2/posix.so
 
 {% include 'common/Dockerfile.j2' %}

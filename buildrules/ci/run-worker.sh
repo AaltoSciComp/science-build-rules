@@ -45,4 +45,4 @@ CMDS="bash -l"
 if [[ "$#" -gt 1 ]]; then
     CMDS="bash -l -c ${@:2}"
 fi
-docker run -e WORKER_UID=$(id -u) -e HOME=/home/buildbot -v ${BUILDBOT_HOME}:/home/buildbot:rw -it aaltoscienceit/scibuilder-worker:$TARGET $CMDS
+docker run --privileged --rm -e WORKER_UID=$(id -u) -e HOME=/home/buildbot -v ${BUILDBOT_HOME}:/home/buildbot:rw -it aaltoscienceit/scibuilder-worker:$TARGET $CMDS

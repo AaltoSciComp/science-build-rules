@@ -18,5 +18,7 @@ if [[ $HOME_OWNER != $WORKER_UID ]]; then
   exit 1
 fi
 
+singularity config fakeroot --add buildbot
+
 cd /buildbot
 exec gosu buildbot "$@"
