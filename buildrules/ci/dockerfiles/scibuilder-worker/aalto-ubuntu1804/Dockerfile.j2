@@ -105,4 +105,7 @@ RUN apt-get update &&                     \
   cpio                                    \
   && rm -rf /var/lib/apt/lists/*
 
+# Fixing lua posix bug https://bugs.launchpad.net/ubuntu/+source/lua-posix/+bug/1752082
+RUN ln -s /usr/lib/x86_64-linux-gnu/lua/5.2/posix_c.so /usr/lib/x86_64-linux-gnu/lua/5.2/posix.so
+
 {% include 'common/Dockerfile.j2' %}
