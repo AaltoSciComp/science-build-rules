@@ -48,8 +48,8 @@ for TARGET in fgci-centos7 aalto-ubuntu1804 ; do
   docker pull $DOCKER_URL
   PULL_RESULT=$?
   if [ $PULL_RESULT -eq 0 ]; then
-    echo 'Build of "'$TARGET'" was successful.'
+    echo 'Pull of "'$TARGET'" was successful.'
   else
-    echo 'Build of "'$TARGET'" failed.'
+    echo 'Pull of "'$TARGET'" failed.'
   fi
 done
