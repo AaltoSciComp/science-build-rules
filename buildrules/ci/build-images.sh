@@ -45,6 +45,7 @@ for TARGET in scibuilder-master scibuilder-nfs-server ; do
     echo 'Build of "'$TARGET'" was successful.'
   else
     echo 'Build of "'$TARGET'" failed.'
+    exit 1
   fi
   if [ $PUSH -eq 0 ]; then
     if [ $BUILD_RESULT -eq 0 ]; then
@@ -73,13 +74,14 @@ for TARGET in fgci-centos7 aalto-ubuntu1804 ; do
 EOF
   j2 $TARGET/Dockerfile.j2 >> $TARGET/Dockerfile
 
-  # Build base image
+  # Build target image
   docker build --build-arg TARGET=$TARGET $IGNORE_CACHE -t $DOCKER_URL -f $TARGET/Dockerfile .
   BUILD_RESULT=$?
   if [ $BUILD_RESULT -eq 0 ]; then
     echo 'Build of "'$TARGET'" was successful.'
   else
     echo 'Build of "'$TARGET'" failed.'
+    exit 1
   fi
   if [ $PUSH -eq 0 ]; then
     if [ $BUILD_RESULT -eq 0 ]; then
