@@ -41,8 +41,20 @@ echo 'Creating buildbot home to /tmp/buildbot/'$TARGET
 BUILDBOT_HOME=/tmp/buildbot/$TARGET
 mkdir -p ${BUILDBOT_HOME}
 
-CMDS="bash -l"
+CMDS=""
+FLAGS="-it"
 if [[ "$#" -gt 1 ]]; then
-    CMDS="bash -l -c ${@:2}"
+    CMDS='-c "'${@:2}'"'
+    echo $CMDS
+    FLAGS=""
 fi
-docker run --privileged --rm -e WORKER_UID=$(id -u) -e HOME=/home/buildbot -v ${BUILDBOT_HOME}:/home/buildbot:rw -it aaltoscienceit/scibuilder-worker:$TARGET $CMDS
+DOCKER_CMD="docker $FLAGS run --privileged --rm -e WORKER_UID=$(id -u) -e HOME=/home/buildbot -v ${BUILDBOT_HOME}:/home/buildbot:rw aaltoscienceit/scibuilder-worker:$TARGET bash -l $CMDS"
+cat << EOF
+
+Running worker with command:
+
+  ${DOCKER_CMD}
+
+EOF
+
+eval ${DOCKER_CMD}
