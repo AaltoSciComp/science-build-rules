@@ -33,6 +33,7 @@ environments:
     miniconda: False
     python_version: 3
     installer_version: '2019.10'
+    freeze: True
     condarc:
       channels:
         - defaults
