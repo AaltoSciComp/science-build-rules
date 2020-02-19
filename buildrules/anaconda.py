@@ -12,7 +12,7 @@ import requests
 import sh
 
 from buildrules.common.builder import Builder
-from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule
+from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule, RuleError
 from buildrules.common.utils import (load_yaml, write_yaml, makedirs,
                                      copy_file, write_template,
                                      calculate_file_checksum,
@@ -322,16 +322,24 @@ class AnacondaBuilder(Builder):
         return os.path.join(conda_path, 'environment.yml')
 
     @classmethod
-    def _write_modulefile(cls, environment_config):
+    def _write_modulefile(cls, name, version, install_path, module_path):
         """ This function writes a modulefile that points to Anaconda
-        environment constructed from environment_config and installed in
-        install_path into a directory given by module_path.
+        environment installed in install_path and whose name is name/version
+        into a directory given by module_path.
 
         Args:
-            environment_config (dict): Anaconda environment config.
+            name (str): Name of the Anaconda module.
+            version (str): Version of the Anaconda module.
             module_path (str): Directory for the modulefile.
             install_path (str): Installation path of the environment.
         """
+
+        moduleconfig = {
+            'name' : name,
+            'version': version,
+            'install_path': install_path,
+            'module_path': module_path
+        }
 
         template = """
             -- -*- lua -*-
@@ -346,13 +354,14 @@ class AnacondaBuilder(Builder):
             prepend_path("PATH", "{{ install_path }}/bin")
         """
 
-        modulename = '{version!s}.lua'.format(**environment_config)
+        makedirs(module_path, 0o755)
 
-        makedirs(environment_config['module_path'], 0o755)
+        modulefile = os.path.join(module_path, '%s.lua' % version)
 
-        modulefile = os.path.join(environment_config['module_path'], modulename)
+        if os.path.exists(modulefile):
+            raise RuleError('Modulefile %s already exists' % modulefile)
 
-        write_template(modulefile, environment_config, template=template, chmod=0o644)
+        write_template(modulefile, moduleconfig, template=template, chmod=0o644)
 
     def _remove_environment(self, install_path):
         """ This function removes installation situated in install_path.
@@ -610,6 +619,14 @@ class AnacondaBuilder(Builder):
                     self._update_installed_environments,
                     [environment_config['environment_name'], environment_config]))
 
+            rules.extend([
+                LoggingRule('Creating modulefile for environment: %s' % environment_name),
+                PythonRule(
+                    self._write_modulefile,
+                    [environment_config['name'], environment_config['version'], install_path, module_path])
+            ])
+
+
             if update_install and self.remove_after_update:
                 rules.extend([
                     LoggingRule(('Removing old environment from '
@@ -618,8 +635,8 @@ class AnacondaBuilder(Builder):
 
         return rules
 
-    def _get_modulefile_install_rules(self):
-        """ This function creates build rules that install modulefiles.
+    def _get_modulefile_clean_rules(self):
+        """ This function creates build rules that clean up modulefiles.
 
         Returns:
             list: List of build rules.
@@ -631,21 +648,7 @@ class AnacondaBuilder(Builder):
         rules.extend([
             LoggingRule("Cleaning previous modulefiles."),
             PythonRule(self._clean_modules),
-            LoggingRule('Writing modulefiles.'),
         ])
-
-        # Obtain already installed environments
-        installed_environments = self._get_installed_environments()['environments']
-
-        # Create new modulefiles
-        for environment_name, environment_config in installed_environments.items():
-
-            rules.extend([
-                LoggingRule('Creating modulefile for environment: %s' % environment_name),
-                PythonRule(
-                    self._write_modulefile,
-                    [environment_config])
-            ])
 
         return rules
 
@@ -655,8 +658,8 @@ class AnacondaBuilder(Builder):
         Anaconda build consists of the following steps:
 
         1. Create directories for software, modules and temporary files.
-        2. Install environments.
-        3. Install modulefiles.
+        2. Clean up modulefiles
+        3. Install environments.
 
         Returns:
             list: List of build rules.
@@ -664,8 +667,8 @@ class AnacondaBuilder(Builder):
 
         rules = (
             self._get_directory_creation_rules() +
-            self._get_environment_install_rules() +
-            self._get_modulefile_install_rules()
+            self._get_modulefile_clean_rules() +
+            self._get_environment_install_rules()
         )
         return rules
 
