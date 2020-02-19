@@ -405,9 +405,12 @@ class AnacondaBuilder(Builder):
         if os.path.isfile(self._installed_file):
             installed_dict = load_yaml(self._installed_file)
         # Remove old environments that have been removed from the installation path
+        removed_environments = []
         for environment in installed_dict['environments']:
             if not os.path.isdir(installed_dict['environments'][environment]['install_path']):
-                del installed_dict['environments'][environment]
+                removed_environments.append(environment)
+        for environment in removed_environments:
+            del installed_dict['environments'][environment]
         return installed_dict
 
     def _update_installed_environments(self, environment_name, environment_config):
