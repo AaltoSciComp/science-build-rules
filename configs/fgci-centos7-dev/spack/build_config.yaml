@@ -122,6 +122,8 @@ packages:
     version: 3.7.4
   - name: 'r'
     version: 3.6.1
+  - name: 'r-irkernel'
+    version: 1.1
   - name: 'py-gpaw'
     version: 1.3.0
     variants:
