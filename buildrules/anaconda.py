@@ -335,15 +335,14 @@ class AnacondaBuilder(Builder):
         Args:
             name (str): Name of the Anaconda module.
             version (str): Version of the Anaconda module.
-            module_path (str): Directory for the modulefile.
             install_path (str): Installation path of the environment.
+            module_path (str): Directory for the modulefile.
         """
 
         moduleconfig = {
             'name' : name,
             'version': version,
             'install_path': install_path,
-            'module_path': module_path
         }
 
         template = """

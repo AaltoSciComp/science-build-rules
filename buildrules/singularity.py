@@ -365,8 +365,14 @@ class SingularityBuilder(Builder):
                     install_image_path,
                     os.path.basename(stage_image))
 
+                module_path = os.path.join(
+                    self._module_path,
+                    image_config['name'])
+
                 image_config['definition_file'] = install_definition
                 image_config['image_file'] = install_image
+                image_config['module_path'] = module_path
+
 
                 buildenv = copy.deepcopy(default_env)
                 auths = self._auths.get(image_config['registry'], None)
@@ -398,140 +404,117 @@ class SingularityBuilder(Builder):
 
                 rules.append(LoggingRule(install_msg.format(module_name)))
 
-                if skip_install:
-                    continue
+                if not skip_install:
 
+                     rules.extend([
+                         PythonRule(makedirs, [build_definition_path]),
+                         PythonRule(makedirs, [build_image_path]),
+                         PythonRule(makedirs, [install_definition_path]),
+                         PythonRule(makedirs, [install_image_path]),
+                         PythonRule(makedirs, [module_path]),
+                     ])
+
+                     rules.extend([
+                         LoggingRule(
+                             'Writing definition file for %s' % module_name),
+                         PythonRule(
+                             self._write_definition_file,
+                             args=[stage_definition],
+                             kwargs={
+                                 'registry': image_config['registry'],
+                                 'docker_url': image_config['docker_url'],
+                                 'commands': commands
+                         }),
+                     ])
+
+                     singularity_build_cmd = ['singularity', 'build']
+                     chown_cmd = ['chown', '{0}:{0}'.format(uid)]
+
+                     debug = (image_config.get('debug', False) or
+                             self._confreader['config']['config'].get('debug', False))
+                     sudo = (image_config.get('sudo', False) or
+                             self._confreader['config']['config'].get('sudo', False))
+                     fakeroot = (image_config.get('fakeroot', False) or
+                                 self._confreader['config']['config'].get(
+                                     'fakeroot', False))
+                     if debug:
+                         singularity_build_cmd.insert(1, '-d')
+                     if sudo:
+                         singularity_build_cmd.insert(0, 'sudo')
+                         chown_cmd.insert(0, 'sudo')
+                     if fakeroot:
+                         singularity_build_cmd.append('--fakeroot')
+                     rules.extend([
+                         LoggingRule(
+                             'Building image for %s' % module_name),
+                         SubprocessRule(
+                             singularity_build_cmd + [stage_image, stage_definition],
+                             env=buildenv,
+                             shell=True)
+                     ])
+                     if sudo:
+                         rules.append(
+                             SubprocessRule(
+                                 chown_cmd + [stage_image],
+                                 shell=True))
+                     rules.extend([
+                         LoggingRule(
+                             'Copying staged image to installation directory'),
+                         PythonRule(
+                             copy_file, [stage_image, install_image]),
+                     ])
+
+                     rules.extend([
+                         LoggingRule(
+                             'Copying definition file to installation directory'),
+                         PythonRule(
+                             copy_file, [stage_definition, install_definition]),
+                     ])
+
+                     rules.extend([
+                         LoggingRule(
+                             'Updating installed images'),
+                         PythonRule(
+                             self._update_installed_images,
+                             [module_name, image_config])
+                     ])
                 rules.extend([
-                    PythonRule(makedirs, [build_definition_path]),
-                    PythonRule(makedirs, [build_image_path]),
-                    PythonRule(makedirs, [install_definition_path]),
-                    PythonRule(makedirs, [install_image_path]),
-                ])
-
-
-                rules.extend([
-                    LoggingRule(
-                        'Writing definition file for %s' % module_name),
+                    LoggingRule('Writing modulefile for %s' % module_name),
                     PythonRule(
-                        self._write_definition_file,
-                        args=[stage_definition],
-                        kwargs={
-                            'registry': image_config['registry'],
-                            'docker_url': image_config['docker_url'],
-                            'commands': commands
-                    }),
+                        self._write_modulefile,
+                        [image_config['name'], image_config['tag'],
+                         image_config['flags'], install_image, module_path]),
                 ])
 
-                singularity_build_cmd = ['singularity', 'build']
-                chown_cmd = ['chown', '{0}:{0}'.format(uid)]
-
-                debug = (image_config.get('debug', False) or
-                        self._confreader['config']['config'].get('debug', False))
-                sudo = (image_config.get('sudo', False) or
-                        self._confreader['config']['config'].get('sudo', False))
-                fakeroot = (image_config.get('fakeroot', False) or
-                            self._confreader['config']['config'].get(
-                                'fakeroot', False))
-                if debug:
-                    singularity_build_cmd.insert(1, '-d')
-                if sudo:
-                    singularity_build_cmd.insert(0, 'sudo')
-                    chown_cmd.insert(0, 'sudo')
-                if fakeroot:
-                    singularity_build_cmd.append('--fakeroot')
-                rules.extend([
-                    LoggingRule(
-                        'Building image for %s' % module_name),
-                    SubprocessRule(
-                        singularity_build_cmd + [stage_image, stage_definition],
-                        env=buildenv,
-                        shell=True)
-                ])
-                if sudo:
-                    rules.append(
-                        SubprocessRule(
-                            chown_cmd + [stage_image],
-                            shell=True))
-                rules.extend([
-                    LoggingRule(
-                        'Copying staged image to installation directory'),
-                    PythonRule(
-                        copy_file, [stage_image, install_image]),
-                ])
-
-                rules.extend([
-                    LoggingRule(
-                        'Copying definition file to installation directory'),
-                    PythonRule(
-                        copy_file, [stage_definition, install_definition]),
-                ])
-
-                rules.extend([
-                    LoggingRule(
-                        'Updating installed images'),
-                    PythonRule(
-                        self._update_installed_images,
-                        [module_name, image_config])
-                ])
-
-            if update_install and remove_after_update:
-                rules.extend([
-                    LoggingRule(('Removing old environment from '
-                                 '{0}').format(previous_image_path)),
-                    PythonRule(os.remove, [previous_image_path])])
+                if update_install and remove_after_update:
+                    rules.extend([
+                        LoggingRule(('Removing old environment from '
+                                     '{0}').format(previous_image_path)),
+                        PythonRule(os.remove, [previous_image_path])])
 
         return rules
 
-    def _get_modulefile_install_rules(self):
-        """ This function creates build rules that install modulefiles.
-
-        Returns:
-            list: List of build rules.
-        """
-
-        rules = []
-
-        # Obtain already installed images
-
-        # Clean up modulefiles
-        rules.extend([
-            LoggingRule("Cleaning previous modulefiles."),
-            PythonRule(self._clean_modules),
-            LoggingRule('Writing modulefiles.'),
-        ])
-
-        # Create new modulefiles
-        for module_name, image_config in self._get_installed_images()['images'].items():
-
-            module_path = os.path.join(
-                self._module_path,
-                module_name)
-
-            rules.extend([
-                PythonRule(
-                    makedirs,
-                    [module_path, 0o755]),
-                PythonRule(
-                    self._write_modulefile,
-                    [module_path, image_config])
-            ])
-
-        return rules
-
-    def _write_modulefile(self, module_path, image_config):
+    def _write_modulefile(self, name, tag, flags, image_file, module_path):
         """ This function writes a modulefile that points to Singularity
-        images constructed from image_config to module_path.
+        image installed in image_file and whose name is name/version
+        into a directory given by module_path.
 
         Args:
+            name (str): Name of the Singularity module.
+            tag (str): tag of the Singlarity module.
+            flags (str): Flags of the Singularity module.
+            image_file (str): Installation path of the environment.
             module_path (str): Directory for the modulefile.
-            image_config (dict): Anaconda environment config.
         """
 
         moduleconfig = {
-            'wrapper_path': self._wrapper_path
+            'wrapper_path': self._wrapper_path,
+            'name' : name,
+            'tag' : tag,
+            'image_file': image_file,
+            'flags': flags,
         }
 
-        moduleconfig.update(image_config)
 
         template = """
             -- -*- lua -*-
@@ -548,15 +531,20 @@ class SingularityBuilder(Builder):
             setenv("SING_IMAGE", "{{ image_file }}")
             setenv("SING_FLAGS", " {{ flags }} ")
         """
+        makedirs(module_path, 0o755)
 
-        modulename = '{tag!s}.lua'.format(**moduleconfig)
+        modulefile = os.path.join(module_path, '%s.lua' % tag)
 
-        modulefile = os.path.join(module_path, modulename)
+        if os.path.exists(modulefile):
+            raise RuleError('Modulefile %s already exists' % modulefile)
 
         write_template(modulefile, moduleconfig, template=template, chmod=0o644)
 
     def _clean_modules(self):
-        """ This function removes all existing modulefiles.
+        """ This function creates build rules that clean up modulefiles.
+
+        Returns:
+            list: List of build rules.
         """
 
         if os.path.isdir(self._module_path):
@@ -565,6 +553,23 @@ class SingularityBuilder(Builder):
             )
             for modulefile in modulefiles:
                 os.remove(modulefile)
+
+    def _get_modulefile_clean_rules(self):
+        """ This function creates build rules that clean up modulefiles.
+
+        Returns:
+            list: List of build rules.
+        """
+
+        rules = []
+
+        # Clean up modulefiles
+        rules.extend([
+            LoggingRule("Cleaning previous modulefiles."),
+            PythonRule(self._clean_modules),
+        ])
+
+        return rules
 
     def _get_rules(self):
         """_get_rules provides build rules for the builder.
@@ -575,8 +580,8 @@ class SingularityBuilder(Builder):
 
         rules = (
             self._get_directory_creation_rules() +
-            self._get_image_install_rules() + 
-            self._get_modulefile_install_rules()
+            self._get_modulefile_clean_rules() +
+            self._get_image_install_rules()
         )
         return rules
 
