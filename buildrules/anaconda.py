@@ -12,7 +12,7 @@ import requests
 import sh
 
 from buildrules.common.builder import Builder
-from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule
+from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule, RuleError
 from buildrules.common.utils import (load_yaml, write_yaml, makedirs,
                                      copy_file, write_template,
                                      calculate_file_checksum,
@@ -208,9 +208,14 @@ class AnacondaBuilder(Builder):
         environment_config['conda_packages'].sort()
         environment_config['pip_packages'].sort()
 
+        # Remove freeze temporarily from configuration as that should not be included in checksum calculation
+        freeze = environment_config.pop('freeze', False)
+
         # Calculate checksum based on the current state of the environment_config
         environment_config['checksum'] = calculate_dict_checksum(environment_config)
         environment_config['checksum_small'] = environment_config['checksum'][:8]
+
+        environment_config['freeze'] = freeze
 
         return environment_config
 
@@ -322,22 +327,24 @@ class AnacondaBuilder(Builder):
         return os.path.join(conda_path, 'environment.yml')
 
     @classmethod
-    def _write_modulefile(cls, environment_config, module_path, install_path):
+    def _write_modulefile(cls, name, version, install_path, module_path):
         """ This function writes a modulefile that points to Anaconda
-        environment constructed from environment_config and installed in
-        install_path into a directory given by module_path.
+        environment installed in install_path and whose name is name/version
+        into a directory given by module_path.
 
         Args:
-            environment_config (dict): Anaconda environment config.
+            name (str): Name of the Anaconda module.
+            version (str): Version of the Anaconda module.
             module_path (str): Directory for the modulefile.
             install_path (str): Installation path of the environment.
         """
 
         moduleconfig = {
+            'name' : name,
+            'version': version,
             'install_path': install_path,
+            'module_path': module_path
         }
-
-        moduleconfig.update(environment_config)
 
         template = """
             -- -*- lua -*-
@@ -352,9 +359,12 @@ class AnacondaBuilder(Builder):
             prepend_path("PATH", "{{ install_path }}/bin")
         """
 
-        modulename = '{version!s}.lua'.format(**moduleconfig)
+        makedirs(module_path, 0o755)
 
-        modulefile = os.path.join(module_path, modulename)
+        modulefile = os.path.join(module_path, '%s.lua' % version)
+
+        if os.path.exists(modulefile):
+            raise RuleError('Modulefile %s already exists' % modulefile)
 
         write_template(modulefile, moduleconfig, template=template, chmod=0o644)
 
@@ -394,6 +404,13 @@ class AnacondaBuilder(Builder):
         }
         if os.path.isfile(self._installed_file):
             installed_dict = load_yaml(self._installed_file)
+        # Remove old environments that have been removed from the installation path
+        removed_environments = []
+        for environment in installed_dict['environments']:
+            if not os.path.isdir(installed_dict['environments'][environment]['install_path']):
+                removed_environments.append(environment)
+        for environment in removed_environments:
+            del installed_dict['environments'][environment]
         return installed_dict
 
     def _update_installed_environments(self, environment_name, environment_config):
@@ -409,7 +426,7 @@ class AnacondaBuilder(Builder):
         installed_dict['environments'][environment_name] = environment_config
         write_yaml(self._installed_file, installed_dict)
 
-    def _update_condarc(self, conda_path, condarc):
+    def _update_condarc(self, conda_path, condarc, install_time=True):
         """ This function updates the .condarc-file located in conda_path
         based on condarc.
 
@@ -423,7 +440,8 @@ class AnacondaBuilder(Builder):
             'always_yes': True,
             'auto_update_conda': True,
         }
-        condarc.update(condarc_defaults)
+        if install_time:
+            condarc.update(condarc_defaults)
         condarc_file = os.path.join(conda_path, '.condarc')
         write_yaml(condarc_file, condarc)
 
@@ -523,6 +541,7 @@ class AnacondaBuilder(Builder):
 
             installer = self._get_installer_path(environment_config, update_installer=update_install)
             install_path = self._get_install_path(environment_config)
+            module_path = self._get_module_path(environment_config)
 
             # Add new installation path to PATH
             conda_env = {
@@ -531,88 +550,103 @@ class AnacondaBuilder(Builder):
             }
 
             environment_config['install_path'] = install_path
+            environment_config['module_path'] = module_path
             environment_config['environment_file'] = self._get_environment_file_path(install_path)
 
             rules.append(LoggingRule(install_msg.format(**environment_config)))
 
-            if skip_install:
-                continue
+            if not skip_install:
+              # Install base environment
+              rules.extend([
+                  PythonRule(self._remove_environment, [install_path]),
+                  PythonRule(self._download_installer, [installer]),
+                  PythonRule(
+                      makedirs,
+                      [install_path, 0o755],
+                  ),
+                  SubprocessRule(
+                      ['bash', installer, '-f', '-b', '-p', install_path],
+                      shell=True
+                  ),
+              ])
 
-            # Install base environment
-            rules.extend([
-                PythonRule(self._remove_environment, [install_path]),
-                PythonRule(self._download_installer, [installer]),
-                PythonRule(
-                    makedirs,
-                    [install_path, 0o755],
-                ),
-                SubprocessRule(
-                    ['bash', installer, '-f', '-b', '-p', install_path],
-                    shell=True
-                ),
-            ])
+              # Create condarc for the installed environment
+              rules.extend([
+                  LoggingRule('Verifying that only the environment condarc is utilized.'),
+                  PythonRule(
+                      self._verify_condarc,
+                      [install_path]
+                  ),
+                  LoggingRule('Creating condarc for environment.'),
+                  PythonRule(
+                      self._update_condarc,
+                      [install_path, condarc],
+                  ),
+              ])
 
-            # Create condarc for the installed environment
-            rules.extend([
-                LoggingRule('Verifying that only the environment condarc is utilized.'),
-                PythonRule(
-                    self._verify_condarc,
-                    [install_path]
-                ),
-                LoggingRule('Creating condarc for environment.'),
-                PythonRule(
-                    self._update_condarc,
-                    [install_path, condarc],
-                ),
-            ])
+              # During update, install old packages using environment.yml
+              if update_install:
+                  rules.extend([
+                      SubprocessRule(
+                          ['conda', 'env', 'update',
+                           '--file', previous_environment,
+                           '--prefix', install_path],
+                          env=conda_env,
+                          shell=True)])
 
-            # During update, install old packages using environment.yml
-            if update_install:
-                rules.extend([
-                    SubprocessRule(
-                        ['conda', 'env', 'update',
-                         '--file', previous_environment,
-                         '--prefix', install_path],
-                        env=conda_env,
-                        shell=True)])
+                  conda_install_cmd.append('--freeze-installed')
+                  pip_install_cmd.extend([
+                      '--upgrade', '--upgrade-strategy', 'only-if-needed'])
 
-                conda_install_cmd.append('--freeze-installed')
-                pip_install_cmd.extend([
-                    '--upgrade', '--upgrade-strategy', 'only-if-needed'])
+              # Install packages using conda
+              if conda_packages:
+                  rules.extend([
+                      LoggingRule('Installing conda packages.'),
+                      SubprocessRule(
+                          conda_install_cmd + conda_packages,
+                          env=conda_env,
+                          shell=True),
+                  ])
 
-            # Install packages using conda
-            if conda_packages:
-                rules.extend([
-                    LoggingRule('Installing conda packages.'),
-                    SubprocessRule(
-                        conda_install_cmd + conda_packages,
-                        env=conda_env,
-                        shell=True),
-                ])
+              # Install packages using pip
+              if pip_packages:
+                  rules.extend([
+                      LoggingRule('Installing pip packages.'),
+                      SubprocessRule(
+                          pip_install_cmd + pip_packages,
+                          env=conda_env,
+                          shell=True),
+                  ])
 
-            # Install packages using pip
-            if pip_packages:
-                rules.extend([
-                    LoggingRule('Installing pip packages.'),
-                    SubprocessRule(
-                        pip_install_cmd + pip_packages,
-                        env=conda_env,
-                        shell=True),
-                ])
-
-            # Create environment.yml
-            rules.extend([
-                LoggingRule('Creating environment.yml from newly built environment.'),
-                PythonRule(
-                    self._export_conda_environment,
-                    [install_path])
-            ])
+              # Create environment.yml
+              rules.extend([
+                  LoggingRule('Creating environment.yml from newly built environment.'),
+                  PythonRule(
+                      self._export_conda_environment,
+                      [install_path])
+              ])
 
             # Add newly created environment to installed environments
             rules.append(
                 PythonRule(
                     self._update_installed_environments,
                     [environment_config['environment_name'], environment_config]))
+
+            # Create modulefile for the environment
+            rules.extend([
+                LoggingRule('Creating modulefile for environment: %s' % environment_name),
+                PythonRule(
+                    self._write_modulefile,
+                    [environment_config['name'], environment_config['version'], install_path, module_path])
+            ])
+            rules.extend([
+                  LoggingRule('Creating condarc for environment.'),
+                  PythonRule(
+                      self._update_condarc,
+                      [install_path, condarc],
+                      {'install_time': False})
+            ])
+
 
             if update_install and self.remove_after_update:
                 rules.extend([
@@ -622,8 +656,8 @@ class AnacondaBuilder(Builder):
 
         return rules
 
-    def _get_modulefile_install_rules(self):
-        """ This function creates build rules that install modulefiles.
+    def _get_modulefile_clean_rules(self):
+        """ This function creates build rules that clean up modulefiles.
 
         Returns:
             list: List of build rules.
@@ -635,25 +669,7 @@ class AnacondaBuilder(Builder):
         rules.extend([
             LoggingRule("Cleaning previous modulefiles."),
             PythonRule(self._clean_modules),
-            LoggingRule('Writing modulefiles.'),
         ])
-
-        # Create new modulefiles
-        for environment in self._confreader['build_config']['environments']:
-
-            environment_config = self._create_environment_config(environment)
-
-            install_path = self._get_install_path(environment_config)
-            module_path = self._get_module_path(environment_config)
-
-            rules.extend([
-                PythonRule(
-                    makedirs,
-                    [module_path, 0o755]),
-                PythonRule(
-                    self._write_modulefile,
-                    [environment_config, module_path, install_path])
-            ])
 
         return rules
 
@@ -663,8 +679,8 @@ class AnacondaBuilder(Builder):
         Anaconda build consists of the following steps:
 
         1. Create directories for software, modules and temporary files.
-        2. Install environments.
-        3. Install modulefiles.
+        2. Clean up modulefiles
+        3. Install environments.
 
         Returns:
             list: List of build rules.
@@ -672,8 +688,8 @@ class AnacondaBuilder(Builder):
 
         rules = (
             self._get_directory_creation_rules() +
-            self._get_environment_install_rules() +
-            self._get_modulefile_install_rules()
+            self._get_modulefile_clean_rules() +
+            self._get_environment_install_rules()
         )
         return rules
 
