@@ -263,12 +263,13 @@ class SingularityBuilder(Builder):
         flags = []
         for flag_collection in config.pop('flag_collections', []):
             flags = flags + self._flag_collections[flag_collection]
-        config['flags'] = ' '.join(flags)
 
         config['checksum'] = calculate_dict_checksum(config)
         config['checksum_small'] = config['checksum'][:8]
         config['nameformat'] = '{name!s}-{tag!s}-{checksum_small!s}'.format(**config)
         config['docker_url'] = '{docker_user!s}/{docker_image!s}:{tag!s}'.format(**config)
+
+        config['flags'] = ' '.join(flags)
 
         return config
 
