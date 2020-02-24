@@ -102,6 +102,7 @@ collections:
       - conda
       - conda-env
       - conda-tree
+      - configargparse
       - contextlib2
       - coverage
       - cplex
