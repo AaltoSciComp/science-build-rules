@@ -604,10 +604,14 @@ class AnacondaBuilder(Builder):
               # During update, install old packages using environment.yml
               if update_install:
                   rules.extend([
+                      LoggingRule(('Sanitizing environment file from previous '
+                                   'installation: %s' % previous_environment)),
                       PythonRule(
                           self._sanitize_environment_file,
                           [install_path, previous_environment],
                       ),
+                      LoggingRule(('Installing conda packages from previous '
+                                   'installation.')),
                       SubprocessRule(
                           ['conda', 'env', 'update',
                            '--file', environment_config['environment_file'],
