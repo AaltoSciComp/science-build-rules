@@ -65,7 +65,6 @@ collections:
     pip_packages:
       - bash-kernel
       - jupyterlab-git
-      - jupyter-matplotlib
       - matlab-kernel
       - nbzip
       - pymanopt
