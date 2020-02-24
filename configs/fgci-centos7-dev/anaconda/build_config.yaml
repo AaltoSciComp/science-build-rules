@@ -64,20 +64,13 @@ collections:
   triton-generic:
     pip_packages:
       - bash-kernel
-      - docopt
-      - ipymd
       - jupyterlab-git
       - jupyter-matplotlib
       - matlab-kernel
-      - mne
       - nbzip
-      - numpy
       - pymanopt
-      - pymvpa2
       - python-igraph
       - roboschool
-      - sphinx
-      - sphinx-rtd-theme
     conda_packages:
       - anaconda
       - anaconda-client
@@ -114,6 +107,7 @@ collections:
       - cython
       - dill
       - distributed
+      - docopt
       - docutils
       - fastcache
       - fastparquet
@@ -148,6 +142,7 @@ collections:
       - mkl-service
       - mkl_fft
       - mkl_random
+      - mne
       - mock
       - more-itertools
       - mosek
@@ -165,6 +160,7 @@ collections:
       - nose
       - numba
       - numexpr
+      - numpy
       - numpydoc
       - olefile
       - openmp
@@ -193,6 +189,7 @@ collections:
       - pygpu
       - pylint
       - pympler
+      - pymvpa2
       - pyopenssl
       - pyparsing
       - pysocks
@@ -218,7 +215,9 @@ collections:
       - singledispatch
       - six
       - sortedcollections
+      - sphinx
       - sphinxcontrib
+      - sphinx_rtd_theme
       - spyder
       - sqlalchemy
       - sqlite
