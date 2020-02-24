@@ -461,6 +461,24 @@ class AnacondaBuilder(Builder):
         conda_env = json.loads(conda_env_json)
         write_yaml(self._get_environment_file_path(conda_path), conda_env)
 
+    def _sanitize_environment_file(self, install_path, environment_file):
+        """ This function sanitizes environment.yml created by previous
+        installation by removing pip packages from dependencies.
+
+        Args:
+            install_path (str): New installation path where environment.yml
+                will be written.
+            environment_file (str): Previous environment file that will be
+                sanitized.
+        """
+        conda_env = load_yaml(environment_file)
+        dependencies = [
+            dependency for dependency in conda_env.pop('dependencies')
+            if not isinstance(dependency, dict)
+        ]
+        conda_env['dependencies'] = dependencies
+        write_yaml(self._get_environment_file_path(install_path), conda_env)
+
     @classmethod
     def _verify_condarc(cls, conda_path):
         """ This function verifies that the Anaconda installed in
@@ -586,9 +604,13 @@ class AnacondaBuilder(Builder):
               # During update, install old packages using environment.yml
               if update_install:
                   rules.extend([
+                      PythonRule(
+                          self._sanitize_environment_file,
+                          [install_path, previous_environment],
+                      ),
                       SubprocessRule(
                           ['conda', 'env', 'update',
-                           '--file', previous_environment,
+                           '--file', environment_config['environment_file'],
                            '--prefix', install_path],
                           env=conda_env,
                           shell=True)])
