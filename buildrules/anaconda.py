@@ -461,7 +461,7 @@ class AnacondaBuilder(Builder):
         conda_env = json.loads(conda_env_json)
         write_yaml(self._get_environment_file_path(conda_path), conda_env)
 
-    def _sanitize_environment_file(self, install_path, environment_file):
+    def _sanitize_environment_file(self, old_environment_file, new_environment_file):
         """ This function sanitizes environment.yml created by previous
         installation by removing pip packages from dependencies.
 
@@ -471,13 +471,13 @@ class AnacondaBuilder(Builder):
             environment_file (str): Previous environment file that will be
                 sanitized.
         """
-        conda_env = load_yaml(environment_file)
+        conda_env = load_yaml(old_environment_file)
         dependencies = [
             dependency for dependency in conda_env.pop('dependencies')
             if not isinstance(dependency, dict)
         ]
         conda_env['dependencies'] = dependencies
-        write_yaml(self._get_environment_file_path(install_path), conda_env)
+        write_yaml(new_environment_file, conda_env)
 
     @classmethod
     def _verify_condarc(cls, conda_path):
@@ -604,11 +604,14 @@ class AnacondaBuilder(Builder):
               # During update, install old packages using environment.yml
               if update_install:
                   rules.extend([
-                      LoggingRule(('Sanitizing environment file from previous '
-                                   'installation: %s' % previous_environment)),
+                      LoggingRule(
+                          ('Sanitizing environment file from previous installation '
+                           '"{0}" to new installation "{1}"').format(
+                               previous_environment,
+                               environment_config['environment_file'])),
                       PythonRule(
                           self._sanitize_environment_file,
-                          [install_path, previous_environment],
+                          [previous_environment, environment_config['environment_file']],
                       ),
                       LoggingRule(('Installing conda packages from previous '
                                    'installation.')),
