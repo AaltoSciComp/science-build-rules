@@ -188,7 +188,6 @@ collections:
       - pygpu
       - pylint
       - pympler
-      - pymvpa2
       - pyopenssl
       - pyparsing
       - pysocks
