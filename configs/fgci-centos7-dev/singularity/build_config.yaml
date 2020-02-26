@@ -1,0 +1,51 @@
+command_collections:
+  common:
+    post_commands:
+      - 'mkdir /u'
+      - 'for i in $(seq 0 9); do for j in $(seq 0 9) ; do ln -s /m/home/home$i/$i$j /u/$i$j ; done ; done'
+      - 'mkdir /scratch'
+      - 'mkdir /m'
+      - 'mkdir /l'
+      - 'mkdir /share'
+      - 'mkdir -p /opt/mellanox'
+      - 'mkdir -p /var/singularity/mnt/final/usr/bin'
+  python3-run:
+    runscript_commands:
+      - 'exec python3 "$@"'
+  detectron:
+    environment_commands:
+      - 'export PYTHONPATH=$PYTHONPATH:/detectron/lib'
+  openfoam:
+    post_commands:
+      - 'cat /opt/OpenFOAM/setImage_v1712.sh >> /environment'
+  graph-tool:
+    post_commands:
+      - 'pacman -S python-pip python-virtualenv --noconfirm --needed'
+  openpose:
+    post_commands:
+      - 'ln -s /opt/openpose-master/build/examples/openpose/openpose.bin /usr/local/bin/openpose'
+flag_collections:
+  common:
+    - '-B /m:/m'
+    - '-B /l:/l'
+    - '-B /scratch:/scratch'
+  nvidia:
+    - '--nv'
+  cntk:
+    - '-B /tmp:/run/lock'
+  mellanox:
+    - '-B /opt/mellanox:/opt/mellanox'
+  modules:
+    - '-B /share:/share'
+  openpose:
+    - '--pwd /opt/openpose-master'
+definitions:
+  - name: singularity-ubuntu
+    docker_user: library
+    docker_image: ubuntu
+    tags:
+      - 'latest'
+    flag_collections:
+      - 'common'
+    command_collections:
+      - 'common'
