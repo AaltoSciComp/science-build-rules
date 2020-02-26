@@ -356,6 +356,7 @@ class AnacondaBuilder(Builder):
             help([[This is an automatically created Anaconda installation.]])
 
             prepend_path("PATH", "{{ install_path }}/bin")
+            setenv("CONDA_PREFIX", "{{ install_path }}")
         """
 
         makedirs(module_path, 0o755)
