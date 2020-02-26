@@ -83,6 +83,11 @@ services:
     links:
       - buildbot
       - nfs_service
+  {%- if (builds["singularity"] | default({"enabled": False}))["enabled"] %}
+  {%- if "singularity" in worker %}
+    privileged: true
+  {%- endif %}
+  {%- endif %}
     volumes:
       - {{ worker.name }}_home:/home/buildbot:rw
       - cache:/cache
