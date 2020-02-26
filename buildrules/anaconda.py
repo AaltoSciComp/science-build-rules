@@ -680,7 +680,6 @@ class AnacondaBuilder(Builder):
                                      '{0}').format(previous_install_path)),
                         PythonRule(self._remove_environment, [previous_install_path])])
 
-            self._logger.warning(environment_config)
             # Create modulefile for the environment
             rules.extend([
                 LoggingRule('Creating modulefile for environment: %s' % environment_name),
