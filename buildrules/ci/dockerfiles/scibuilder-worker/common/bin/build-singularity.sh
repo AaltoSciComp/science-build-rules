@@ -2,6 +2,14 @@
 
 set -euo pipefail
 
-BUILD_TARGET=$1
+COMMAND=$1
+TARGET=${WORKERNAME#"worker_"}
+CONF_DIR=$(pwd)/configs/$TARGET/singularity
 
-echo $BUILD_TARGET
+[[ -f /usr/share/lmod/lmod/init/bash ]] && . /usr/share/lmod/lmod/init/bash
+
+set +u
+
+python3 -u -m buildrules singularity $COMMAND $CONF_DIR
+
+exit $?

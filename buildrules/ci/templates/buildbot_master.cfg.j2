@@ -229,7 +229,7 @@ anaconda_builder.addStep(
         name='AnacondaDescribe - {{ worker.name }}',
         command=[
                 "build-anaconda",
-                "describe"
+                "describe",
                 ],
         interruptSignal='TERM',
         sigtermTime=30,
@@ -241,7 +241,7 @@ anaconda_builder.addStep(
         name='AnacondaBuild - {{ worker.name }}',
         command=[
                 "build-anaconda",
-                "build"
+                "build",
                 ],
         interruptSignal='TERM',
         sigtermTime=30,
@@ -269,17 +269,28 @@ singularity_builder.addStep(steps.Git(
 singularity_builder.addStep(
     steps.ShellCommand(
         name='SingularityBuild - {{ worker.name }}',
-        command=util.FlattenList([
-            "echo",
-            "build-singularity",
-            portusParameters]),
+        command=[
+                "build-singularity",
+                "describe",
+                ],
         interruptSignal='TERM',
         sigtermTime=30,
-        timeout=buildbot_timeout,
-        haltOnFailure=True))
+        usePTY=True,
+        timeout=buildbot_timeout))
+singularity_builder.addStep(
+    steps.ShellCommand(
+        name='SingularityBuild - {{ worker.name }}',
+        command=[
+                "build-singularity",
+                "build",
+                ],
+        interruptSignal='TERM',
+        sigtermTime=30,
+        usePTY=True,
+        timeout=buildbot_timeout))
 c['builders'].append(
     util.BuilderConfig(
-        name="Singularity - {{ worker.name }}"
+        name="Singularity - {{ worker.name }}",
         workernames=["worker_{{ worker.name }}"],
         factory=singularity_builder,
         workerbuilddir='/build/singularity'
@@ -365,7 +376,7 @@ spack_builder.addStep(
         name='SpackUninstall - {{ worker.name }}',
         command=[
                 "spackbuilder",
-                "find"
+                "find",
                 ],
         interruptSignal='TERM',
         sigtermTime=30,
@@ -377,7 +388,7 @@ spack_builder.addStep(
         name='SpackDescribe - {{ worker.name }}',
         command=[
                 "build-spack",
-                "describe"
+                "describe",
                 ],
         interruptSignal='TERM',
         sigtermTime=30,
@@ -389,7 +400,7 @@ spack_builder.addStep(
         name='SpackBuild - {{ worker.name }}',
         command=[
                 "build-spack",
-                "build"
+                "build",
                 ],
         interruptSignal='TERM',
         sigtermTime=30,
