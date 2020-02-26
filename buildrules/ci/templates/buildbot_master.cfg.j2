@@ -268,7 +268,7 @@ singularity_builder.addStep(steps.Git(
     haltOnFailure=True))
 singularity_builder.addStep(
     steps.ShellCommand(
-        name='SingularityBuild - {{ worker.name }}',
+        name='SingularityDescribe - {{ worker.name }}',
         command=[
                 "build-singularity",
                 "describe",
