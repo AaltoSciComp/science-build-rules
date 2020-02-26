@@ -47,6 +47,41 @@ environments:
     collections:
       - tensorflow-v2
       - triton-generic
+  - name: anaconda
+    version: '2020-02-tf1'
+    miniconda: False
+    python_version: 3
+    installer_version: '2019.10'
+    condarc:
+      channels:
+        - defaults
+        - pytorch
+        - gurobi
+        - IBMDecisionOptimization
+        - anaconda
+        - mosek
+        - conda-forge
+    collections:
+      - tensorflow-v1
+      - triton-generic
+  - name: anaconda
+    version: '2020-02-tf2'
+    miniconda: False
+    python_version: 3
+    installer_version: '2019.10'
+    freeze: True
+    condarc:
+      channels:
+        - defaults
+        - pytorch
+        - gurobi
+        - IBMDecisionOptimization
+        - anaconda
+        - mosek
+        - conda-forge
+    collections:
+      - tensorflow-v2
+      - triton-generic
 collections:
   tensorflow-v1:
     conda_packages:
@@ -65,16 +100,12 @@ collections:
   triton-generic:
     pip_packages:
       - bash-kernel
-      - docopt
+      - jupyterlab-git
       - matlab-kernel
-      - mne
-      - numpy
+      - nbzip
       - pymanopt
-      - pymvpa2
       - python-igraph
       - roboschool
-      - sphinx
-      - sphinx-rtd-theme
     conda_packages:
       - anaconda
       - anaconda-client
@@ -99,6 +130,7 @@ collections:
       - conda
       - conda-env
       - conda-tree
+      - configargparse
       - contextlib2
       - coverage
       - cplex
@@ -110,6 +142,7 @@ collections:
       - cython
       - dill
       - distributed
+      - docopt
       - docutils
       - fastcache
       - fastparquet
@@ -121,6 +154,7 @@ collections:
       - hdf5
       - heapdict
       - html5lib
+      - importnb
       - ipdb
       - ipykernel
       - ipyparallel
@@ -128,8 +162,10 @@ collections:
       - ipywidgets
       - joblib
       - jupyter
+      - jupyter_contrib_nbextensions
       - jupyterlab
       - jupyterlab_server
+      - jupytext
       - keras
       - keyring
       - llvmlite
@@ -141,6 +177,7 @@ collections:
       - mkl-service
       - mkl_fft
       - mkl_random
+      - mne
       - mock
       - more-itertools
       - mosek
@@ -148,6 +185,9 @@ collections:
       - mpich2
       - navigator-updater
       - nbconvert
+      - nbdime
+      - nbstripout
+      - nbval
       - nccl
       - networkx
       - nitime
@@ -155,6 +195,7 @@ collections:
       - nose
       - numba
       - numexpr
+      - numpy
       - numpydoc
       - olefile
       - openmp
@@ -208,7 +249,9 @@ collections:
       - singledispatch
       - six
       - sortedcollections
+      - sphinx
       - sphinxcontrib
+      - sphinx_rtd_theme
       - spyder
       - sqlalchemy
       - sqlite
