@@ -27,5 +27,7 @@ environments:
     condarc:
       channels:
         - defaults
+    conda_packages:
+      - numpy
     collections:
       - tensorflow-v1

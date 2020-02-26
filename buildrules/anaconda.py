@@ -539,6 +539,9 @@ class AnacondaBuilder(Builder):
             update_install = False
             freeze = environment_config.get('freeze', False)
 
+            install_path = self._get_install_path(environment_config)
+            module_path = self._get_module_path(environment_config)
+
             # Check if same kind of an environment is already installed
             installed_checksum = installed_environments.get(
                 environment_name, {}).get('checksum', '')
@@ -555,11 +558,11 @@ class AnacondaBuilder(Builder):
             else:
                 install_msg = ("Environment {environment_name} is already installed. "
                                "Skipping installation.")
+                install_path = installed_environments[environment_name]['install_path']
+                module_path = installed_environments[environment_name]['module_path']
                 skip_install = True
 
             installer = self._get_installer_path(environment_config, update_installer=update_install)
-            install_path = self._get_install_path(environment_config)
-            module_path = self._get_module_path(environment_config)
 
             # Add new installation path to PATH
             conda_env = {
@@ -574,93 +577,110 @@ class AnacondaBuilder(Builder):
             rules.append(LoggingRule(install_msg.format(**environment_config)))
 
             if not skip_install:
-              # Install base environment
-              rules.extend([
-                  PythonRule(self._remove_environment, [install_path]),
-                  PythonRule(self._download_installer, [installer]),
-                  PythonRule(
-                      makedirs,
-                      [install_path, 0o755],
-                  ),
-                  SubprocessRule(
-                      ['bash', installer, '-f', '-b', '-p', install_path],
-                      shell=True
-                  ),
-              ])
+                # Install base environment
+                rules.extend([
+                    PythonRule(self._remove_environment, [install_path]),
+                    PythonRule(self._download_installer, [installer]),
+                    PythonRule(
+                        makedirs,
+                        [install_path, 0o755],
+                    ),
+                    SubprocessRule(
+                        ['bash', installer, '-f', '-b', '-p', install_path],
+                        shell=True
+                    ),
+                ])
 
-              # Create condarc for the installed environment
-              rules.extend([
-                  LoggingRule('Verifying that only the environment condarc is utilized.'),
-                  PythonRule(
-                      self._verify_condarc,
-                      [install_path]
-                  ),
-                  LoggingRule('Creating condarc for environment.'),
-                  PythonRule(
-                      self._update_condarc,
-                      [install_path, condarc],
-                  ),
-              ])
+                # Create condarc for the installed environment
+                rules.extend([
+                    LoggingRule('Verifying that only the environment condarc is utilized.'),
+                    PythonRule(
+                        self._verify_condarc,
+                        [install_path]
+                    ),
+                    LoggingRule('Creating condarc for environment.'),
+                    PythonRule(
+                        self._update_condarc,
+                        [install_path, condarc],
+                    ),
+                ])
 
-              # During update, install old packages using environment.yml
-              if update_install:
-                  rules.extend([
-                      LoggingRule(
-                          ('Sanitizing environment file from previous installation '
-                           '"{0}" to new installation "{1}"').format(
-                               previous_environment,
-                               environment_config['environment_file'])),
+                # During update, install old packages using environment.yml
+                if update_install:
+                    rules.extend([
+                        LoggingRule(
+                            ('Sanitizing environment file from previous installation '
+                             '"{0}" to new installation "{1}"').format(
+                                 previous_environment,
+                                 environment_config['environment_file'])),
+                        PythonRule(
+                            self._sanitize_environment_file,
+                            [previous_environment, environment_config['environment_file']],
+                        ),
+                        LoggingRule(('Installing conda packages from previous '
+                                     'installation.')),
+                        SubprocessRule(
+                            ['conda', 'env', 'update',
+                             '--file', environment_config['environment_file'],
+                             '--prefix', install_path],
+                            env=conda_env,
+                            shell=True)])
+
+                    conda_install_cmd.append('--freeze-installed')
+                    pip_install_cmd.extend([
+                        '--upgrade', '--upgrade-strategy', 'only-if-needed'])
+
+                # Install packages using conda
+                if conda_packages:
+                    rules.extend([
+                        LoggingRule('Installing conda packages.'),
+                        SubprocessRule(
+                            conda_install_cmd + conda_packages,
+                            env=conda_env,
+                            shell=True),
+                    ])
+
+                # Install packages using pip
+                if pip_packages:
+                    rules.extend([
+                        LoggingRule('Installing pip packages.'),
+                        SubprocessRule(
+                            pip_install_cmd + pip_packages,
+                            env=conda_env,
+                            shell=True),
+                    ])
+
+                # Create environment.yml
+                rules.extend([
+                    LoggingRule('Creating environment.yml from newly built environment.'),
+                    PythonRule(
+                        self._export_conda_environment,
+                        [install_path])
+                ])
+
+                # Add newly created environment to installed environments
+                rules.extend([
+                    LoggingRule('Updating installed_environments.yml.'),
+                    PythonRule(
+                        self._update_installed_environments,
+                        [environment_config['environment_name'], environment_config]),
+                ])
+
+                # Update .condarc
+                rules.extend([
+                      LoggingRule('Creating condarc for environment.'),
                       PythonRule(
-                          self._sanitize_environment_file,
-                          [previous_environment, environment_config['environment_file']],
-                      ),
-                      LoggingRule(('Installing conda packages from previous '
-                                   'installation.')),
-                      SubprocessRule(
-                          ['conda', 'env', 'update',
-                           '--file', environment_config['environment_file'],
-                           '--prefix', install_path],
-                          env=conda_env,
-                          shell=True)])
+                          self._update_condarc,
+                          [install_path, condarc],
+                          {'install_time': False})
+                ])
+                if update_install and self.remove_after_update:
+                    rules.extend([
+                        LoggingRule(('Removing old environment from '
+                                     '{0}').format(previous_install_path)),
+                        PythonRule(self._remove_environment, [previous_install_path])])
 
-                  conda_install_cmd.append('--freeze-installed')
-                  pip_install_cmd.extend([
-                      '--upgrade', '--upgrade-strategy', 'only-if-needed'])
-
-              # Install packages using conda
-              if conda_packages:
-                  rules.extend([
-                      LoggingRule('Installing conda packages.'),
-                      SubprocessRule(
-                          conda_install_cmd + conda_packages,
-                          env=conda_env,
-                          shell=True),
-                  ])
-
-              # Install packages using pip
-              if pip_packages:
-                  rules.extend([
-                      LoggingRule('Installing pip packages.'),
-                      SubprocessRule(
-                          pip_install_cmd + pip_packages,
-                          env=conda_env,
-                          shell=True),
-                  ])
-
-              # Create environment.yml
-              rules.extend([
-                  LoggingRule('Creating environment.yml from newly built environment.'),
-                  PythonRule(
-                      self._export_conda_environment,
-                      [install_path])
-              ])
-
-            # Add newly created environment to installed environments
-            rules.append(
-                PythonRule(
-                    self._update_installed_environments,
-                    [environment_config['environment_name'], environment_config]))
-
+            self._logger.warning(environment_config)
             # Create modulefile for the environment
             rules.extend([
                 LoggingRule('Creating modulefile for environment: %s' % environment_name),
@@ -668,20 +688,6 @@ class AnacondaBuilder(Builder):
                     self._write_modulefile,
                     [environment_config['name'], environment_config['version'], install_path, module_path])
             ])
-            rules.extend([
-                  LoggingRule('Creating condarc for environment.'),
-                  PythonRule(
-                      self._update_condarc,
-                      [install_path, condarc],
-                      {'install_time': False})
-            ])
-
-
-            if update_install and self.remove_after_update:
-                rules.extend([
-                    LoggingRule(('Removing old environment from '
-                                 '{0}').format(previous_install_path)),
-                    PythonRule(self._remove_environment, [previous_install_path])])
 
         return rules
 
