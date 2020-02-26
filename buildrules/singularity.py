@@ -342,7 +342,7 @@ class SingularityBuilder(Builder):
 
                 stage_image = os.path.join(
                     build_image_path,
-                    '{0}.simg'.format(nameformat))
+                    '{0}.sif'.format(nameformat))
 
                 install_path = os.path.join(
                     self._install_path,
