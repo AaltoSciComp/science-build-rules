@@ -30,6 +30,11 @@ command_collections:
       - 'pip install scipy==1.3.3'
       - 'pip install requests==2.22.0'
       - 'pip install Pillow==6.2.1'
+  stylegan2_pytorch:
+      - 'apt-get update'
+      - 'apt-get -y upgrade'
+      - 'apt-get -y install -q build-essential g++'
+      - 'rm -rf /var/lib/apt/lists/*'
 flag_collections:
   common:
     - '-B /m:/m'
@@ -67,6 +72,20 @@ definitions:
     command_collections:
       - 'common'
       - 'stylegan2'
+    flag_collections:
+      - 'common'
+      - 'dgx'
+  - name: 'stylegan2-pytorch'
+    docker_user: 'nvidia'
+    docker_image: 'pytorch'
+    registry: 'nvcr.io'
+    module_namespace: 'graphics-dgx'
+    tags:
+      - '2020.02-py3'
+    command_collections:
+      - 'common'
+      - 'stylegan2'
+      - 'stylegan2_pytorch'
     flag_collections:
       - 'common'
       - 'dgx'
