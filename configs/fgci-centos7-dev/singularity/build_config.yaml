@@ -29,6 +29,7 @@ flag_collections:
     - '-B /m:/m'
     - '-B /l:/l'
     - '-B /scratch:/scratch'
+    - '-B /raid:/raid'
   nvidia:
     - '--nv'
   cntk:
