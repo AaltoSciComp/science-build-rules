@@ -82,7 +82,7 @@ definitions:
     registry: 'nvcr.io'
     module_namespace: 'graphics-dgx'
     tags:
-      - '2020.02-py3'
+      - '20.02-py3'
     command_collections:
       - 'common'
       - 'stylegan2'
