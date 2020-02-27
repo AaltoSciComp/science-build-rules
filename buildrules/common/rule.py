@@ -89,6 +89,8 @@ class PythonRule(Rule):
                  func,
                  args=None,
                  kwargs=None,
+                 hide_args=False,
+                 hide_kwargs=False,
                  stdout_writer=None,
                  stderr_writer=None):
         if args is None:
@@ -98,6 +100,8 @@ class PythonRule(Rule):
         self._func = func
         self._args = args
         self._kwargs = kwargs
+        self._hide_args = hide_args
+        self._hide_kwargs = hide_kwargs
         super().__init__(stdout_writer, stderr_writer)
 
     @rule_error_wrapper
@@ -110,10 +114,14 @@ class PythonRule(Rule):
         return False
 
     def __str__(self):
-        return 'PythonRule: {{ function: {0}, args: {1}, kwargs: {2} }}'.format(
-            self._func.__qualname__,
-            self._args,
-            self._kwargs)
+        msg = 'PythonRule: {{ '
+        msg_list = ['function: {0}'.format(self._func.__qualname__)]
+        if not self._hide_args:
+            msg_list.append('args: {0}'.format(self._args))
+        if not self._hide_kwargs:
+            msg_list.append('kwargs: {0}'.format(self._kwargs))
+        msg += ', '.join(msg_list) + ' }}'
+        return msg
 
 class SubprocessRule(Rule):
     """SubprocessRule is a BuildRule that when called will execute a shell
@@ -150,7 +158,7 @@ class SubprocessRule(Rule):
                  stdout_writer=None,
                  stderr_writer=None,
                  cwd=None,
-                 silent_env=False):
+                 hide_env=False):
         self._sp_command = sp_command
         self._orig_env = env
         if env is not None:
@@ -161,7 +169,7 @@ class SubprocessRule(Rule):
         self._shell = shell
         self._check = check
         self._cwd = cwd
-        self._silent_env = silent_env
+        self._hide_env = hide_env
         super().__init__(stdout_writer, stderr_writer)
 
     @rule_error_wrapper
@@ -218,18 +226,13 @@ class SubprocessRule(Rule):
         return 0
 
     def __str__(self):
-        if not self._silent_env:
-            message = ('SubprocessRule: {{ sp_function: {0}, '
-                    'env: {1}, shell: {2} }}').format(
-                        ' '.join(self._sp_command),
-                        self._orig_env,
-                        self._shell)
-        else:
-            message = ('SubprocessRule: {{ sp_function: {0}, '
-                    'shell: {1} }}').format(
-                        ' '.join(self._sp_command),
-                        self._shell)
-        return message
+        msg = 'SubprocessRule: {{ '
+        msg_list = ['sp_function: {0}'.format(' '.join(self._sp_command))]
+        if not self._hide_env:
+            msg_list.append('env: {0}'.format(self._orig_env))
+        msg_list.append('shell: {0}'.format(self._shell))
+        msg += ', '.join(msg_list) + ' }}'
+        return msg
 
 class LoggingRule(Rule):
     """LoggingRule is a simple logger that outputs a message at desired step.

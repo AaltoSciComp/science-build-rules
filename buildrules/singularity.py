@@ -302,6 +302,25 @@ class SingularityBuilder(Builder):
 
         write_template(definition_file, definition_config, template=template)
 
+    def _build_image(self, image, definition, sudo=False, fakeroot=False, debug=False, build_env=None):
+        singularity_build_cmd = ['singularity', 'build']
+
+        if debug:
+            singularity_build_cmd.insert(1, '-d')
+        if sudo:
+            singularity_build_cmd.insert(0, 'sudo')
+            chown_cmd.insert(0, 'sudo')
+        if fakeroot:
+            singularity_build_cmd.append('--fakeroot')
+
+        if not os.path.isfile(image):
+
+            cmd = SubprocessRule(
+                singularity_build_cmd + [image, definition],
+                env=build_env,
+                shell=True,
+                hide_env=True)
+            cmd()
 
     def _get_image_install_rules(self):
 
@@ -375,10 +394,10 @@ class SingularityBuilder(Builder):
                 image_config['image_file'] = install_image
                 image_config['module_path'] = module_path
 
-                buildenv = copy.deepcopy(default_env)
+                build_env = copy.deepcopy(default_env)
                 auths = self._auths.get(image_config['registry'], None)
                 if auths:
-                    buildenv.update({
+                    build_env.update({
                         'SINGULARITY_DOCKER_USERNAME': auths['username'],
                         'SINGULARITY_DOCKER_PASSWORD': auths['password']
                     })
@@ -428,9 +447,6 @@ class SingularityBuilder(Builder):
                          }),
                      ])
 
-                     singularity_build_cmd = ['singularity', 'build', '-F']
-                     chown_cmd = ['chown', '{0}:{0}'.format(uid)]
-
                      debug = (image_config.get('debug', False) or
                              self._confreader['config']['config'].get('debug', False))
                      sudo = (image_config.get('sudo', False) or
@@ -438,26 +454,24 @@ class SingularityBuilder(Builder):
                      fakeroot = (image_config.get('fakeroot', False) or
                                  self._confreader['config']['config'].get(
                                      'fakeroot', False))
-                     if debug:
-                         singularity_build_cmd.insert(1, '-d')
-                     if sudo:
-                         singularity_build_cmd.insert(0, 'sudo')
-                         chown_cmd.insert(0, 'sudo')
-                     if fakeroot:
-                         singularity_build_cmd.append('--fakeroot')
                      rules.extend([
                          LoggingRule(
                              'Building image for %s' % install_name),
-                         SubprocessRule(
-                             singularity_build_cmd + [stage_image, stage_definition],
-                             env=buildenv,
-                             shell=True)
+                         PythonRule(
+                             self._build_image,
+                             [stage_image, stage_definition],
+                             {'debug': debug, 'sudo': sudo, 'fakeroot': fakeroot,
+                              'build_env': build_env},
+                             hide_kwargs=True)
                      ])
+
                      if sudo:
+                         chown_cmd = ['chown', '{0}:{0}'.format(uid)]
                          rules.append(
                              SubprocessRule(
                                  chown_cmd + [stage_image],
                                  shell=True))
+
                      rules.extend([
                          LoggingRule(
                              'Copying staged image to installation directory'),
@@ -551,7 +565,7 @@ class SingularityBuilder(Builder):
 
         if os.path.isdir(self._build_stage):
             images = glob(
-                os.path.join(self._build_stage, '*', '*', '*', 'images', '*.sif')
+                os.path.join(self._build_stage, 'images', '*.sif')
             )
             for image in images:
                 os.remove(image)
