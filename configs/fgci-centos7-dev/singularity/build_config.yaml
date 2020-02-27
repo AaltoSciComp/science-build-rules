@@ -31,6 +31,7 @@ command_collections:
       - 'pip install requests==2.22.0'
       - 'pip install Pillow==6.2.1'
   stylegan2_pytorch:
+    post_commands:
       - 'apt-get update'
       - 'apt-get -y upgrade'
       - 'apt-get -y install -q build-essential g++'
