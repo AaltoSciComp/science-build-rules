@@ -14,7 +14,7 @@ import requests
 import sh
 
 from buildrules.common.builder import Builder
-from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule
+from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule, RuleError
 from buildrules.common.confreader import ConfReader
 from buildrules.common.utils import (load_yaml, write_yaml, makedirs, copy_file,
         write_template, calculate_dict_checksum)
@@ -97,6 +97,7 @@ class SingularityBuilder(Builder):
                             'debug': {'type': 'boolean'},
                             'sudo': {'type': 'boolean'},
                             'fakeroot': {'type': 'boolean'},
+                            'module_namespace': {'type': 'string'},
                             'tags': {
                                 'type': 'array',
                                 'items': {'type': 'string'},
@@ -242,6 +243,7 @@ class SingularityBuilder(Builder):
             'docker_user': 'library',
             'docker_image': definition_dict['name'],
             'tag': tag,
+            'module_namespace': 'common',
         }
 
         config = copy.deepcopy(default_config)
@@ -325,27 +327,29 @@ class SingularityBuilder(Builder):
 
                 build_path = os.path.join(
                     self._build_stage,
+                    image_config['module_namespace'],
                     image_config['name'],
                     tag)
 
-                build_definition_path = os.path.join(
+                stage_definition_path = os.path.join(
                     build_path,
                     'definitions')
 
-                build_image_path = os.path.join(
+                stage_image_path = os.path.join(
                     build_path,
                     'images')
 
                 stage_definition = os.path.join(
-                    build_definition_path,
+                    stage_definition_path,
                     '{0}.def'.format(nameformat))
 
                 stage_image = os.path.join(
-                    build_image_path,
+                    stage_image_path,
                     '{0}.sif'.format(nameformat))
 
                 install_path = os.path.join(
                     self._install_path,
+                    image_config['module_namespace'],
                     image_config['name'],
                     tag)
 
@@ -367,12 +371,12 @@ class SingularityBuilder(Builder):
 
                 module_path = os.path.join(
                     self._module_path,
+                    image_config['module_namespace'],
                     image_config['name'])
 
                 image_config['definition_file'] = install_definition
                 image_config['image_file'] = install_image
                 image_config['module_path'] = module_path
-
 
                 buildenv = copy.deepcopy(default_env)
                 auths = self._auths.get(image_config['registry'], None)
@@ -407,8 +411,8 @@ class SingularityBuilder(Builder):
                 if not skip_install:
 
                      rules.extend([
-                         PythonRule(makedirs, [build_definition_path]),
-                         PythonRule(makedirs, [build_image_path]),
+                         PythonRule(makedirs, [stage_definition_path]),
+                         PythonRule(makedirs, [stage_image_path]),
                          PythonRule(makedirs, [install_definition_path]),
                          PythonRule(makedirs, [install_image_path]),
                          PythonRule(makedirs, [module_path]),
@@ -549,7 +553,7 @@ class SingularityBuilder(Builder):
 
         if os.path.isdir(self._module_path):
             modulefiles = glob(
-                os.path.join(self._module_path, '*', '*.lua')
+                os.path.join(self._module_path, '*', '*', '*.lua')
             )
             for modulefile in modulefiles:
                 os.remove(modulefile)
