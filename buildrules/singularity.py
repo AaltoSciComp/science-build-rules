@@ -266,12 +266,16 @@ class SingularityBuilder(Builder):
         for flag_collection in config.pop('flag_collections', []):
             flags = flags + self._flag_collections[flag_collection]
 
+        # Do not include module namespace to image checksum
+        module_namespace = config.pop('module_namespace')
+
         config['checksum'] = calculate_dict_checksum(config)
         config['checksum_small'] = config['checksum'][:8]
         config['nameformat'] = '{name!s}-{tag!s}-{checksum_small!s}'.format(**config)
         config['docker_url'] = '{docker_user!s}/{docker_image!s}:{tag!s}'.format(**config)
 
         config['flags'] = ' '.join(flags)
+        config['module_namespace'] = module_namespace
 
         return config
 
@@ -317,26 +321,25 @@ class SingularityBuilder(Builder):
             'remove_after_update',
             False)
 
+        rules.extend([
+            LoggingRule('Cleaning up images in staging path: %s' % self._build_stage),
+            PythonRule(self._clean_staging),
+        ])
+
         for definition in self._confreader['build_config']['definitions']:
             for tag in definition.pop('tags'):
                 image_config = self._get_image_config(tag, definition)
 
                 nameformat = image_config.pop('nameformat')
                 commands = image_config.pop('commands')
-                module_name = image_config.pop('module_name')
-
-                build_path = os.path.join(
-                    self._build_stage,
-                    image_config['module_namespace'],
-                    image_config['name'],
-                    tag)
+                install_name = '%s/%s' % (image_config['module_namespace'], image_config['module_name'])
 
                 stage_definition_path = os.path.join(
-                    build_path,
+                    self._build_stage,
                     'definitions')
 
                 stage_image_path = os.path.join(
-                    build_path,
+                    self._build_stage,
                     'images')
 
                 stage_definition = os.path.join(
@@ -347,18 +350,12 @@ class SingularityBuilder(Builder):
                     stage_image_path,
                     '{0}.sif'.format(nameformat))
 
-                install_path = os.path.join(
-                    self._install_path,
-                    image_config['module_namespace'],
-                    image_config['name'],
-                    tag)
-
                 install_definition_path = os.path.join(
-                    install_path,
+                    self._install_path,
                     'definitions')
 
                 install_image_path = os.path.join(
-                    install_path,
+                    self._install_path,
                     'images')
 
                 install_definition = os.path.join(
@@ -391,13 +388,13 @@ class SingularityBuilder(Builder):
 
                 # Check if same kind of an image is already installed
                 installed_checksum = installed_images.get(
-                    module_name, {}).get('checksum', '')
+                    install_name, {}).get('checksum', '')
 
                 if not installed_checksum:
                     install_msg = ("Image {0} is "
                                    "not installed. Starting installation.")
                 elif installed_checksum != image_config['checksum']:
-                    previous_image_path = installed_images[module_name]['image_file']
+                    previous_image_path = installed_images[install_name]['image_file']
                     install_msg = ("Image {0} installed "
                                    "but marked for update.")
                     update_install = True
@@ -406,7 +403,7 @@ class SingularityBuilder(Builder):
                                    "Skipping installation.")
                     skip_install = True
 
-                rules.append(LoggingRule(install_msg.format(module_name)))
+                rules.append(LoggingRule(install_msg.format(install_name)))
 
                 if not skip_install:
 
@@ -420,7 +417,7 @@ class SingularityBuilder(Builder):
 
                      rules.extend([
                          LoggingRule(
-                             'Writing definition file for %s' % module_name),
+                             'Writing definition file for %s' % install_name),
                          PythonRule(
                              self._write_definition_file,
                              args=[stage_definition],
@@ -431,7 +428,7 @@ class SingularityBuilder(Builder):
                          }),
                      ])
 
-                     singularity_build_cmd = ['singularity', 'build']
+                     singularity_build_cmd = ['singularity', 'build', '-F']
                      chown_cmd = ['chown', '{0}:{0}'.format(uid)]
 
                      debug = (image_config.get('debug', False) or
@@ -450,7 +447,7 @@ class SingularityBuilder(Builder):
                          singularity_build_cmd.append('--fakeroot')
                      rules.extend([
                          LoggingRule(
-                             'Building image for %s' % module_name),
+                             'Building image for %s' % install_name),
                          SubprocessRule(
                              singularity_build_cmd + [stage_image, stage_definition],
                              env=buildenv,
@@ -480,21 +477,22 @@ class SingularityBuilder(Builder):
                              'Updating installed images'),
                          PythonRule(
                              self._update_installed_images,
-                             [module_name, image_config])
+                             [install_name, image_config])
                      ])
+
+                     if update_install and remove_after_update:
+                         rules.extend([
+                             LoggingRule(('Removing old environment from '
+                                          '{0}').format(previous_image_path)),
+                             PythonRule(os.remove, [previous_image_path])])
+
                 rules.extend([
-                    LoggingRule('Writing modulefile for %s' % module_name),
+                    LoggingRule('Writing modulefile for %s' % install_name),
                     PythonRule(
                         self._write_modulefile,
                         [image_config['name'], image_config['tag'],
                          image_config['flags'], install_image, module_path]),
                 ])
-
-                if update_install and remove_after_update:
-                    rules.extend([
-                        LoggingRule(('Removing old environment from '
-                                     '{0}').format(previous_image_path)),
-                        PythonRule(os.remove, [previous_image_path])])
 
         return rules
 
@@ -543,6 +541,20 @@ class SingularityBuilder(Builder):
             raise RuleError('Modulefile %s already exists' % modulefile)
 
         write_template(modulefile, moduleconfig, template=template, chmod=0o644)
+
+    def _clean_staging(self):
+        """ This function creates build rules that clean up staging.
+
+        Returns:
+            list: List of build rules.
+        """
+
+        if os.path.isdir(self._build_stage):
+            images = glob(
+                os.path.join(self._build_stage, '*', '*', '*', 'images', '*.sif')
+            )
+            for image in images:
+                os.remove(image)
 
     def _clean_modules(self):
         """ This function creates build rules that clean up modulefiles.

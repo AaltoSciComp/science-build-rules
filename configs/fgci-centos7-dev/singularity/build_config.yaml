@@ -6,6 +6,7 @@ command_collections:
       - 'mkdir /scratch'
       - 'mkdir /m'
       - 'mkdir /l'
+      - 'mkdir /raid'
       - 'mkdir /share'
       - 'mkdir -p /opt/mellanox'
       - 'mkdir -p /var/singularity/mnt/final/usr/bin'
@@ -29,6 +30,7 @@ flag_collections:
     - '-B /m:/m'
     - '-B /l:/l'
     - '-B /scratch:/scratch'
+  dgx:
     - '-B /raid:/raid'
   nvidia:
     - '--nv'
@@ -48,5 +50,16 @@ definitions:
       - 'latest'
     flag_collections:
       - 'common'
+    command_collections:
+      - 'common'
+  - name: singularity-ubuntu
+    docker_user: library
+    docker_image: ubuntu
+    module_namespace: dgx
+    tags:
+      - 'latest'
+    flag_collections:
+      - 'common'
+      - 'dgx'
     command_collections:
       - 'common'

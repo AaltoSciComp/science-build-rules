@@ -15,3 +15,13 @@ definitions:
       - 'common'
     command_collections:
       - 'common'
+  - name: singularity-ubuntu
+    module_namespace: dgx
+    docker_user: library
+    docker_image: ubuntu
+    tags:
+      - 'latest'
+    flag_collections:
+      - 'common'
+    command_collections:
+      - 'common'
