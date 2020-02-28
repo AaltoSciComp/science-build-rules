@@ -85,7 +85,6 @@ definitions:
       - '20.02-py3'
     command_collections:
       - 'common'
-      - 'stylegan2'
       - 'stylegan2_pytorch'
     flag_collections:
       - 'common'
