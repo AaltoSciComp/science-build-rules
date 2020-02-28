@@ -579,7 +579,7 @@ class CIBuilder(Builder):
             singularity_auths_file = os.path.join(
                 self._mountpoints['home'],
                 worker['name'],
-                'singularity_auths.yml')
+                'singularity_auths.yaml')
 
             rules.append(PythonRule(
                 write_yaml, [singularity_auths_file, singularity_auths]))

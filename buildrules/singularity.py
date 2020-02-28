@@ -397,6 +397,11 @@ class SingularityBuilder(Builder):
                 build_env = copy.deepcopy(default_env)
                 auths = self._auths.get(image_config['registry'], None)
                 if auths:
+                    rules.append(
+                        LoggingRule(
+                            ("Using authentication for user "
+                             "'%s' with registry '%s'") % (auths['username'], image_config['registry'])
+                        ))
                     build_env.update({
                         'SINGULARITY_DOCKER_USERNAME': auths['username'],
                         'SINGULARITY_DOCKER_PASSWORD': auths['password']
