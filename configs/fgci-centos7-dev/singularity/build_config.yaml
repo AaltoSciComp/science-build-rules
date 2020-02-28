@@ -33,7 +33,11 @@ command_collections:
   stylegan2_pytorch:
     post_commands:
       - 'apt-get update'
-      - 'apt-get -y upgrade'
+      - 'apt-get -y install -q build-essential g++'
+      - 'rm -rf /var/lib/apt/lists/*'
+  compilers:
+    post_commands:
+      - 'apt-get update'
       - 'apt-get -y install -q build-essential g++'
       - 'rm -rf /var/lib/apt/lists/*'
 flag_collections:
@@ -89,3 +93,40 @@ definitions:
     flag_collections:
       - 'common'
       - 'dgx'
+  - name: 'nvidia-pytorch'
+    docker_user: 'nvidia'
+    docker_image: 'pytorch'
+    registry: 'nvcr.io'
+    module_namespace: 'common'
+    tags:
+      - '20.02-py3'
+    command_collections:
+      - 'common'
+      - 'compilers'
+    flag_collections:
+      - 'common'
+  - name: 'nvidia-tensorflow'
+    docker_user: 'nvidia'
+    docker_image: 'tensorflow'
+    registry: 'nvcr.io'
+    module_namespace: 'common'
+    tags:
+      - '20.02-tf1-py3'
+      - '20.02-tf2-py3'
+    command_collections:
+      - 'common'
+      - 'compilers'
+    flag_collections:
+      - 'common'
+  - name: 'singularity-rstudio'
+    docker_user: 'aaltoscienceit'
+    docker_image: 'rstudio'
+    registry: 'registry.cs.aalto.fi'
+    module_namespace: 'common'
+    tags:
+      - '1.2.5033'
+    command_collections:
+      - 'common'
+      - 'compilers'
+    flag_collections:
+      - 'common'
