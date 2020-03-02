@@ -23,6 +23,7 @@ class CIBuilder(Builder):
         'patternProperties': {
             'build_environment_repository': {'type': 'string'},
             'science_build_rules_repository': {'type': 'string'},
+            'science_build_configs_repository': {'type': 'string'},
             'build_folder': {'type': 'string'},
             'compose_project_name': {'type': 'string'},
             'buildbot_master': {
