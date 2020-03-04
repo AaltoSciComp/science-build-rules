@@ -5,6 +5,8 @@ command_collections:
 flag_collections:
   common:
     - '-B /tmp:/my_mount'
+  nvidia:
+    - '--nv'
 definitions:
   - name: singularity-ubuntu
     docker_user: library
@@ -13,5 +15,15 @@ definitions:
       - 'latest'
     flag_collections:
       - 'common'
+    command_collections:
+      - 'common'
+  - name: singularity-tensorflow
+    docker_user: tensorflow
+    docker_image: tensorflow
+    tags:
+      - 'latest'
+    flag_collections:
+      - 'common'
+      - 'nvidia'
     command_collections:
       - 'common'
