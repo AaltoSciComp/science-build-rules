@@ -80,6 +80,7 @@ definitions:
     flag_collections:
       - 'common'
       - 'dgx'
+      - 'nvidia'
   - name: 'stylegan2-pytorch'
     docker_user: 'nvidia'
     docker_image: 'pytorch'
@@ -93,6 +94,7 @@ definitions:
     flag_collections:
       - 'common'
       - 'dgx'
+      - 'nvidia'
   - name: 'nvidia-pytorch'
     docker_user: 'nvidia'
     docker_image: 'pytorch'
@@ -105,6 +107,7 @@ definitions:
       - 'compilers'
     flag_collections:
       - 'common'
+      - 'nvidia'
   - name: 'nvidia-tensorflow'
     docker_user: 'nvidia'
     docker_image: 'tensorflow'
@@ -118,6 +121,7 @@ definitions:
       - 'compilers'
     flag_collections:
       - 'common'
+      - 'nvidia'
   - name: 'singularity-rstudio'
     docker_user: 'aaltoscienceit'
     docker_image: 'rstudio'
