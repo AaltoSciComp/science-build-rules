@@ -134,3 +134,13 @@ definitions:
       - 'compilers'
     flag_collections:
       - 'common'
+  - name: 'singularity-polysolver'
+    docker_user: 'sachet'
+    docker_image: 'polysolver'
+    module_namespace: 'common'
+    tags:
+      - 'v4'
+    command_collections:
+      - 'common'
+    flag_collections:
+      - 'common'
