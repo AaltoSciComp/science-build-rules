@@ -66,10 +66,25 @@ class CIBuilder(Builder):
                             },
                         },
                     },
-                    'docker': {
+                    'openstack': {
                         'type': 'object',
-                        'properties': {
-                            'config_file': {'type': 'string'},
+                        'patternProperties': {
+                            '.*' : {
+                                'type': 'object',
+                                'additionalProperties': False,
+                                'properties': {
+                                    'username': {'type': 'string'},
+                                    'password': {'type': 'string'},
+                                    'project_name': {'type': 'string'},
+                                    'auth_url': {'type': 'string'},
+                                },
+                                'required': [
+                                    'username',
+                                    'password',
+                                    'project_name',
+                                    'auth_url',
+                                ],
+                            },
                         },
                     },
                     'singularity': {
@@ -83,6 +98,10 @@ class CIBuilder(Builder):
                                     'username': {'type': 'string'},
                                     'password': {'type': 'string'},
                                 },
+                                'required': [
+                                    'username',
+                                    'password',
+                                ],
                             },
                         },
                     },
@@ -562,7 +581,7 @@ class CIBuilder(Builder):
 
     def _create_singularity_auths(self):
 
-        """Copies or creates ssh keys based on configuration"""
+        """Creates authentications for docker registries for Singularity builder"""
 
         rules = []
 
@@ -586,6 +605,32 @@ class CIBuilder(Builder):
 
         return rules
 
+    def _create_openstack_auths(self):
+
+        """Creates authentications for OpenStack deployer"""
+
+        rules = []
+
+        workers = [{'name':'master', 'builds': {}}]
+
+        workers.extend(self._confreader['build_config']['target_workers'])
+
+        openstack_auths = {
+            'auths': self._confreader['build_config'].get('auths', {}).get('openstack', {})
+        }
+
+        for worker in workers:
+
+            openstack_auths_file = os.path.join(
+                self._mountpoints['home'],
+                worker['name'],
+                'os_auths.yaml')
+
+            rules.append(PythonRule(
+                write_yaml, [openstack_auths_file, openstack_auths]))
+
+        return rules
+
     def _get_rules(self):
         rules = []
         rules.extend(self._get_clone_build_environment_rule())
@@ -593,6 +638,7 @@ class CIBuilder(Builder):
         rules.extend(self._copy_certs())
         rules.extend(self._copy_ssh())
         rules.extend(self._create_singularity_auths())
+        rules.extend(self._create_openstack_auths())
         rules.extend(self._get_config_creation_rules())
         return rules
 

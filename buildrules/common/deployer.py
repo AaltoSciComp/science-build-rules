@@ -8,8 +8,9 @@ strategies.
 import logging
 import os
 import yaml
-from jsonschema import validate
 from buildrules.common.rule import SubprocessRule, LoggingRule, PythonRule
+from buildrules.common.confreader import ConfReader
+from jsonschema import validate
 from swiftclient.service import SwiftError, SwiftService, SwiftUploadObject
 
 DEPLOYMENTCONFIG_SCHEMA = {
@@ -112,41 +113,72 @@ class SwiftDeployer(Deployer):
         "type": "object",
         "properties" : {
             "method": {"type" : "string"},
+            "target_host": {"type" : "string"},
             "dest_container": {"type" : "string"},
             "source": {"type" : "string"},
             "source_replacement": {"type" : "string"},
-            "os_secrets_file": {"type": "string"},
+            "auths_file": {"type": "string"},
         },
-        "required": ["method", "dest_container", "source", "os_secrets_file"]
+        "required": ["method", "target_host", "dest_container", "source"]
     }
 
-    OS_SECRETS_SCHEMA = {
+    AUTH_SCHEMA = {
         "$schema" : "http://json-schema.org/draft-07/schema#",
-        "type": "object",
-        "properties" : {
-            "os_username": {"type" : "string"},
-            "os_password": {"type": "string"},
-            "os_project_name": {"type" : "string"},
-            "os_auth_url": {"type" : "string"},
+        'patternProperties': {
+            'auths': {
+                'type': 'object',
+                'default': {},
+                'patternProperties': {
+                    '.*' : {
+                        'type': 'object',
+                        'additionalProperties': False,
+                        'properties': {
+                            'username': {'type': 'string'},
+                            'password': {'type': 'string'},
+                            "project_name": {"type" : "string"},
+                            "auth_url": {"type" : "string"},
+                        },
+                        "required": [
+                            "username",
+                            "password",
+                            "project_name",
+                            "auth_url"
+                        ],
+                    },
+                },
+            },
         },
-        "required": ["os_username", "os_password", "os_project_name", "os_auth_url"]
     }
 
     def __init__(self, deployer_config):
 
         super().__init__(deployer_config)
 
-        with open(self._deployer_config['os_secrets_file'], 'r') as yaml_f:
-            os_secrets = yaml.load(yaml_f.read(), Loader=yaml.Loader)
-        validate(os_secrets, self.OS_SECRETS_SCHEMA)
-        self._os_secrets = os_secrets
+        self._auths = self._get_auths()
+
+    def _get_auths(self):
+        auths_file = os.path.expanduser(self._deployer_config.get(
+            'auths_file',
+            os.path.join('~', 'os_auths.yaml')))
+
+        auths_name = os.path.splitext(os.path.basename(auths_file))[0]
+
+        auths = {}
+        if os.path.isfile(auths_file):
+            auths.update(ConfReader([auths_file],[self.AUTH_SCHEMA])[auths_name]['auths'])
+
+        return auths
 
     def _swift_deploy(self):
 
+        auth = self._auths[self._deployer_config['target_host']]
+
         swift_options = {
-            'auth_version': '3'
+            'auth_version': '3',
         }
-        swift_options.update(self._os_secrets)
+
+        for key, value in auth.items():
+            swift_options['os_%s' % key] = value
 
         with SwiftService(options=swift_options) as swift:
 

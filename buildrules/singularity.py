@@ -119,8 +119,31 @@ class SingularityBuilder(Builder):
                     },
                 },
             },
-        }]
+        },
+    ]
 
+    AUTH_SCHEMA = {
+        '$schema': 'http://json-schema.org/schema#',
+        'title': 'Singularity auth file schema',
+        'type': 'object',
+        'additionalProperties': False,
+        'patternProperties': {
+            'auths': {
+                'type': 'object',
+                'default': {},
+                'patternProperties': {
+                    '.*' : {
+                        'type': 'object',
+                        'additionalProperties': False,
+                        'properties': {
+                            'username': {'type': 'string'},
+                            'password': {'type': 'string'},
+                        },
+                    },
+                },
+            },
+        },
+    }
 
     def __init__(self, conf_folder):
         self._singularity_path = os.path.join(os.getcwd(), 'singularity')
@@ -157,31 +180,11 @@ class SingularityBuilder(Builder):
                 'auths_file',
                 os.path.join('~', 'singularity_auths.yaml')))
 
-        auth_schema = {
-            '$schema': 'http://json-schema.org/schema#',
-            'title': 'Singularity auth file schema',
-            'type': 'object',
-            'additionalProperties': False,
-            'patternProperties': {
-                'auths': {
-                    'type': 'object',
-                    'default': {},
-                    'patternProperties': {
-                        '.*' : {
-                            'type': 'object',
-                            'additionalProperties': False,
-                            'properties': {
-                                'username': {'type': 'string'},
-                                'password': {'type': 'string'},
-                            },
-                        },
-                    },
-                },
-            },
-        }
+        auths_name = os.path.splitext(os.path.basename(auths_file))[0]
+
         auths = {}
         if os.path.isfile(auths_file):
-            auths.update(ConfReader([auths_file],[auth_schema])['singularity_auths']['auths'])
+            auths.update(ConfReader([auths_file],[self.AUTH_SCHEMA])[auths_name]['auths'])
 
         return auths
 
