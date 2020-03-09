@@ -66,7 +66,7 @@ class CIBuilder(Builder):
                             },
                         },
                     },
-                    'openstack': {
+                    'swift': {
                         'type': 'object',
                         'patternProperties': {
                             '.*' : {
@@ -605,7 +605,7 @@ class CIBuilder(Builder):
 
         return rules
 
-    def _create_openstack_auths(self):
+    def _create_swift_auths(self):
 
         """Creates authentications for OpenStack deployer"""
 
@@ -615,19 +615,19 @@ class CIBuilder(Builder):
 
         workers.extend(self._confreader['build_config']['target_workers'])
 
-        openstack_auths = {
-            'auths': self._confreader['build_config'].get('auths', {}).get('openstack', {})
+        swift_auths = {
+            'auths': self._confreader['build_config'].get('auths', {}).get('swift', {})
         }
 
         for worker in workers:
 
-            openstack_auths_file = os.path.join(
+            swift_auths_file = os.path.join(
                 self._mountpoints['home'],
                 worker['name'],
                 'os_auths.yaml')
 
             rules.append(PythonRule(
-                write_yaml, [openstack_auths_file, openstack_auths]))
+                write_yaml, [swift_auths_file, swift_auths]))
 
         return rules
 
@@ -638,7 +638,7 @@ class CIBuilder(Builder):
         rules.extend(self._copy_certs())
         rules.extend(self._copy_ssh())
         rules.extend(self._create_singularity_auths())
-        rules.extend(self._create_openstack_auths())
+        rules.extend(self._create_swift_auths())
         rules.extend(self._get_config_creation_rules())
         return rules
 
