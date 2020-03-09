@@ -1,0 +1,50 @@
+command_collections:
+  common:
+    post_commands:
+      - 'mkdir /u'
+      - 'for i in $(seq 0 9); do for j in $(seq 0 9) ; do ln -s /m/home/home$i/$i$j /u/$i$j ; done ; done'
+      - 'mkdir /scratch'
+      - 'mkdir /m'
+      - 'mkdir /l'
+      - 'mkdir /raid'
+      - 'mkdir /share'
+      - 'mkdir -p /opt/mellanox'
+      - 'mkdir -p /var/singularity/mnt/final/usr/bin'
+  stylegan2:
+    post_commands:
+      - 'pip install scipy==1.3.3'
+      - 'pip install requests==2.22.0'
+      - 'pip install Pillow==6.2.1'
+  stylegan2_pytorch:
+    post_commands:
+      - 'apt-get update'
+      - 'apt-get -y install -q build-essential g++'
+      - 'rm -rf /var/lib/apt/lists/*'
+      - 'rm -rf /var/lib/apt/lists/*'
+flag_collections:
+  nvidia:
+    - '--nv'
+definitions:
+  - name: 'stylegan2'
+    docker_user: 'tensorflow'
+    docker_image: 'tensorflow'
+    module_namespace: 'graphics'
+    tags:
+      - '1.15.0-gpu-py3'
+    command_collections:
+      - 'common'
+      - 'stylegan2'
+    flag_collections:
+      - 'nvidia'
+  - name: 'stylegan2-pytorch'
+    docker_user: 'nvidia'
+    docker_image: 'pytorch'
+    registry: 'nvcr.io'
+    module_namespace: 'graphics'
+    tags:
+      - '20.02-py3'
+    command_collections:
+      - 'common'
+      - 'stylegan2_pytorch'
+    flag_collections:
+      - 'nvidia'

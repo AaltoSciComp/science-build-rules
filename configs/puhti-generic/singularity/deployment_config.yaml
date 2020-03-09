@@ -1,0 +1,5 @@
+- method: swift
+  target_host: puhti
+  source: /appl/soft/ai/singularity/aalto/fcai
+  dest_container: aalto_singularity_images
+  source_replacement: fcai

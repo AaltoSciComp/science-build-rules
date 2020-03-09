@@ -1,0 +1,11 @@
+config:
+  install_path: /appl/soft/ai/singularity/aalto/fcai/software
+  module_path: /appl/soft/ai/singularity/aalto/fcai/modules
+  source_cache: /cache/singularity/source
+  tmpdir: /tmp/singularity
+  build_stage: /cache/singularity/stage
+  wrapper_path: /appl/bin
+  remove_after_update: True
+  sudo: False
+  fakeroot: True
+  debug: False
