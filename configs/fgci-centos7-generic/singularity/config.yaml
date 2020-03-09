@@ -1,0 +1,11 @@
+config:
+  install_path: /share/apps/singularity-ci/fgci-centos7-dev/software
+  module_path: /share/apps/singularity-ci/fgci-centos7-dev/modules
+  source_cache: /cache/singularity/source
+  tmpdir: /tmp/singularity
+  build_stage: /cache/singularity/stage
+  wrapper_path: /share/apps/singularity/wrapper
+  remove_after_update: True
+  sudo: False
+  fakeroot: True
+  debug: False
