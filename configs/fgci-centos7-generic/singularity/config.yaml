@@ -1,6 +1,6 @@
 config:
-  install_path: /share/apps/singularity-ci/fgci-centos7-dev/software
-  module_path: /share/apps/singularity-ci/fgci-centos7-dev/modules
+  install_path: /share/apps/singularity-ci/fgci-centos7-generic/software
+  module_path: /share/apps/singularity-ci/fgci-centos7-generic/modules
   source_cache: /cache/singularity/source
   tmpdir: /tmp/singularity
   build_stage: /cache/singularity/stage
