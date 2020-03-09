@@ -10,6 +10,11 @@ command_collections:
       - 'mkdir /share'
       - 'mkdir -p /opt/mellanox'
       - 'mkdir -p /var/singularity/mnt/final/usr/bin'
+  compilers:
+    post_commands:
+      - 'apt-get update'
+      - 'apt-get -y install -q build-essential g++'
+      - 'rm -rf /var/lib/apt/lists/*'
   stylegan2:
     post_commands:
       - 'pip install scipy==1.3.3'
