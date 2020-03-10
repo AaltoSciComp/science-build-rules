@@ -552,8 +552,19 @@ class SingularityBuilder(Builder):
 
             prepend_path("PATH", "{{ wrapper_path }}")
 
-            setenv("SING_IMAGE", "{{ image_file }}")
-            setenv("SING_FLAGS", " {{ flags }} ")
+            family("singularity")
+
+            local local_flags=os.getenv("SING_FLAGS")
+            local sing_flags=" {{ flags }} "
+
+
+            if local_flags then
+                pushenv("SING_FLAGS", local_flags .. sing_flags)
+            else
+                setenv("SING_FLAGS", sing_flags)
+            end
+
+            pushenv("SING_IMAGE", "{{ image_file }}")
         """
         makedirs(module_path, 0o755)
 
