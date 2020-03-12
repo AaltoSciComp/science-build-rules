@@ -142,3 +142,7 @@ packages:
     version: 2019.3.2
   - name: 'valgrind'
     version: 3.15.0
+  - name: 'intel-mkl'
+    version: 2019.3.199
+    variants:
+      - 'threads=openmp'
