@@ -75,3 +75,7 @@ modules:
         prepend_path:
           LIBRARY_PATH: '${PREFIX}/lib/gcc/x86_64-unknown-linux-gnu/${VERSION}'
           LD_LIBRARY_PATH: '${PREFIX}/lib/gcc/x86_64-unknown-linux-gnu/${VERSION}'
+    intel-parallel-studio:
+      environment:
+        set:
+          SLURM_MPI_TYPE: 'pmi2'
