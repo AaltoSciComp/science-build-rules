@@ -1,5 +1,5 @@
 - method: rsync
-  target_host: fgi.csc.fi
+  target_host: idris
   source: /cvmfs/fgi.csc.fi/apps/el7/aalto/singularity
   dest: /cvmfs/fgi.csc.fi/apps/el7/aalto/singularity
   rsync_flags: -surlptDxv

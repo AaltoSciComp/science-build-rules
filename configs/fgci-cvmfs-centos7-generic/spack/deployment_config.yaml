@@ -1,5 +1,5 @@
 - method: rsync
-  target_host: fgi.csc.fi
+  target_host: idris
   source: /cvmfs/fgi.csc.fi/apps/el7/aalto/spack
   dest: /cvmfs/fgi.csc.fi/apps/el7/aalto/spack
   rsync_flags: -surlptDxv
