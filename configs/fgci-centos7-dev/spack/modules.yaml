@@ -47,6 +47,7 @@ modules:
           '${PACKAGE}_ROOT': '${PREFIX}'
       suffixes:
         '^cuda'          : 'cuda'
+        '^libpng@1.2.0:1.2.99' : 'libpng-1.2'
         '^openmpi'       : 'openmpi'
         '^scalapack'     : 'scalapack'
         '+qt'            : 'qt'
