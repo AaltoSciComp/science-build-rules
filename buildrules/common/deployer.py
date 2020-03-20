@@ -81,7 +81,8 @@ class RsyncDeployer(Deployer):
         rsync_deployer_config.update(**self._deployer_config)
 
         cmd = ['rsync']
-        cmd.append(rsync_deployer_config['rsync_flags'])
+        rsync_flags = rsync_deployer_config['rsync_flags'].split(' ')
+        cmd.extend(rsync_flags)
         if rsync_deployer_config['chmod_options']:
             cmd.append('--chmod={0}'.format(rsync_deployer_config['chmod_options']))
         cmd.extend(['-e',rsync_deployer_config['ssh_command']])
