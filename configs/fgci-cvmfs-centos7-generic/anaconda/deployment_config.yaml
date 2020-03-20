@@ -1,7 +1,1 @@
-- method: rsync
-  target_host: idris
-  source: /cvmfs/fgi.csc.fi/apps/el7/aalto/anaconda
-  dest: /cvmfs/fgi.csc.fi/apps/el7/aalto/anaconda
-  rsync_flags: -surlptDxv --chown=500:500
-  chmod_options: 'Dg+s,ug+w,Fo-w,+X'
-  delete: false
+[]
