@@ -1,0 +1,5 @@
+installer_checksums:
+  Miniconda3-latest-Linux-x86_64.sh: 'bfe34e1fa28d6d75a7ad05fd02fa5472275673d5f5621b77380898dee1be15d2'
+  Miniconda3-4.7.12.1-Linux-x86_64.sh: 'bfe34e1fa28d6d75a7ad05fd02fa5472275673d5f5621b77380898dee1be15d2'
+  Anaconda3-2019.10-Linux-x86_64.sh: '46d762284d252e51cd58a8ca6c8adc9da2eadc82c342927b2f66ed011d1d8b53'
+environments: []

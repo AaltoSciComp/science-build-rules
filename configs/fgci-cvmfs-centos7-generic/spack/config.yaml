@@ -1,0 +1,11 @@
+config:
+  install_tree: /cvmfs/fgi.csc.fi/apps/el7/aalto/spack/software
+  install_path_scheme: '${PACKAGE}/${VERSION}/${HASH:7}'
+  module_roots:
+    tcl: /cvmfs/fgi.csc.fi/apps/el7/aalto/spack/modules
+    lmod: /cvmfs/fgi.csc.fi/apps/el7/aalto/spack/lmod
+  source_cache: /cache/spack
+  misc_cache: /tmp/spack_misc_cache
+  build_stage:
+    - $spack/var/spack/stage
+  locks: false

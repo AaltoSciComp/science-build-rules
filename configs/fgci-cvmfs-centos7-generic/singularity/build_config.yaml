@@ -1,0 +1,60 @@
+command_collections:
+  common:
+    post_commands:
+      - 'mkdir /u'
+      - 'for i in $(seq 0 9); do for j in $(seq 0 9) ; do ln -s /m/home/home$i/$i$j /u/$i$j ; done ; done'
+      - 'mkdir /scratch'
+      - 'mkdir /m'
+      - 'mkdir /l'
+      - 'mkdir /raid'
+      - 'mkdir /share'
+      - 'mkdir -p /opt/mellanox'
+      - 'mkdir -p /var/singularity/mnt/final/usr/bin'
+  python3-run:
+    runscript_commands:
+      - 'exec python3 "$@"'
+  detectron:
+    environment_commands:
+      - 'export PYTHONPATH=$PYTHONPATH:/detectron/lib'
+  openfoam:
+    post_commands:
+      - 'cat /opt/OpenFOAM/setImage_v1712.sh >> /environment'
+  graph-tool:
+    post_commands:
+      - 'pacman -S python-pip python-virtualenv --noconfirm --needed'
+  openpose:
+    post_commands:
+      - 'ln -s /opt/openpose-master/build/examples/openpose/openpose.bin /usr/local/bin/openpose'
+  stylegan2:
+    post_commands:
+      - 'pip install scipy==1.3.3'
+      - 'pip install requests==2.22.0'
+      - 'pip install Pillow==6.2.1'
+  stylegan2_pytorch:
+    post_commands:
+      - 'apt-get update'
+      - 'apt-get -y install -q build-essential g++'
+      - 'rm -rf /var/lib/apt/lists/*'
+  compilers:
+    post_commands:
+      - 'apt-get update'
+      - 'apt-get -y install -q build-essential g++'
+      - 'rm -rf /var/lib/apt/lists/*'
+flag_collections:
+  common:
+    - '-B /m:/m'
+    - '-B /l:/l'
+    - '-B /scratch:/scratch'
+  dgx:
+    - '-B /raid:/raid'
+  nvidia:
+    - '--nv'
+  cntk:
+    - '-B /tmp:/run/lock'
+  mellanox:
+    - '-B /opt/mellanox:/opt/mellanox'
+  modules:
+    - '-B /share:/share'
+  openpose:
+    - '--pwd /opt/openpose-master'
+definitions: []
