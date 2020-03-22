@@ -1,0 +1,11 @@
+config:
+  install_tree: /share/apps/spack/envs/fgci-centos7-upstream/software
+  install_path_scheme: '${PACKAGE}/${VERSION}/${HASH:7}'
+  module_roots:
+    tcl: /share/apps/spack/envs/fgci-centos7-upstream/modules
+    lmod: /share/apps/spack/envs/fgci-centos7-upstream/lmod
+  source_cache: /cache/spack
+  misc_cache: /tmp/spack_misc_cache
+  build_stage:
+    - $spack/var/spack/stage
+  locks: false
