@@ -24,23 +24,6 @@ compilers:
       platform: linux
       os: centos7
       arch: x86_64
-  - name: 'gcc'
-    version: 9.2.0
-    variants:
-      - '+piclibs'
-      - '+nvptx'
-    extra_flags:
-      - '-j 1'
-    dependencies:
-      - '%gcc@4.8.5'
-    flags:
-      cflags: -O2 -g -march=westmere -ftree-vectorize
-      cxxflags: -O2 -g -march=westmere -ftree-vectorize
-      fflags: -O2 -g -march=westmere -ftree-vectorize
-    target_architecture:
-      platform: linux
-      os: centos7
-      arch: x86_64
   - name: 'intel-parallel-studio'
     version: 'cluster.2019.3'
     licenses:
@@ -70,6 +53,13 @@ compilers:
       os: centos7
       arch: x86_64
 packages:
+  - name: 'gcc'
+    version: '9.2.0'
+    variants:
+      - '+piclibs'
+      - '+nvptx'
+    dependencies:
+      - '%gcc@4.8.5'
   - name: 'llvm'
     version: 8.0.0
     extra_flags:
