@@ -53,13 +53,6 @@ compilers:
       os: centos7
       arch: x86_64
 packages:
-  - name: 'gcc'
-    version: '9.2.0'
-    variants:
-      - '+piclibs'
-      - '+nvptx'
-    dependencies:
-      - '%gcc@4.8.5'
   - name: 'llvm'
     version: 8.0.0
     extra_flags:
@@ -138,3 +131,8 @@ packages:
     version: 2019.3.2
   - name: 'valgrind'
     version: 3.15.0
+  - name: 'gcc'
+    version: '9.2.0'
+    variants:
+      - '+piclibs'
+      - '+nvptx'
