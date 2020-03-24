@@ -38,11 +38,25 @@ compilers:
       platform: linux
       os: centos7
       arch: x86_64
+  - name: 'intel-parallel-studio'
+    version: 'cluster.2020.0'
+    licenses:
+      - 'license.lic'
+    dependencies:
+      - '%gcc@9.2.0'
+    flags:
+      cflags: -O2 -g -march=westmere
+      cxxflags: -O2 -g -march=westmere
+      fflags: -O2 -g -march=westmere
+    target_architecture:
+      platform: linux
+      os: centos7
+      arch: x86_64
 packages:
   - name: 'llvm'
     version: 8.0.0
     extra_flags:
-      - '-j 6'
+      - '-j 1'
   - name: 'boost'
     version: 1.55.0
   - name: 'cairo'
@@ -53,10 +67,16 @@ packages:
     version: 1.19.0
   - name: 'cuda'
     version: 10.1.243
+  - name: 'freesurfer'
+    version: 6.0.0
   - name: 'go'
     version: 1.12.8
   - name: 'heaptrack'
     version: 1.1.0
+  - name: 'intel-mkl'
+    version: 2019.3.199
+    variants:
+      - 'threads=openmp'
   - name: 'miniconda2'
     version: 4.6.14
   - name: 'miniconda3'
@@ -91,6 +111,8 @@ packages:
     version: 3.7.4
   - name: 'r'
     version: 3.6.1
+  - name: 'r-irkernel'
+    version: '1.1'
   - name: 'py-gpaw'
     version: 1.3.0
     variants:
@@ -109,3 +131,8 @@ packages:
     version: 2019.3.2
   - name: 'valgrind'
     version: 3.15.0
+  - name: 'gcc'
+    version: '9.2.0'
+    variants:
+      - '+piclibs'
+      - '+nvptx'
