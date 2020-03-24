@@ -125,6 +125,8 @@ packages:
     version: 'live'
   - name: 'upcxx'
     version: 2019.3.2
+    dependencies:
+      - '^python~optimizations'
   - name: 'valgrind'
     version: 3.15.0
   - name: 'gcc'
