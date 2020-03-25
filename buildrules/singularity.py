@@ -306,8 +306,7 @@ class SingularityBuilder(Builder):
         write_template(definition_file, definition_config, template=template)
 
     def _build_image(self, image, definition, sudo=False,
-                     fakeroot=False, debug=False, build_env=None,
-                     install_image=None):
+                     fakeroot=False, debug=False, build_env=None):
         singularity_build_cmd = ['singularity', 'build']
 
         if debug:
@@ -318,7 +317,7 @@ class SingularityBuilder(Builder):
         if fakeroot:
             singularity_build_cmd.append('--fakeroot')
 
-        if not os.path.isfile(install_image):
+        if not os.path.isfile(image):
 
             cmd = SubprocessRule(
                 singularity_build_cmd + [image, definition],
@@ -416,21 +415,21 @@ class SingularityBuilder(Builder):
                 update_install = False
 
                 # Check if same kind of an image is already installed
-                installed_checksum = installed_images.get(
-                    install_name, {}).get('checksum', '')
+                installed_checksums = [ x['checksum'] for installed_image in installed_images.values ]
+                previous_image_path = installed_images.get(install_name, {}).get(
+                    'image_file', None)
 
-                if not installed_checksum:
-                    install_msg = ("Image {0} is "
-                                   "not installed. Starting installation.")
-                elif installed_checksum != image_config['checksum']:
-                    previous_image_path = installed_images[install_name]['image_file']
+                if image_config['checksum'] in installed_checksums:
+                    install_msg = ("Image {0} is already installed. "
+                                   "Skipping installation.")
+                    skip_install = True
+                elif previous_image_path:
                     install_msg = ("Image {0} installed "
                                    "but marked for update.")
                     update_install = True
                 else:
-                    install_msg = ("Image {0} is already installed. "
-                                   "Skipping installation.")
-                    skip_install = True
+                    install_msg = ("Image {0} is "
+                                   "not installed. Starting installation.")
 
                 rules.append(LoggingRule(install_msg.format(install_name)))
 
@@ -471,7 +470,7 @@ class SingularityBuilder(Builder):
                              self._build_image,
                              [stage_image, stage_definition],
                              {'debug': debug, 'sudo': sudo, 'fakeroot': fakeroot,
-                              'build_env': build_env, 'install_image': install_image},
+                              'build_env': build_env},
                              hide_kwargs=True)
                      ])
 
@@ -506,7 +505,7 @@ class SingularityBuilder(Builder):
 
                      if update_install and remove_after_update:
                          rules.extend([
-                             LoggingRule(('Removing old environment from '
+                             LoggingRule(('Removing old image from '
                                           '{0}').format(previous_image_path)),
                              PythonRule(os.remove, [previous_image_path])])
 
