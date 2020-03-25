@@ -1,7 +1,14 @@
 - method: rsync
   target_host: triton
-  source: /share/apps/singularity-ci/fgci-centos7-generic
-  dest: /share/apps/singularity-ci/fgci-centos7-generic
+  source: /share/apps/singularity-ci/fgci-centos7-generic/modules
+  dest: /share/apps/singularity-ci/fgci-centos7-generic/modules
   rsync_flags: -surlptDxv
   chmod_options: 'Dg+s,ug+w,Fo-w,+X'
   delete: true
+- method: rsync
+  target_host: triton
+  source: /share/apps/singularity-ci/fgci-centos7-generic/software
+  dest: /share/apps/singularity-ci/fgci-centos7-generic/software
+  rsync_flags: -surlptDxv
+  chmod_options: 'Dg+s,ug+w,Fo-w,+X'
+  delete: false

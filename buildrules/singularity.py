@@ -305,7 +305,9 @@ class SingularityBuilder(Builder):
 
         write_template(definition_file, definition_config, template=template)
 
-    def _build_image(self, image, definition, sudo=False, fakeroot=False, debug=False, build_env=None):
+    def _build_image(self, image, definition, sudo=False,
+                     fakeroot=False, debug=False, build_env=None,
+                     install_image=None):
         singularity_build_cmd = ['singularity', 'build']
 
         if debug:
@@ -316,7 +318,7 @@ class SingularityBuilder(Builder):
         if fakeroot:
             singularity_build_cmd.append('--fakeroot')
 
-        if not os.path.isfile(image):
+        if not os.path.isfile(install_image):
 
             cmd = SubprocessRule(
                 singularity_build_cmd + [image, definition],
@@ -469,7 +471,7 @@ class SingularityBuilder(Builder):
                              self._build_image,
                              [stage_image, stage_definition],
                              {'debug': debug, 'sudo': sudo, 'fakeroot': fakeroot,
-                              'build_env': build_env},
+                              'build_env': build_env, 'install_image': install_image},
                              hide_kwargs=True)
                      ])
 
