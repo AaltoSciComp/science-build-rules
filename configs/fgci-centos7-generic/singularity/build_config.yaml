@@ -114,6 +114,20 @@ definitions:
     docker_user: 'nvidia'
     docker_image: 'pytorch'
     registry: 'nvcr.io'
+    module_namespace: 'dgx'
+    tags:
+      - '20.02-py3'
+    command_collections:
+      - 'common'
+      - 'compilers'
+    flag_collections:
+      - 'common'
+      - 'nvidia'
+      - 'dgx'
+  - name: 'nvidia-pytorch'
+    docker_user: 'nvidia'
+    docker_image: 'pytorch'
+    registry: 'nvcr.io'
     module_namespace: 'common'
     tags:
       - '20.02-py3'
@@ -123,6 +137,21 @@ definitions:
     flag_collections:
       - 'common'
       - 'nvidia'
+  - name: 'nvidia-tensorflow'
+    docker_user: 'nvidia'
+    docker_image: 'tensorflow'
+    registry: 'nvcr.io'
+    module_namespace: 'dgx'
+    tags:
+      - '20.02-tf1-py3'
+      - '20.02-tf2-py3'
+    command_collections:
+      - 'common'
+      - 'compilers'
+    flag_collections:
+      - 'common'
+      - 'nvidia'
+      - 'dgx'
   - name: 'nvidia-tensorflow'
     docker_user: 'nvidia'
     docker_image: 'tensorflow'
