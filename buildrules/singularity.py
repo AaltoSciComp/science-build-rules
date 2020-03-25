@@ -415,7 +415,9 @@ class SingularityBuilder(Builder):
                 update_install = False
 
                 # Check if same kind of an image is already installed
-                installed_checksums = [ x['checksum'] for installed_image in installed_images.values() ]
+                installed_checksums = [
+                        installed_image['checksum']
+                        for installed_image in installed_images.values() ]
                 previous_image_path = installed_images.get(install_name, {}).get(
                     'image_file', None)
 
