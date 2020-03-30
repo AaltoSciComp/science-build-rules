@@ -163,6 +163,7 @@ collections:
       - numpydoc
       - olefile
       - openmp
+      - opencv
       - pandas
       - pandoc
       - partd
