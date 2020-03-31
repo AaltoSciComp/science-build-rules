@@ -67,6 +67,7 @@ collections:
       - jupyterlab-git
       - matlab-kernel
       - nbzip
+      - opencv-contrib-python
       - pymanopt
       - python-igraph
       - roboschool
@@ -163,7 +164,6 @@ collections:
       - numpydoc
       - olefile
       - openmp
-      - opencv
       - pandas
       - pandoc
       - partd
