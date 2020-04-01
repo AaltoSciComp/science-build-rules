@@ -24,23 +24,6 @@ compilers:
       platform: linux
       os: centos7
       arch: x86_64
-  - name: 'gcc'
-    version: 9.2.0
-    variants:
-      - '+piclibs'
-      - '+nvptx'
-    extra_flags:
-      - '-j 1'
-    dependencies:
-      - '%gcc@4.8.5'
-    flags:
-      cflags: -O2 -g -march=westmere -ftree-vectorize
-      cxxflags: -O2 -g -march=westmere -ftree-vectorize
-      fflags: -O2 -g -march=westmere -ftree-vectorize
-    target_architecture:
-      platform: linux
-      os: centos7
-      arch: x86_64
   - name: 'intel-parallel-studio'
     version: 'cluster.2019.3'
     licenses:
@@ -72,6 +55,8 @@ compilers:
 packages:
   - name: 'llvm'
     version: 8.0.0
+    extra_flags:
+      - '-j 1'
   - name: 'boost'
     version: 1.55.0
   - name: 'cairo'
@@ -86,6 +71,10 @@ packages:
     version: 1.12.8
   - name: 'heaptrack'
     version: 1.1.0
+  - name: 'intel-mkl'
+    version: 2019.3.199
+    variants:
+      - 'threads=openmp'
   - name: 'miniconda2'
     version: 4.6.14
   - name: 'miniconda3'
@@ -108,6 +97,8 @@ packages:
     version: '7'
     variants:
       - '+metis'
+  - name: 'openmpi'
+    version: 3.1.4
   - name: 'python'
     version: 3.7.4
   - name: 'r'
@@ -132,7 +123,8 @@ packages:
     version: 2019.3.2
   - name: 'valgrind'
     version: 3.15.0
-  - name: 'intel-mkl'
-    version: 2019.3.199
+  - name: 'gcc'
+    version: '9.2.0'
     variants:
-      - 'threads=openmp'
+      - '+piclibs'
+      - '+nvptx'
