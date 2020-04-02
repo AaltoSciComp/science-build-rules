@@ -111,6 +111,7 @@ collections:
       - docutils
       - fastcache
       - fastparquet
+      - feather-format
       - gmpy2
       - gpy
       - gurobi
