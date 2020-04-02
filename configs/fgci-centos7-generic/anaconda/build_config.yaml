@@ -103,6 +103,7 @@ collections:
       - jupyterlab-git
       - matlab-kernel
       - nbzip
+      - opencv-contrib-python
       - pymanopt
       - python-igraph
       - roboschool
