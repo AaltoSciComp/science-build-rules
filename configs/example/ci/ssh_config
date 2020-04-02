@@ -1,5 +1,0 @@
-Host github github.com
-  User git
-  Hostname github.com
-  IdentityFile ~/.ssh/id_rsa
-  ForwardX11 no

@@ -1,8 +1,0 @@
-target_architecture:
-  platform: linux
-  os: None
-  arch: x86_64
-compilers: []
-packages:
-  - name: libtool
-    version: 2.4.6
