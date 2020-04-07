@@ -1,0 +1,9 @@
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+    . /etc/bashrc
+fi
+
+if [ -f /build/spack/build/spack/share/spack/setup-env.sh ]; then
+    . /build/spack/build/spack/share/spack/setup-env.sh
+    alias spackbuilder='spack -C /build/spack/build/configs/${WORKERNAME#worker_}/spack'
+fi

@@ -1,0 +1,22 @@
+#!/bin/bash
+
+set -euo pipefail
+
+if [ $# -lt 1 ]; then
+  echo 'Usage:
+    bin/worker-shell <target>'
+  exit 1
+fi
+
+TARGET=$1
+
+WORKER_RUNNING=$(docker ps --format "{{.Names}}" --filter status=running | grep 'worker_'$TARGET | wc -l)
+
+if [[ "$WORKER_RUNNING" -eq 0 ]] ; then
+  echo 'No worker found for target '$TARGET
+  exit 1
+fi
+
+echo 'Launching spack shell for target '$TARGET'...'
+
+docker-compose run worker_$TARGET bash -
