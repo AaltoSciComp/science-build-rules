@@ -111,4 +111,10 @@ RUN apt-get update &&                     \
 # Fix lua posix bug https://bugs.launchpad.net/ubuntu/+source/lua-posix/+bug/1752082
 RUN ln -s /usr/lib/x86_64-linux-gnu/lua/5.2/posix_c.so /usr/lib/x86_64-linux-gnu/lua/5.2/posix.so
 
+# Required by pymvpa2 pip package
+RUN apt-get update &&                     \
+  apt-get -y install -q                   \
+  swig                         \
+  && rm -rf /var/lib/apt/lists/*
+
 {% include 'common/Dockerfile.j2' %}
