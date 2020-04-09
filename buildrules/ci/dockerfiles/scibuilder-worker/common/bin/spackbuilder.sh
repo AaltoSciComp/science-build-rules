@@ -3,7 +3,7 @@
 set -euo pipefail
 
 TARGET=${WORKERNAME#"worker_"}
-CONF_DIR=$(pwd)/configs/$TARGET/spack
+CONF_DIR=/build/spack/build/configs/$TARGET/spack
 
 [[ -f /usr/share/lmod/lmod/init/bash ]] && . /usr/share/lmod/lmod/init/bash
 
