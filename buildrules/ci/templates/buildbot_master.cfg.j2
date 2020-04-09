@@ -25,6 +25,7 @@ from dateutil.parser import parse as dateparse
 ###############################################################################
 
 rules_repo = "{{ science_build_rules_repository }}"
+configs_repo = "{{ science_build_configs_repository }}"
 
 buildbot_timeout    = {{ buildbot_master.timeout | default(7200)}}
 
@@ -214,16 +215,44 @@ c['builders'] = []
 {% if builds.anaconda.enabled | default('false') -%}
 {% if 'anaconda' in worker -%}
 anaconda_builder = util.BuildFactory()
-{% if 'github.com' in science_build_rules_repository -%}
+{% if 'github.com' in science_build_configs_repository -%}
 anaconda_builder.addStep(steps.GitHub(
 {% else -%}
 anaconda_builder.addStep(steps.Git(
 {% endif -%}
-    name='Anaconda Git Sync',
-    repourl=rules_repo,
+    name='Configs Sync',
+    repourl=configs_repo,
     mode='full',
     shallow=True,
     haltOnFailure=True))
+anaconda_builder.addStep(steps.ShellCommand(
+    name='Adding buildrules as submodule',
+    command=[
+        "git",
+        "submodule",
+        "add",
+        "--force",
+        rules_repo,
+        "rules",
+    ]))
+anaconda_builder.addStep(steps.ShellCommand(
+    name='Submodule sync',
+    command=[
+        "git",
+        "submodule",
+        "sync",
+    ]))
+anaconda_builder.addStep(steps.ShellCommand(
+    name='Submodule update',
+    command=['git',
+            'submodule',
+            'update',
+            '--init',
+            '--recursive',
+            '--force',
+            '--checkout',
+            '--remote',
+    ]))
 anaconda_builder.addStep(
     steps.ShellCommand(
         name='AnacondaDescribe - {{ worker.name }}',
@@ -234,6 +263,7 @@ anaconda_builder.addStep(
         interruptSignal='TERM',
         sigtermTime=30,
         usePTY=True,
+        workdir='/build/anaconda/build/rules',
         timeout=buildbot_timeout,
         haltOnFailure=True))
 anaconda_builder.addStep(
@@ -246,6 +276,7 @@ anaconda_builder.addStep(
         interruptSignal='TERM',
         sigtermTime=30,
         usePTY=True,
+        workdir='/build/anaconda/build/rules',
         timeout=buildbot_timeout))
 c['builders'].append(
     util.BuilderConfig(
@@ -260,12 +291,44 @@ c['builders'].append(
 {% if builds.singularity.enabled | default('false') -%}
 {% if 'singularity' in worker -%}
 singularity_builder = util.BuildFactory()
+{% if 'github.com' in science_build_configs_repository -%}
+singularity_builder.addStep(steps.GitHub(
+{% else -%}
 singularity_builder.addStep(steps.Git(
-    name='Singularity Git Sync',
-    repourl=rules_repo,
+{% endif -%}
+    name='Configs Sync',
+    repourl=configs_repo,
     mode='full',
     shallow=True,
     haltOnFailure=True))
+singularity_builder.addStep(steps.ShellCommand(
+    name='Adding buildrules as submodule',
+    command=[
+        "git",
+        "submodule",
+        "add",
+        "--force",
+        rules_repo,
+        "rules",
+    ]))
+singularity_builder.addStep(steps.ShellCommand(
+    name='Submodule sync',
+    command=[
+        "git",
+        "submodule",
+        "sync",
+    ]))
+singularity_builder.addStep(steps.ShellCommand(
+    name='Submodule update',
+    command=['git',
+            'submodule',
+            'update',
+            '--init',
+            '--recursive',
+            '--force',
+            '--checkout',
+            '--remote',
+    ]))
 singularity_builder.addStep(
     steps.ShellCommand(
         name='SingularityDescribe - {{ worker.name }}',
@@ -276,6 +339,7 @@ singularity_builder.addStep(
         interruptSignal='TERM',
         sigtermTime=30,
         usePTY=True,
+        workdir='/build/singularity/build/rules',
         timeout=buildbot_timeout))
 singularity_builder.addStep(
     steps.ShellCommand(
@@ -287,6 +351,7 @@ singularity_builder.addStep(
         interruptSignal='TERM',
         sigtermTime=30,
         usePTY=True,
+        workdir='/build/singularity/build/rules',
         timeout=buildbot_timeout))
 c['builders'].append(
     util.BuilderConfig(
@@ -301,34 +366,36 @@ c['builders'].append(
 {% if builds.spack.enabled | default('false') -%}
 {% if 'spack' in worker -%}
 spack_builder = util.BuildFactory()
-{% if 'github.com' in science_build_rules_repository -%}
+{% if 'github.com' in science_build_configs_repository -%}
 spack_builder.addStep(steps.GitHub(
 {% else -%}
 spack_builder.addStep(steps.Git(
 {% endif -%}
-    name='Spack Git Sync',
-    repourl=rules_repo,
+    name='Configs Sync',
+    repourl=configs_repo,
     mode='full',
     shallow=True,
-    submodules=False,
     haltOnFailure=True))
+spack_builder.addStep(steps.ShellCommand(
+    name='Adding buildrules as submodule',
+    command=[
+        "git",
+        "submodule",
+        "add",
+        "--force",
+        rules_repo,
+        "rules",
+    ]))
 spack_builder.addStep(steps.ShellCommand(
     name='Check Spack submodule url',
     command=[
         "git",
-        "config",
-        "--file=.gitmodules",
-        "submodule.spack.url",
-        "{{ (worker.spack | default({}))['url'] | default('https://github.com/spack/spack.git') }}",
-    ]))
-spack_builder.addStep(steps.ShellCommand(
-    name='Check Spack submodule branch',
-    command=[
-        "git",
-        "config",
-        "--file=.gitmodules",
-        "submodule.spack.branch",
+        "submodule",
+        "add",
+        "--force",
+        "-b",
         "{{ (worker.spack | default({}))['branch'] | default('develop') }}",
+        "{{ (worker.spack | default({}))['url'] | default('https://github.com/spack/spack.git') }}",
     ]))
 {% if 'license_repo' in builds.spack %}
 spack_builder.addStep(steps.ShellCommand(
@@ -381,6 +448,7 @@ spack_builder.addStep(
         interruptSignal='TERM',
         sigtermTime=30,
         usePTY=True,
+        workdir='rules',
         timeout=buildbot_timeout,
 {%- endif %}
 spack_builder.addStep(
@@ -393,6 +461,7 @@ spack_builder.addStep(
         interruptSignal='TERM',
         sigtermTime=30,
         usePTY=True,
+        workdir='/build/spack/build/rules',
         timeout=buildbot_timeout,
         haltOnFailure=True))
 spack_builder.addStep(
@@ -405,6 +474,7 @@ spack_builder.addStep(
         interruptSignal='TERM',
         sigtermTime=30,
         usePTY=True,
+        workdir='/build/spack/build/rules',
         timeout=buildbot_timeout))
 c['builders'].append(
     util.BuilderConfig(
