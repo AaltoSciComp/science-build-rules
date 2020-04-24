@@ -26,11 +26,11 @@ class CIBuilder(Builder):
             'science_build_configs_repository': {'type': 'string'},
             'build_folder': {'type': 'string'},
             'compose_project_name': {'type': 'string'},
+            'fqdn': {'type': 'string'},
             'buildbot_master': {
                 'type': 'object',
                 'properties': {
                     'image': {'type': 'string'},
-                    'fqdn': {'type': 'string'},
                     'private_key': {'type': 'string'},
                     'public_cert':  {'type': 'string'},
                     'web_port': {'type': 'integer'},
@@ -44,7 +44,6 @@ class CIBuilder(Builder):
                 },
                 'required': [
                     'image',
-                    'fqdn',
                     'worker_password',
                     'worker_uid'
                 ],
@@ -210,6 +209,7 @@ class CIBuilder(Builder):
             'build_folder',
             'buildbot_master',
             'buildbot_db',
+            'fqdn',
         ],
     }]
 
@@ -417,7 +417,7 @@ class CIBuilder(Builder):
 
     def _copy_certs(self):
 
-        fqdn = self._confreader['build_config']['buildbot_master']['fqdn']
+        fqdn = self._confreader['build_config']['fqdn']
         private_key = self._confreader['build_config']['buildbot_master'].get('private_key', None)
         public_cert = self._confreader['build_config']['buildbot_master'].get('public_cert', None)
         key = os.path.join(self._build_folder, 'certs', 'buildbot.key')
