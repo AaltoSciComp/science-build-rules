@@ -674,7 +674,7 @@ class AnacondaBuilder(Builder):
 
             # Update .condarc
             rules.extend([
-                LoggingRule('Creating condarc for environment: %s' % environment_name)
+                LoggingRule('Creating condarc for environment: %s' % environment_name),
                 PythonRule(
                     self._update_condarc,
                     [install_path, condarc],
