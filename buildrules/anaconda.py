@@ -666,19 +666,20 @@ class AnacondaBuilder(Builder):
                         [environment_config['environment_name'], environment_config]),
                 ])
 
-                # Update .condarc
-                rules.extend([
-                      LoggingRule('Creating condarc for environment.'),
-                      PythonRule(
-                          self._update_condarc,
-                          [install_path, condarc],
-                          {'install_time': False})
-                ])
                 if update_install and self.remove_after_update:
                     rules.extend([
                         LoggingRule(('Removing old environment from '
                                      '{0}').format(previous_install_path)),
                         PythonRule(self._remove_environment, [previous_install_path])])
+
+            # Update .condarc
+            rules.extend([
+                LoggingRule('Creating condarc for environment: %s' % environment_name)
+                PythonRule(
+                    self._update_condarc,
+                    [install_path, condarc],
+                    {'install_time': False})
+            ])
 
             # Create modulefile for the environment
             rules.extend([
