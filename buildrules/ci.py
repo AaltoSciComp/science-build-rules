@@ -7,7 +7,8 @@ import tempfile
 
 from buildrules.common.builder import Builder
 from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule, RuleError
-from buildrules.common.utils import makedirs, copy_file, write_template, write_yaml
+from buildrules.common.utils import makedirs, copy_file, copy_dir, write_template, write_yaml
+from shutil import rmtree
 
 class CIBuilder(Builder):
 
@@ -21,7 +22,6 @@ class CIBuilder(Builder):
         'type': 'object',
         'additionalProperties': False,
         'patternProperties': {
-            'build_environment_repository': {'type': 'string'},
             'science_build_rules_repository': {'type': 'string'},
             'science_build_configs_repository': {'type': 'string'},
             'build_folder': {'type': 'string'},
@@ -205,8 +205,6 @@ class CIBuilder(Builder):
             },
         },
         'required': [
-            'build_environment_repository',
-            'build_folder',
             'buildbot_master',
             'buildbot_db',
             'fqdn',
@@ -216,7 +214,9 @@ class CIBuilder(Builder):
     def __init__(self, conf_folder):
 
         super().__init__(conf_folder)
-        self._build_folder = self._confreader['build_config']['build_folder']
+        self._build_folder = self._confreader['build_config'].get(
+            'build_folder', 
+            os.path.join(os.getcwd(), 'ci'))
         self._conf_folder = os.path.join(
             self._build_folder,
             'configs')
@@ -241,22 +241,21 @@ class CIBuilder(Builder):
                     os.path.join(nfs_folder, key))
         self._logger.warning(self._mountpoints)
 
-    def _get_clone_build_environment_rule(self):
-        """Clones science-build-environment-repository"""
+    def _get_copy_ci_directory_rule(self):
+        """Copies the template ci directory to build destination"""
+
         if not os.path.isdir(self._build_folder):
-            src = self._confreader['build_config']['build_environment_repository']
+            src = os.path.join(os.getcwd(), 'buildrules', 'ci')
             dest = self._build_folder
             return [
-                LoggingRule('Cloning build environment repository'),
-                SubprocessRule(
-                    ['git',
-                     'clone',
-                     '--depth=1',
-                     src,
-                     dest,
-                     '2>&1'],
-                    shell=True
-                )
+                LoggingRule('Copying CI directory from %s to %s' % (src, dest)),
+                PythonRule(
+                    copy_dir,
+                    args=[
+                        src,
+                        dest
+                    ]
+                ),
             ]
         return []
 
@@ -632,15 +631,29 @@ class CIBuilder(Builder):
 
         return rules
 
+    def _get_clean_build_directory_rules(self):
+        """Cleans the build directory from unnecessary files after building"""
+
+        build_folder_templates_dir = os.path.join(self._build_folder, 'templates')
+        return [
+            LoggingRule('Cleaning build directory'),
+            LoggingRule('Removing templates from build directory'),
+            PythonRule(
+                rmtree,
+                args=[build_folder_templates_dir],
+            ),
+        ]
+
     def _get_rules(self):
         rules = []
-        rules.extend(self._get_clone_build_environment_rule())
+        rules.extend(self._get_copy_ci_directory_rule())
         rules.extend(self._get_directory_creation_rules())
         rules.extend(self._copy_certs())
         rules.extend(self._copy_ssh())
         rules.extend(self._create_singularity_auths())
         rules.extend(self._create_swift_auths())
         rules.extend(self._get_config_creation_rules())
+        rules.extend(self._get_clean_build_directory_rules())
         return rules
 
 if __name__ == "__main__":
