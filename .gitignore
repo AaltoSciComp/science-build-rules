@@ -2,4 +2,5 @@
 *.pyc
 *~
 conda
+/ci
 docs/_build
