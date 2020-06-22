@@ -110,7 +110,7 @@ def portusParameters(props):
 c['title'] = "CI builds"
 c['titleURL'] = ""
 
-c['buildbotURL'] = "https://{{ buildbot_master.fqdn | default("localhost") }}/"
+c['buildbotURL'] = "https://{{ fqdn }}/"
 
 c['protocols'] = {'pb': {'port': {{ buildbot_master.worker_port | default(9989) }} } }
 

@@ -40,7 +40,7 @@ http {
 
   server {
     listen 443 ssl http2;
-    server_name {{ buildbot_master.fqdn }};
+    server_name {{ fqdn }};
     root html;
 
     ##
