@@ -435,12 +435,14 @@ class AnacondaBuilder(Builder):
             condarc (dict): Dictionary of condarc contents.
         """
 
+
         condarc_defaults = {
             'pkgs_dirs': [self._pkg_cache],
             'always_yes': True,
             'auto_update_conda': True,
         }
         if install_time:
+            condarc = copy.deepcopy(condarc)
             condarc.update(condarc_defaults)
         condarc_file = os.path.join(conda_path, '.condarc')
         write_yaml(condarc_file, condarc)
