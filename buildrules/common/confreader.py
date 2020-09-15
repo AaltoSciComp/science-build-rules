@@ -5,7 +5,7 @@ from os.path import basename, splitext
 from collections.abc import Mapping
 from textwrap import indent
 from copy import copy
-from jsonschema import validate
+from jsonschema import validate, Draft4Validator
 import yaml
 
 class ConfReader(Mapping):
