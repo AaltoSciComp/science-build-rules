@@ -18,6 +18,9 @@ export PATH=${CONDA_PREFIX}/bin:$PATH
 echo 'Creating environment for buildrules'
 conda env create -f environment.yaml > /dev/null
 
+echo "Cloning spack upstream to 'spack'"
+git clone https://github.com/spack/spack.git &> /dev/null
+
 echo 'Finished.'
 echo 'You can launch the Python environment with:'
-echo 'export PATH=$(pwd)/conda/bin:$PATH && source activate buildrules'
+echo 'export PATH=$(pwd)/conda/bin:$PATH && source activate buildrules && source $(pwd)/spack/share/spack/setup-env.sh'
