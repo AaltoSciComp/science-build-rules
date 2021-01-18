@@ -221,7 +221,9 @@ class CIBuilder(Builder):
             self._build_folder,
             'configs')
         self._templates_folder = os.path.join(
-            self._build_folder,
+            os.getcwd(),
+            'buildrules',
+            'ci',
             'templates')
         nfs_folder = os.path.join(
             self._build_folder,
