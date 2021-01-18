@@ -643,6 +643,7 @@ class CIBuilder(Builder):
             PythonRule(
                 rmtree,
                 args=[build_folder_templates_dir],
+                kwargs={'ignore_errors': True},
             ),
         ]
 
