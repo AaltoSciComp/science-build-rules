@@ -9,6 +9,7 @@ import logging
 from glob import glob
 import yaml
 import sh
+import warnings
 
 from buildrules.common.builder import Builder
 from buildrules.common.rule import PythonRule, SubprocessRule, LoggingRule
@@ -16,15 +17,19 @@ from buildrules.common.utils import makedirs, copy_file
 
 SPACK_ROOT=os.getenv('SPACK_ROOT', None)
 if not SPACK_ROOT:
-    raise Exception('Spack environment is not activated, verify your installation.')
-SPACK_LIB_PATH=os.path.join(SPACK_ROOT, 'lib/spack')
-SPACK_EXTERNAL_LIB_PATH=os.path.join(SPACK_ROOT, 'lib/spack/external')
-sys.path.append(SPACK_LIB_PATH)
-sys.path.append(SPACK_EXTERNAL_LIB_PATH)
-import spack.config
-config_schema = spack.schema.config.schema
-modules_schema = spack.schema.modules.schema
-packages_schema = spack.schema.packages.schema
+    warnings.warn('Spack environment is not activated. Spack configuration schemas are not verified correctly!')
+    config_schema = {}
+    modules_schema = {}
+    packages_schema = {}
+else:
+    SPACK_LIB_PATH=os.path.join(SPACK_ROOT, 'lib/spack')
+    SPACK_EXTERNAL_LIB_PATH=os.path.join(SPACK_ROOT, 'lib/spack/external')
+    sys.path.append(SPACK_LIB_PATH)
+    sys.path.append(SPACK_EXTERNAL_LIB_PATH)
+    import spack.config
+    config_schema = spack.schema.config.schema
+    modules_schema = spack.schema.modules.schema
+    packages_schema = spack.schema.packages.schema
 
 class SpackBuilder(Builder):
     """SpackBuilder extends on Builder and creates buildrules for Spack build.
