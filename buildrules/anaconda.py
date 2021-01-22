@@ -81,6 +81,7 @@ class AnacondaBuilder(Builder):
                             'name': {'type': 'string'},
                             'version': {'type': 'string'},
                             'miniconda': {'type': 'boolean'},
+                            'mamba': {'type': 'boolean'},
                             'installer_version': {'type': 'string'},
                             'freeze': {'type': 'boolean'},
                             'python_version': {
@@ -187,6 +188,7 @@ class AnacondaBuilder(Builder):
         """
         default_config = {
             'miniconda': True,
+            'mamba': True,
             'python_version': 3,
             'installer_version': 'latest',
             'pip_packages': [],
@@ -207,6 +209,11 @@ class AnacondaBuilder(Builder):
 
         environment_config['conda_packages'].sort()
         environment_config['pip_packages'].sort()
+
+        if environment_config['mamba']:
+            environment_config['conda_cmd'] = 'mamba'
+        else:
+            environment_config['conda_cmd'] = 'conda'
 
         # Remove freeze temporarily from configuration as that should not be included in checksum calculation
         freeze = environment_config.pop('freeze', False)
@@ -509,6 +516,22 @@ class AnacondaBuilder(Builder):
                     ('Configuration file is not from the '
                      'installation root: {0}'.format(config['config_files'])))
 
+    def _install_mamba(self, conda_path, install_mamba):
+        """ This installs mamba package manager if installation
+        uses mamba.
+
+        Args:
+            conda_path (str): Anaconda installation path.
+            install_mamba (bool): Should mamba be installed.
+        """
+
+        conda_cmd = sh.Command(os.path.join(conda_path, 'bin', 'conda'))
+        if install_mamba:
+            conda_cmd('install', '--yes',
+                      '-c', 'conda-forge',
+                      '-n', 'base',
+                      'mamba')
+
     def _get_environment_install_rules(self):
         """ This function returns build rules that install Anaconda environments.
 
@@ -534,7 +557,7 @@ class AnacondaBuilder(Builder):
             conda_packages = environment_config.get('conda_packages', [])
             condarc = environment_config.get('condarc', {})
 
-            conda_install_cmd = ['conda', 'install', '--yes', '-n', 'base']
+            conda_install_cmd = [environment_config['conda_cmd'], 'install', '--yes', '-n', 'base']
             pip_install_cmd = ['pip', 'install', '--cache-dir', self._pip_cache]
 
             skip_install = False
@@ -607,6 +630,14 @@ class AnacondaBuilder(Builder):
                     ),
                 ])
 
+                rules.extend([
+                    LoggingRule('Installing mamba if needed.'),
+                    PythonRule(
+                        self._install_mamba,
+                        [install_path, environment_config['mamba']],
+                    )
+                ])
+
                 # During update, install old packages using environment.yml
                 if update_install:
                     rules.extend([
@@ -622,7 +653,7 @@ class AnacondaBuilder(Builder):
                         LoggingRule(('Installing conda packages from previous '
                                      'installation.')),
                         SubprocessRule(
-                            ['conda', 'env', 'update',
+                            [environment_config['conda_cmd'], 'env', 'update',
                              '--file', environment_config['environment_file'],
                              '--prefix', install_path],
                             env=conda_env,
