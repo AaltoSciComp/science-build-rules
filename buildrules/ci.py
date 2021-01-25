@@ -29,6 +29,7 @@ class CIBuilder(Builder):
             'fqdn': {'type': 'string'},
             'buildbot_master': {
                 'type': 'object',
+                'additionalProperties': False,
                 'properties': {
                     'image': {'type': 'string'},
                     'private_key': {'type': 'string'},
@@ -50,9 +51,11 @@ class CIBuilder(Builder):
             },
             'auths': {
                 'type': 'object',
+                'additionalProperties': False,
                 'properties': {
                     'ssh': {
                         'type': 'object',
+                        'additionalProperties': False,
                         'properties': {
                             'config_file': {'type': ['string', 'null']},
                             'known_hosts_file': {'type': ['string', 'null']},
@@ -68,6 +71,7 @@ class CIBuilder(Builder):
                     },
                     'swift': {
                         'type': 'object',
+                        'additionalProperties': False,
                         'patternProperties': {
                             '.*' : {
                                 'type': 'object',
@@ -90,6 +94,7 @@ class CIBuilder(Builder):
                     'singularity': {
                         'type': 'object',
                         'default': {},
+                        'additionalProperties': False,
                         'patternProperties': {
                             '.*' : {
                                 'type': 'object',
@@ -109,17 +114,30 @@ class CIBuilder(Builder):
             },
             'buildbot_db': {
                 'type': 'object',
+                'additionalProperties': False,
                 'properties': {
                     'postgres_password': {'type': 'string'},
                 },
             },
             'mountpoints': {
                 'type': 'object',
-                'properties': {
-                    'home': {'type': 'string'},
-                    'cache': {'type': 'string'},
-                    'builds': {'type': 'string'},
-                    'software': {'type': 'string'},
+                'additionalProperties': False,
+                'patternProperties': {
+                    'cache': {
+                        'type': 'object',
+                        'additionalProperties': False,
+                        'properties': {
+                            'path': {'type': 'string'},
+                        },
+                    },
+                    '(home|builds|software)': {
+                        'type': 'object',
+                        'additionalProperties': False,
+                        'properties': {
+                            'path': {'type': 'string'},
+                            'nfs': {'type': 'boolean'},
+                        },
+                    },
                 },
             },
             'builds': {
@@ -127,6 +145,7 @@ class CIBuilder(Builder):
                 'properties': {
                     'spack': {
                         'type': 'object',
+                        'additionalProperties': False,
                         'properties': {
                             'enabled': {'type': 'boolean'},
                         },
@@ -134,6 +153,7 @@ class CIBuilder(Builder):
                     },
                     'singularity': {
                         'type': 'object',
+                        'additionalProperties': False,
                         'properties': {
                             'enabled': {'type': 'boolean'},
                             'enable_portus_hook': {'type': 'boolean'},
@@ -142,6 +162,7 @@ class CIBuilder(Builder):
                     },
                     'registry_clone': {
                         'type': 'object',
+                        'additionalProperties': False,
                         'properties': {
                             'enabled': {'type': 'boolean'},
                         },
@@ -153,18 +174,40 @@ class CIBuilder(Builder):
                 'type': 'array',
                 'items': {
                     'type': 'object',
+                    'additionalProperties': False,
                     'properties': {
                         'name': {'type': 'string'},
-                        'image:': {'type': 'string'},
+                        'image': {'type': 'string'},
+                        'anaconda': {
+                            'type': 'object',
+                            'additionalProperties': False,
+                            'properties': {
+                                'target_path': {'type': 'string'},
+                                'github_hook': {'type': 'boolean'},
+                                'schedule': {
+                                    'type': 'object',
+                                    'additionalProperties': False,
+                                    'properties': {
+                                        'hour': {'type':'integer'},
+                                        'minute': {'type':'integer'},
+                                        'dayOfMonth': {'type':'integer'},
+                                        'month': {'type':'integer'},
+                                        'dayOfWeek': {'type':'integer'},
+                                    },
+                                },
+                            },
+                        },
                         'spack': {
                             'type': 'object',
+                            'additionalProperties': False,
                             'properties': {
-                                'target_path:': {'type': 'string'},
+                                'target_path': {'type': 'string'},
                                 'url': {'type': 'string'},
                                 'branch': {'type': 'string'},
                                 'github_hook': {'type': 'boolean'},
                                 'schedule': {
                                     'type': 'object',
+                                    'additionalProperties': False,
                                     'properties': {
                                         'hour': {'type':'integer'},
                                         'minute': {'type':'integer'},
@@ -177,11 +220,13 @@ class CIBuilder(Builder):
                         },
                         'singularity': {
                             'type': 'object',
+                            'additionalProperties': False,
                             'properties': {
-                                'target_path:': {'type': 'string'},
+                                'target_path': {'type': 'string'},
                                 'github_hook': {'type': 'boolean'},
                                 'schedule': {
                                     'type': 'object',
+                                    'additionalProperties': False,
                                     'properties': {
                                         'hour': {'type':'integer'},
                                         'minute': {'type':'integer'},
@@ -215,7 +260,7 @@ class CIBuilder(Builder):
 
         super().__init__(conf_folder)
         self._build_folder = self._confreader['build_config'].get(
-            'build_folder', 
+            'build_folder',
             os.path.join(os.getcwd(), 'ci'))
         self._conf_folder = os.path.join(
             self._build_folder,
@@ -229,18 +274,22 @@ class CIBuilder(Builder):
             self._build_folder,
             'nfs')
         mountpoints = self._confreader['build_config'].get('mountpoints', {})
+        # Set root mountpoints
         self._mountpoints = {}
         for key in ('home', 'cache', 'builds', 'software'):
-            if key in mountpoints:
-                mountpoint = mountpoints[key]
-                if os.path.isabs(mountpoint):
-                    self._mountpoints[key] = mountpoint
-                else:
-                    self._mountpoints[key] = os.path.abspath(
-                        os.path.join(self._build_folder, mountpoint))
-            else:
-                self._mountpoints[key] = os.path.abspath(
-                    os.path.join(nfs_folder, key))
+            mount_config = {
+                'path': os.path.abspath(
+                    os.path.join(nfs_folder, key)),
+                'nfs': True,
+            }
+            mount_config.update(mountpoints.get(key, {}))
+            self._mountpoints[key] = mount_config
+            path = self._mountpoints[key]['path']
+            if not os.path.isabs(path):
+                self._mountpoints[key]['path'] = os.path.abspath(
+                    os.path.join(self._build_folder, path))
+
+        self._confreader['build_config']['mountpoints'] = self._mountpoints
         self._logger.warning(self._mountpoints)
 
     def _get_copy_ci_directory_rule(self):
@@ -334,12 +383,12 @@ class CIBuilder(Builder):
             LoggingRule('Creating home directory'),
             PythonRule(
                 makedirs,
-                args=[self._mountpoints['home']],
+                args=[self._mountpoints['home']['path']],
                 kwargs={'chmod':0o700}),
             LoggingRule('Creating cache directory'),
             PythonRule(
                 makedirs,
-                args=[self._mountpoints['cache']],
+                args=[self._mountpoints['cache']['path']],
                 kwargs={'chmod':0o700}),
             LoggingRule('Creating build directories')
         ]
@@ -351,7 +400,7 @@ class CIBuilder(Builder):
         def _get_home_creation_rules(workers):
 
             worker_home_folder = os.path.join(
-                self._mountpoints['home'],
+                self._mountpoints['home']['path'],
                 worker['name'])
             worker_ssh_folder = os.path.join(
                 worker_home_folder,
@@ -386,10 +435,11 @@ class CIBuilder(Builder):
             rules.extend(_get_home_creation_rules(worker))
 
         for worker in workers:
+            worker_name = worker['name']
             rules.append(
                 LoggingRule(
                     ('Creating build and software '
-                     'directories for worker %s') % worker['name']))
+                     'directories for worker %s') % worker_name))
             for builder_name, builder_opts in self._confreader['build_config']['builds'].items():
                 if builder_opts.get('enabled', False):
                     rules.extend([
@@ -397,8 +447,8 @@ class CIBuilder(Builder):
                             makedirs,
                             args=[
                                 os.path.join(
-                                    self._mountpoints['builds'],
-                                    worker['name'],
+                                    self._mountpoints['builds']['path'],
+                                    worker_name,
                                     builder_name
                                 ),
                             ],
@@ -407,8 +457,8 @@ class CIBuilder(Builder):
                             makedirs,
                             args=[
                                 os.path.join(
-                                    self._mountpoints['software'],
-                                    worker['name'],
+                                    self._mountpoints['software']['path'],
+                                    worker_name,
                                     builder_name
                                 ),
                             ],
@@ -487,7 +537,7 @@ class CIBuilder(Builder):
         for worker in workers:
 
             ssh_folder = os.path.join(
-                self._mountpoints['home'],
+                self._mountpoints['home']['path'],
                 worker['name'],
                 '.ssh')
 
@@ -598,7 +648,7 @@ class CIBuilder(Builder):
         for worker in workers:
 
             singularity_auths_file = os.path.join(
-                self._mountpoints['home'],
+                self._mountpoints['home']['path'],
                 worker['name'],
                 'singularity_auths.yaml')
 
@@ -624,7 +674,7 @@ class CIBuilder(Builder):
         for worker in workers:
 
             swift_auths_file = os.path.join(
-                self._mountpoints['home'],
+                self._mountpoints['home']['path'],
                 worker['name'],
                 'os_auths.yaml')
 

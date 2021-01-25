@@ -17,8 +17,12 @@ services:
   nfs_service:
     image: aaltoscienceit/scibuilder-nfs-server:latest
     volumes:
-{%- for key in ('home', 'cache', 'builds', 'software') %}
-      - {{ (mountpoints | default({}))[key] | default('./nfs/' ~ key) }}:/exports/{{ key }}
+      - {{ mountpoints['cache']['path'] }}:/exports/cache
+{%- for key in ('home', 'builds', 'software') %}
+{%- set mount_config = mountpoints[key] %}
+{%- if mount_config['nfs'] %}
+      - {{ mount_config['path'] }}:/exports/{{ key }}
+{%- endif %}
 {%- endfor %}
       - ./configs/nfs/exports.txt:/etc/exports:ro
     privileged: true
@@ -120,9 +124,15 @@ volumes:
   {{ worker.name }}_home:
     driver: local
     driver_opts:
+  {%- if mountpoints['home']['nfs'] %}
       type: nfs
       o: addr=172.28.1.1,nolock,noatime
       device: ":/exports/home/{{ worker.name }}"
+  {%- else %}
+      type: none
+      o: bind
+      device: "{{ mountpoints['home']['path'] }}/{{ worker.name }}"
+  {%- endif %}
   {%- endfor %}
   {%- for build, build_args in builds.items() %}
   {%- if build_args.enabled | default(False) %}
@@ -131,15 +141,27 @@ volumes:
   {{ worker.name }}_{{ build }}_build:
     driver: local
     driver_opts:
+  {%- if mountpoints['builds']['nfs'] %}
       type: nfs
       o: addr=172.28.1.1,nolock,noatime
       device: ":/exports/builds/{{ worker.name }}/{{ build }}"
+  {%- else %}
+      type: none
+      o: bind
+      device: "{{ mountpoints['builds']['path'] }}/{{ worker.name }}/{{ build }}"
+  {%- endif %}
   {{ worker.name }}_{{ build }}_software:
     driver: local
     driver_opts:
+  {%- if mountpoints['software']['nfs'] %}
       type: nfs
       o: addr=172.28.1.1,nolock,noatime
       device: ":/exports/software/{{ worker.name }}/{{ build }}"
+  {%- else %}
+      type: none
+      o: bind
+      device: "{{ mountpoints['software']['path'] }}/{{ worker.name }}/{{ build }}"
+  {%- endif %}
   {%- endif %}
   {%- endfor %}
   {%- endif %}
