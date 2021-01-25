@@ -528,7 +528,8 @@ class AnacondaBuilder(Builder):
         conda_cmd = sh.Command(os.path.join(conda_path, 'bin', 'conda'))
         if install_mamba:
             conda_cmd('install', '--yes',
-                      '-c', 'conda-forge',
+                     '--freeze-installed',
+                     '-c conda-forge',
                       '-n', 'base',
                       'mamba')
 
@@ -616,26 +617,25 @@ class AnacondaBuilder(Builder):
                     ),
                 ])
 
-                # Create condarc for the installed environment
                 rules.extend([
+                    # Verify no external condarc is used
                     LoggingRule('Verifying that only the environment condarc is utilized.'),
                     PythonRule(
                         self._verify_condarc,
                         [install_path]
                     ),
+                    # Install mamba if needed
+                    LoggingRule('Installing mamba if needed.'),
+                    PythonRule(
+                        self._install_mamba,
+                        [install_path, environment_config['mamba']],
+                    ),
+                    # Create condarc for the installed environment
                     LoggingRule('Creating condarc for environment.'),
                     PythonRule(
                         self._update_condarc,
                         [install_path, condarc],
                     ),
-                ])
-
-                rules.extend([
-                    LoggingRule('Installing mamba if needed.'),
-                    PythonRule(
-                        self._install_mamba,
-                        [install_path, environment_config['mamba']],
-                    )
                 ])
 
                 # During update, install old packages using environment.yml
