@@ -385,7 +385,7 @@ class AnacondaBuilder(Builder):
         if os.path.isdir(install_path):
             self._logger.info((
                 "Cleaning previous failed installation: %s"), install_path)
-            shutil.rmtree(install_path)
+            sh.rm('-r', '-f', install_path)
 
     def _clean_modules(self):
         """ This function removes all existing modulefiles.
