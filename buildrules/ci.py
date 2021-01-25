@@ -148,6 +148,7 @@ class CIBuilder(Builder):
                         'additionalProperties': False,
                         'properties': {
                             'enabled': {'type': 'boolean'},
+                            'license_repo': {'type': 'string'},
                         },
                         'required': ['enabled'],
                     },
@@ -205,7 +206,6 @@ class CIBuilder(Builder):
                                 'url': {'type': 'string'},
                                 'branch': {'type': 'string'},
                                 'github_hook': {'type': 'boolean'},
-                                'license_repo': {'type': 'string'},
                                 'schedule': {
                                     'type': 'object',
                                     'additionalProperties': False,
