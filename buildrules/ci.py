@@ -273,6 +273,11 @@ class CIBuilder(Builder):
         nfs_folder = os.path.join(
             self._build_folder,
             'nfs')
+
+        self._enabled_builders = []
+        for builder_name, builder_opts in self._confreader['build_config']['builds'].items():
+            if builder_opts.get('enabled', False):
+                self._enabled_builders.append(builder_name)
         mountpoints = self._confreader['build_config'].get('mountpoints', {})
         # Set root mountpoints
         self._mountpoints = {}
@@ -389,9 +394,14 @@ class CIBuilder(Builder):
             PythonRule(
                 makedirs,
                 args=[self._mountpoints['cache']['path']],
-                kwargs={'chmod':0o700}),
-            LoggingRule('Creating build directories')
+                kwargs={'chmod':0o700})
         ]
+        for builder_name in self._enabled_builders:
+            rules.append(
+                PythonRule(
+                    makedirs,
+                    args=[os.path.join(self._mountpoints['cache']['path'], builder_name)],
+                    kwargs={'chmod':0o700}))
 
         master = [{'name':'master'}]
 
@@ -440,30 +450,29 @@ class CIBuilder(Builder):
                 LoggingRule(
                     ('Creating build and software '
                      'directories for worker %s') % worker_name))
-            for builder_name, builder_opts in self._confreader['build_config']['builds'].items():
-                if builder_opts.get('enabled', False):
-                    rules.extend([
-                        PythonRule(
-                            makedirs,
-                            args=[
-                                os.path.join(
-                                    self._mountpoints['builds']['path'],
-                                    worker_name,
-                                    builder_name
-                                ),
-                            ],
-                        ),
-                        PythonRule(
-                            makedirs,
-                            args=[
-                                os.path.join(
-                                    self._mountpoints['software']['path'],
-                                    worker_name,
-                                    builder_name
-                                ),
-                            ],
-                        ),
-                    ])
+            for builder_name in self._enabled_builders:
+                rules.extend([
+                    PythonRule(
+                        makedirs,
+                        args=[
+                            os.path.join(
+                                self._mountpoints['builds']['path'],
+                                worker_name,
+                                builder_name
+                            ),
+                        ],
+                    ),
+                    PythonRule(
+                        makedirs,
+                        args=[
+                            os.path.join(
+                                self._mountpoints['software']['path'],
+                                worker_name,
+                                builder_name
+                            ),
+                        ],
+                    ),
+                ])
         return rules
 
     def _copy_certs(self):
