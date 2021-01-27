@@ -436,21 +436,6 @@ spack_builder.addStep(steps.CopyDirectory(
     src='/build/spack/build/licenses/licenses/{{ worker.name }}',
     dest='/build/spack/build/spack/etc/spack/licenses'))
 {% endif %}
-{%- set cleanup = (worker.spack | default({}))['cleanup'] | default('') %}
-{%- if cleanup %}
-spack_builder.addStep(
-    steps.ShellCommand(
-        name='SpackUninstall - {{ worker.name }}',
-        command=[
-                "spackbuilder",
-                "find",
-                ],
-        interruptSignal='TERM',
-        sigtermTime=30,
-        usePTY=True,
-        workdir='rules',
-        timeout=buildbot_timeout,
-{%- endif %}
 spack_builder.addStep(
     steps.ShellCommand(
         name='SpackDescribe - {{ worker.name }}',
