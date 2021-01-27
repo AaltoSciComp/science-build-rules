@@ -48,9 +48,6 @@ RUN  chmod +x /usr/local/bin/build-singularity
 COPY ./common/bin/build-spack.sh /usr/local/bin/build-spack
 RUN  chmod +x /usr/local/bin/build-spack
 
-COPY ./common/bin/spackbuilder.sh /usr/local/bin/spackbuilder
-RUN  chmod +x /usr/local/bin/spackbuilder
-
 COPY ./common/entry.sh /usr/local/bin/entry.sh
 RUN  chmod +x /usr/local/bin/entry.sh
 
