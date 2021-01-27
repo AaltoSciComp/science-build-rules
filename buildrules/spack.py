@@ -135,7 +135,10 @@ class SpackBuilder(Builder):
 
     def _get_reindex_rules(self):
         logging_rule = LoggingRule('Re-indexing installed packages.')
-        reindex_rule = SubprocessRule(self._spack_cmd + ['reindex'])
+        reindex_rule = SubprocessRule(
+            self._spack_cmd + ['reindex'],
+            env={ 'LC_ALL':'en_US.utf8' },
+        )
         return [logging_rule, reindex_rule]
 
     def _get_spec_string(self, package_config):
@@ -176,7 +179,9 @@ class SpackBuilder(Builder):
         spec_str = self._get_spec_string(package_config)
         spec_list = self._get_spec_list(package_config)
         self._logger.debug(msg='Creating package spec rule for spec: {0}'.format(spec_str))
-        return SubprocessRule(self._spack_cmd + ['spec'] + spec_list)
+        return SubprocessRule(
+            self._spack_cmd + ['spec'] + spec_list,
+            env={ 'LC_ALL':'en_US.utf8' })
 
     def _get_package_install_rule(self, package_config):
         spec_str = self._get_spec_string(package_config)
@@ -185,7 +190,8 @@ class SpackBuilder(Builder):
         arch_flags = self._get_target_architecture_flags(package_config)
         self._logger.debug(msg='Creating package install rule for spec: {0}'.format(spec_str))
         return SubprocessRule(
-            self._spack_cmd + ['install', '-v'] + extra_flags + spec_list + arch_flags)
+            self._spack_cmd + ['install', '-v'] + extra_flags + spec_list + arch_flags,
+            env={ 'LC_ALL':'en_US.utf8' })
 
     def _set_compiler_flags(self, spec, flags):
         if os.path.isfile(self._compilers_file):
@@ -226,6 +232,7 @@ class SpackBuilder(Builder):
                    'print', '$2', "}'", '|', 'xargs', '-r']) +
                  self._spack_cmd + ['compiler', 'add']),
                 shell=True,
+                env={ 'LC_ALL':'en_US.utf8' },
                 check=False)
 
         def get_compiler_flags_rule(spec_list, package_config):
@@ -237,6 +244,7 @@ class SpackBuilder(Builder):
             LoggingRule('Adding default compilers.'),
             SubprocessRule(
                 self._spack_cmd + ['compiler', 'add'],
+                env={ 'LC_ALL':'en_US.utf8' },
             )
         ])
 
@@ -337,8 +345,8 @@ class SpackBuilder(Builder):
              'lmod',
              'refresh',
              '-y',
-             '--delete-tree']
-            )
+             '--delete-tree'],
+            env={ 'LC_ALL':'en_US.utf8' })
         return [logging_rule, recreate_rule]
 
     def _get_module_arch_folders(self, lmod_root):
