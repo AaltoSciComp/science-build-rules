@@ -38,8 +38,8 @@ services:
       - POSTGRES_PASSWORD={{ buildbot_db.postgres_password }}
       - BUILDBOT_CONFIG_DIR=config
       - BUILDBOT_CONFIG_URL=file:///buildbot/master.cfg
-      - BUILDBOT_WORKER_PORT={{ buildbot_master.worker_port }}
-      - BUILDBOT_WEB_PORT=tcp:port={{ buildbot_master.web_port }}
+      - BUILDBOT_WORKER_PORT={{ buildbot_master.worker_port | default(9989) }}
+      - BUILDBOT_WEB_PORT=tcp:port={{ buildbot_master.web_port | default(8010) }}
       - GITLAB_HOOK_SECRET={{ buildbot_master.gitlab_hook_secret }}
       - WORKERPASS={{ buildbot_master.worker_password }}
       - buildbot_db
