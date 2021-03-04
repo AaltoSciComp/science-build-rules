@@ -159,8 +159,7 @@ class SpackBuilder(Builder):
             extra_flags.extend(flag_str.split(' '))
         return extra_flags
 
-    @classmethod
-    def _get_spec_list(cls, package_config):
+    def _get_spec_list(self, package_config):
         spec_list = ['{name}@{version}'.format(**package_config)]
         spec_list.extend(package_config.get('variants', []))
         spec_list.extend(self._get_target_architecture_flags(package_config))
@@ -185,7 +184,7 @@ class SpackBuilder(Builder):
         extra_flags = self._get_extra_flags(package_config)
         self._logger.debug(msg='Creating package install rule for spec: {0}'.format(spec_str))
         return SubprocessRule(
-            self._spack_cmd + ['install', '-v'] + extra_flags + spec_list + arch_flags)
+            self._spack_cmd + ['install', '-v'] + extra_flags + spec_list)
 
     def _set_compiler_flags(self, spec, flags):
         if os.path.isfile(self._compilers_file):
