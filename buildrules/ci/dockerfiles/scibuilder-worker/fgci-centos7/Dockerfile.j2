@@ -24,18 +24,9 @@ RUN yum update -y && yum install -y       \
   openssl-devel                           \
   python                                  \
   python-devel                            \
-  python-jinja2                           \
-  python-pip                              \
-  python-yaml                             \
   python36                                \
-  python36-coloredlogs                    \
   python36-devel                          \
-  python36-jinja2                         \
-  python36-jsonschema                     \
-  python36-pip                            \
-  python36-requests                       \
-  python36-sh                             \
-  python36-yaml                           \
+  rust                                    \
   rsync                                   \
   shadow-utils                            \
   squashfs-tools                          \
@@ -74,12 +65,6 @@ RUN yum update -y && yum install -y       \
   mesa-dri-drivers                        \
   xorg-x11-xbitmaps                       \
   && yum clean all
-
-# Installing dependencies for Swift deployer
-
-RUN pip3 install                          \
-  python-swiftclient                      \
-  python-keystoneclient
 
 RUN echo 'buildbot ALL=(ALL) NOPASSWD:SETENV: /usr/local/bin/singularity, /bin/chown' >> /etc/sudoers
 

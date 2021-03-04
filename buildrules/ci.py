@@ -115,6 +115,7 @@ class CIBuilder(Builder):
             'buildbot_db': {
                 'type': 'object',
                 'additionalProperties': False,
+                'mountpoint': {'type':'string'},
                 'properties': {
                     'postgres_password': {'type': 'string'},
                 },
@@ -274,6 +275,9 @@ class CIBuilder(Builder):
         nfs_folder = os.path.join(
             self._build_folder,
             'nfs')
+        db_folder = os.path.join(
+            self._build_folder,
+            'db')
 
         self._enabled_builders = []
         for builder_name, builder_opts in self._confreader['build_config']['builds'].items():
@@ -281,7 +285,11 @@ class CIBuilder(Builder):
                 self._enabled_builders.append(builder_name)
         mountpoints = self._confreader['build_config'].get('mountpoints', {})
         # Set root mountpoints
-        self._mountpoints = {}
+        self._mountpoints = {
+            'db': {
+                'path': self._confreader['build_config']['buildbot_db'].get('mountpoint', db_folder)
+            }
+        }
         for key in ('home', 'cache', 'builds', 'software'):
             mount_config = {
                 'path': os.path.abspath(
@@ -395,6 +403,11 @@ class CIBuilder(Builder):
             PythonRule(
                 makedirs,
                 args=[self._mountpoints['cache']['path']],
+                kwargs={'chmod':0o700}),
+            LoggingRule('Creating db directory'),
+            PythonRule(
+                makedirs,
+                args=[self._mountpoints['db']['path']],
                 kwargs={'chmod':0o700})
         ]
         for builder_name in self._enabled_builders:

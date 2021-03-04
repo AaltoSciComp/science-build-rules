@@ -1,3 +1,22 @@
+# Install new version of pip
+RUN python3 -m pip install -U pip
+
+# Install dependencies for buildrules
+RUN python3 -m pip install                \
+  coloredlogs                             \
+  jinja2                                  \
+  jsonschema                              \
+  requests                                \
+  sh                                      \
+  pyyaml
+
+# Installing dependencies for Swift deployer
+RUN python3 -m pip install                \
+  python-swiftclient                      \
+  python-keystoneclient
+
+# Install 
+
 # Install gosu
 COPY ./common/gosu_public.pgp /root/gosu_public.pgp
 
@@ -20,8 +39,10 @@ echo "057ecd4ac1d3c3be31f82fc0848bf77b1326a975b4f8423fe31607205a0fe945  /usr/loc
 chmod 755 /usr/local/bin/dumb-init
 
 # Install more requirements
-RUN pip3 --no-cache-dir install twisted[tls] && \
-  mkdir /buildbot && \
+RUN pip3 --no-cache-dir install twisted[tls] snips-nlu
+
+# Prepare for buildbot installation
+RUN mkdir /buildbot && \
   useradd -ms /bin/bash buildbot
 
 # Setting buildbot version

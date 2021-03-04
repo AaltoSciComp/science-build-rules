@@ -12,6 +12,7 @@ RUN apt-get update &&                     \
   bash-completion                         \
   ca-certificates                         \
   cmake                                   \
+  cpio                                    \
   curl                                    \
   git                                     \
   grep                                    \
@@ -27,25 +28,15 @@ RUN apt-get update &&                     \
   openssh-client                          \
   python                                  \
   python-dev                              \
-  python-jinja2                           \
-  python-pip                              \
-  python-yaml                             \
   python3                                 \
-  python3-coloredlogs                     \
   python3-dev                             \
-  python3-jinja2                          \
-  python3-jsonschema                      \
-  python3-keystoneclient                  \
-  python3-pip                             \
-  python3-requests                        \
-  python3-sh                              \
-  python3-swiftclient                     \
-  python3-yaml                            \
+  rustc                                   \
   rsync                                   \
   software-properties-common              \
   squashfs-tools                          \
   ssh                                     \
   sudo                                    \
+  swig                                    \
   tcl                                     \
   unzip                                   \
   uuid-dev                                \
@@ -103,18 +94,13 @@ RUN echo 'buildbot ALL=(ALL) NOPASSWD:SETENV: /usr/bin/singularity, /bin/chown' 
 RUN mkdir ~/.gnupg
 RUN echo "disable-ipv6" >> ~/.gnupg/dirmngr.conf
 
-RUN apt-get update &&                     \
-  apt-get -y install -q                   \
-  cpio                                    \
-  && rm -rf /var/lib/apt/lists/*
-
 # Fix lua posix bug https://bugs.launchpad.net/ubuntu/+source/lua-posix/+bug/1752082
 RUN ln -s /usr/lib/x86_64-linux-gnu/lua/5.2/posix_c.so /usr/lib/x86_64-linux-gnu/lua/5.2/posix.so
 
-# Required by pymvpa2 pip package
 RUN apt-get update &&                     \
   apt-get -y install -q                   \
-  swig                         \
+  python3-pip                             \
   && rm -rf /var/lib/apt/lists/*
+
 
 {% include 'common/Dockerfile.j2' %}
