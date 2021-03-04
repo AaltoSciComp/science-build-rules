@@ -159,8 +159,7 @@ class SpackBuilder(Builder):
             extra_flags.extend(flag_str.split(' '))
         return extra_flags
 
-    @classmethod
-    def _get_spec_list(cls, package_config):
+    def _get_spec_list(self, package_config):
         spec_list = ['{name}@{version}'.format(**package_config)]
         spec_list.extend(package_config.get('variants', []))
         spec_list.extend(self._get_target_architecture_flags(package_config))
