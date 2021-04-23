@@ -1,0 +1,103 @@
+FROM ubuntu:20.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+USER root
+
+RUN apt-get update &&                     \
+  apt-get -y upgrade &&                   \
+  apt-get -y install -q                   \
+  apt-transport-https                     \
+  bash                                    \
+  bash-completion                         \
+  ca-certificates                         \
+  cmake                                   \
+  cpio                                    \
+  curl                                    \
+  git                                     \
+  grep                                    \
+  libarchive-dev                          \
+  libnl-3-200                             \
+  libnl-3-dev                             \
+  libssh-4                                \
+  libssh2-1                               \
+  libssh2-1-dev                           \
+  libssl-dev                              \
+  libvshadow-utils                        \
+  lmod                                    \
+  openssh-client                          \
+  python                                  \
+  python-dev                              \
+  python3                                 \
+  python3-dev                             \
+  rustc                                   \
+  rsync                                   \
+  software-properties-common              \
+  squashfs-tools                          \
+  ssh                                     \
+  sudo                                    \
+  swig                                    \
+  tcl                                     \
+  unzip                                   \
+  uuid-dev                                \
+  wget                                    \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update &&                     \
+  apt-get -y install -q                   \
+  libgl1-mesa-dri                         \
+  xbitmaps                                \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update &&                     \
+  apt-get install -y                      \
+  build-essential                         \
+  libssl-dev                              \
+  uuid-dev                                \
+  libgpgme-dev                            \
+  squashfs-tools                          \
+  libseccomp-dev                          \
+  wget                                    \
+  pkg-config                              \
+  git                                     \
+  cryptsetup-bin                          \
+  && rm -rf /var/lib/apt/lists/*
+
+
+# Install Go for singularity
+ARG GO_VERSION=1.13.8
+
+RUN cd /tmp &&                            \
+  wget https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz && \
+  tar -C /opt -xzvf go${GO_VERSION}.linux-amd64.tar.gz && \
+  rm go${GO_VERSION}.linux-amd64.tar.gz
+
+ARG SING_VERSION=3.5.2
+
+# Install singularity
+RUN export GOPATH=/opt/go-modules &&      \
+  mkdir ${GOPATH} &&                      \
+  export PATH=/opt/go/bin:${GOPATH}/bin:$PATH && \
+  cd /tmp &&                              \
+  git clone https://github.com/sylabs/singularity.git && \
+  cd singularity &&                       \
+  git checkout v${SING_VERSION}  &&       \
+  ./mconfig &&                            \
+  make -C ./builddir &&                   \
+  make -C ./builddir install &&           \
+  cd /tmp &&                              \
+  rm -r singularity
+
+RUN echo 'buildbot ALL=(ALL) NOPASSWD:SETENV: /usr/bin/singularity, /bin/chown' >> /etc/sudoers
+
+# Fix gosu gpg key import error
+RUN mkdir ~/.gnupg
+RUN echo "disable-ipv6" >> ~/.gnupg/dirmngr.conf
+
+RUN apt-get update &&                     \
+  apt-get -y install -q                   \
+  python3-pip                             \
+  && rm -rf /var/lib/apt/lists/*
+
+
+{% include 'common/Dockerfile.j2' %}
