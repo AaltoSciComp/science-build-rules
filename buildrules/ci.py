@@ -123,7 +123,7 @@ class CIBuilder(Builder):
                 'type': 'object',
                 'additionalProperties': False,
                 'patternProperties': {
-                    'cache': {
+                    '(db|cache)': {
                         'type': 'object',
                         'additionalProperties': False,
                         'properties': {
@@ -290,6 +290,15 @@ class CIBuilder(Builder):
             }
             mount_config.update(mountpoints.get(key, {}))
             self._mountpoints[key] = mount_config
+
+        db_paths = {
+            'path': 'db'
+        }
+        db_paths.update(mountpoints.get('db', {}))
+        self._mountpoints['db'] = db_paths
+
+        # Normalize paths
+        for key in self._mountpoints:
             path = self._mountpoints[key]['path']
             if not os.path.isabs(path):
                 self._mountpoints[key]['path'] = os.path.abspath(
@@ -395,6 +404,11 @@ class CIBuilder(Builder):
             PythonRule(
                 makedirs,
                 args=[self._mountpoints['cache']['path']],
+                kwargs={'chmod':0o700}),
+            LoggingRule('Creating db directory'),
+            PythonRule(
+                makedirs,
+                args=[self._mountpoints['db']['path']],
                 kwargs={'chmod':0o700})
         ]
         for builder_name in self._enabled_builders:

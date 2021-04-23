@@ -163,7 +163,7 @@ c['status'] = []
 # DB configuration
 
 c['db'] = {
-    'db_url' : os.environ.get("BUILDBOT_DB_URL", "sqlite://").format(**os.environ)
+    'db_url' : 'postgresql+psycopg2://buildbot:{{ buildbot_db.postgres_password }}@buildbot_db/buildbot'
 }
 
 #################################################

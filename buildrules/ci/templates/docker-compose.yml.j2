@@ -35,19 +35,12 @@ services:
     env_file:
       - ./configs/buildbot/db.env
     environment:
-      - POSTGRES_PASSWORD={{ buildbot_db.postgres_password }}
       - BUILDBOT_CONFIG_DIR=config
       - BUILDBOT_CONFIG_URL=file:///buildbot/master.cfg
       - BUILDBOT_WORKER_PORT={{ buildbot_master.worker_port }}
       - BUILDBOT_WEB_PORT=tcp:port={{ buildbot_master.web_port }}
-      - GITLAB_HOOK_SECRET={{ buildbot_master.gitlab_hook_secret }}
       - WORKERPASS={{ buildbot_master.worker_password }}
-      - buildbot_db
-      - RULES_REPO={{ science_build_rules_repository }}
       - WORKER_UID={{ buildbot_master.worker_uid }}
-      - TARGET_WORKERS={% for worker in target_workers -%}
-                           {{ worker.name }}{% if not loop.last %},{% endif %}
-                       {%- endfor %}
     depends_on:
       - buildbot_db
       - nfs_service
@@ -64,7 +57,7 @@ services:
       - ./configs/buildbot/db.env
     environment:
       - POSTGRES_PASSWORD={{ buildbot_db.postgres_password }}
-    image: "postgres:9.4"
+    image: "postgres:13.2"
     volumes:
         - db_data:/var/lib/postgresql/data
     expose:
@@ -108,6 +101,10 @@ services:
 volumes:
   db_data:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: "{{ mountpoints['db']['path'] }}"
   cache:
     driver: local
     driver_opts:
