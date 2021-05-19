@@ -529,7 +529,7 @@ class AnacondaBuilder(Builder):
         if install_mamba:
             conda_cmd('install', '--yes',
                      '--freeze-installed',
-                     '-c conda-forge',
+                     '-c', 'conda-forge',
                       '-n', 'base',
                       'mamba')
 
