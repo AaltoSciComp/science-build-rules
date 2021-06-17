@@ -107,6 +107,23 @@ class AnacondaBuilder(Builder):
                                 'type': 'array',
                                 'items': {'type': 'string'}
                             },
+                            'extra_module_variables': {
+                                'type': 'object',
+                                'additionalProperties': False,
+                                'patternProperties': {
+                                    '(setenv|prepend_path|append_path)': {
+                                        'type': 'array',
+                                        'items': {
+                                            'type': 'object',
+                                            'additionalProperties': False,
+                                            'properties': {
+                                                'name': {'type': 'string'},
+                                                'value': {'type': 'string'},
+                                            },
+                                        },
+                                    },
+                                },
+                            },
                         },
                         'required': ['name', 'version'],
                     },
@@ -193,6 +210,7 @@ class AnacondaBuilder(Builder):
             'installer_version': 'latest',
             'pip_packages': [],
             'conda_packages': [],
+            'extra_module_variables': {},
         }
 
         environment_config = copy.deepcopy(default_config)
@@ -334,7 +352,7 @@ class AnacondaBuilder(Builder):
         return os.path.join(conda_path, 'environment.yml')
 
     @classmethod
-    def _write_modulefile(cls, name, version, install_path, module_path):
+    def _write_modulefile(cls, name, version, install_path, module_path, extra_module_variables):
         """ This function writes a modulefile that points to Anaconda
         environment installed in install_path and whose name is name/version
         into a directory given by module_path.
@@ -344,12 +362,25 @@ class AnacondaBuilder(Builder):
             version (str): Version of the Anaconda module.
             install_path (str): Installation path of the environment.
             module_path (str): Directory for the modulefile.
+            extra_module_variables (dict): Additional environment variables to add to the modulefile.
         """
+
+        # Replace instances of $prefix from extra module variables
+        modulevars = copy.deepcopy(extra_module_variables)
+
+        def replace_prefix(variable):
+            variable['value'] = variable['value'].replace('$prefix', install_path)
+            return variable
+
+        for key in modulevars:
+            modulevars[key] = [ replace_prefix(variable) for variable in modulevars[key] ]
+
 
         moduleconfig = {
             'name' : name,
             'version': version,
             'install_path': install_path,
+            'extra_module_variables': modulevars,
         }
 
         template = """
@@ -364,6 +395,11 @@ class AnacondaBuilder(Builder):
 
             prepend_path("PATH", "{{ install_path }}/bin")
             setenv("CONDA_PREFIX", "{{ install_path }}")
+            {%- for key, variables in extra_module_variables.items() %}
+            {%- for variable in variables %}
+            {{ key }}("{{ variable['name'] }}", "{{ variable['value'] }}")
+            {%- endfor %}
+            {%- endfor %}
         """
 
         makedirs(module_path, 0o755)
@@ -719,7 +755,11 @@ class AnacondaBuilder(Builder):
                 LoggingRule('Creating modulefile for environment: %s' % environment_name),
                 PythonRule(
                     self._write_modulefile,
-                    [environment_config['name'], environment_config['version'], install_path, module_path])
+                    [environment_config['name'],
+                     environment_config['version'],
+                     install_path,
+                     module_path,
+                     environment_config['extra_module_variables']])
             ])
 
         return rules
