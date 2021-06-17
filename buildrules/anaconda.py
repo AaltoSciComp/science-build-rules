@@ -112,14 +112,9 @@ class AnacondaBuilder(Builder):
                                 'additionalProperties': False,
                                 'patternProperties': {
                                     '(setenv|prepend_path|append_path)': {
-                                        'type': 'array',
-                                        'items': {
-                                            'type': 'object',
-                                            'additionalProperties': False,
-                                            'properties': {
-                                                'name': {'type': 'string'},
-                                                'value': {'type': 'string'},
-                                            },
+                                        'type': 'object',
+                                        'patternProperties': {
+                                            '.*': {'type': 'string'},
                                         },
                                     },
                                 },
@@ -368,12 +363,12 @@ class AnacondaBuilder(Builder):
         # Replace instances of $prefix from extra module variables
         modulevars = copy.deepcopy(extra_module_variables)
 
-        def replace_prefix(variable):
-            variable['value'] = variable['value'].replace('$prefix', install_path)
-            return variable
+        def replace_prefix(variable_value):
+            return variable_value.replace('$prefix', install_path)
 
-        for key in modulevars:
-            modulevars[key] = [ replace_prefix(variable) for variable in modulevars[key] ]
+        for env_function in modulevars:
+            for variable in modulevars[env_function]:
+                modulevars[env_function][variable] = replace_prefix(modulevars[env_function][variable])
 
 
         moduleconfig = {
@@ -395,9 +390,9 @@ class AnacondaBuilder(Builder):
 
             prepend_path("PATH", "{{ install_path }}/bin")
             setenv("CONDA_PREFIX", "{{ install_path }}")
-            {%- for key, variables in extra_module_variables.items() %}
-            {%- for variable in variables %}
-            {{ key }}("{{ variable['name'] }}", "{{ variable['value'] }}")
+            {%- for env_function, variables in extra_module_variables.items() %}
+            {%- for variable_name, variable_value in variables.items() %}
+            {{ env_function }}("{{ variable_name }}", "{{ variable_value }}")
             {%- endfor %}
             {%- endfor %}
         """
@@ -585,6 +580,7 @@ class AnacondaBuilder(Builder):
         env_path = list(filter(
             lambda x: re.search('^/(usr|bin|sbin)', x),
             os.getenv('PATH').split(':')))
+
         for environment in self._confreader['build_config']['environments']:
 
             environment_config = self._create_environment_config(environment)
@@ -593,6 +589,7 @@ class AnacondaBuilder(Builder):
             pip_packages = environment_config.get('pip_packages', [])
             conda_packages = environment_config.get('conda_packages', [])
             condarc = environment_config.get('condarc', {})
+            extra_module_variables = environment_config.get('extra_module_variables', {})
 
             conda_install_cmd = [environment_config['conda_cmd'], 'install', '--yes', '-n', 'base']
             pip_install_cmd = ['pip', 'install', '--cache-dir', self._pip_cache]
@@ -759,7 +756,7 @@ class AnacondaBuilder(Builder):
                      environment_config['version'],
                      install_path,
                      module_path,
-                     environment_config['extra_module_variables']])
+                     extra_module_variables])
             ])
 
         return rules
