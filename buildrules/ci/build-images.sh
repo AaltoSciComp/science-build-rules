@@ -6,6 +6,7 @@ PUSH=1
 IGNORE_CACHE=''
 DOCKER_SERVER=${DOCKER_SERVER:-"docker.io"}
 DOCKER_USER=${DOCKER_USER:-"aaltoscienceit"}
+WORKERS="fgci-centos7 aalto-ubuntu1804 aalto-ubuntu2004"
 
 for ARG in "$@"
 do
@@ -25,6 +26,11 @@ case $ARG in
   ;;
   -s|--server)
   DOCKER_SERVER=$2
+  shift
+  shift
+  ;;
+  -w|--workers)
+  WORKERS=${2//,/ }
   shift
   shift
   ;;
@@ -59,7 +65,7 @@ done
 # Build worker-images
 cd scibuilder-worker
 
-for TARGET in fgci-centos7 aalto-ubuntu1804 aalto-ubuntu2004 ; do
+for TARGET in $WORKERS ; do
 
   DOCKER_URL=$DOCKER_SERVER/$DOCKER_USER/scibuilder-worker:$TARGET
   BUILD_RESULT=1
