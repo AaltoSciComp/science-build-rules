@@ -43,38 +43,69 @@ RUN yum update -y && yum install -y       \
   singularity                             \
   && yum clean all
 
-# Add Open HPC slurm
+# Add mellanox ib stack
 
-ARG TARGET
+RUN yum update -y && yum install -y       \
+  pciutils                                \
+  numactl-libs                            \
+  gtk2                                    \
+  atk                                     \
+  cairo                                   \
+  tcsh                                    \
+  lsof                                    \
+  libmnl                                  \
+  ethtool                                 \
+  tk                                      \
+  && yum clean all
+
+ENV RPMS_DIR=/tmp/rpms
+
+ARG MLNX_VERSION=4.9-3.1.5.0-rhel7.9-x86_64
+
+COPY ./extra_rpms/MLNX_OFED_LINUX-${MLNX_VERSION} $RPMS_DIR
+
+ARG KERNEL=3.10.0-1160.42.2
+
+RUN yum update -y && yum install -y       \
+  kernel-devel-${KERNEL}.el7.x86_64       \
+  && yum clean all
+
+RUN cd ${RPMS_DIR} &&              \
+  yes | ./mlnxofedinstall          \
+      --force                      \
+      --add-kernel-support         \
+      --without-fw-update          \
+      --skip-repo                  \
+      --kernel ${KERNEL}           \
+      --kernel-sources /usr/src/kernels/${KERNEL}.el7.x86_64 \
+      --without-rshim              \
+  && rm -r ${RPMS_DIR}
+
+
+# Add Open HPC slurm
 
 RUN yum install -y https://github.com/openhpc/ohpc/releases/download/v1.3.GA/ohpc-release-1.3-1.el7.x86_64.rpm
 
 RUN yum update -y && yum install -y       \
   hwloc-libs                              \
   munge-ohpc                              \
-  pmix                                    \
-  pmix-devel                              \
-  libibverbs                              \
-  libibverbs-devel                        \
   && yum clean all
 
-ENV SLURM_DIR=/tmp/rpms
 
 ARG SLURM_VERSION=21.08.0-4.1
 ARG OHPC_VERSION=1.3.8.1
 
-COPY ./extra_rpms $SLURM_DIR
-
-RUN yum localinstall -y                   \
-  ${SLURM_DIR}/slurm-contribs-ohpc-${SLURM_VERSION}.ohpc.${OHPC_VERSION}.x86_64.rpm        \
-  ${SLURM_DIR}/slurm-devel-ohpc-${SLURM_VERSION}.ohpc.${OHPC_VERSION}.x86_64.rpm           \
-  ${SLURM_DIR}/slurm-example-configs-ohpc-${SLURM_VERSION}.ohpc.${OHPC_VERSION}.x86_64.rpm \
-  ${SLURM_DIR}/slurm-libpmi-ohpc-${SLURM_VERSION}.ohpc.${OHPC_VERSION}.x86_64.rpm          \
-  ${SLURM_DIR}/slurm-ohpc-${SLURM_VERSION}.ohpc.${OHPC_VERSION}.x86_64.rpm                 \
-  ${SLURM_DIR}/slurm-pam_slurm-ohpc-${SLURM_VERSION}.ohpc.${OHPC_VERSION}.x86_64.rpm       \
-  ${SLURM_DIR}/slurm-perlapi-ohpc-${SLURM_VERSION}.ohpc.${OHPC_VERSION}.x86_64.rpm         \
-  ${SLURM_DIR}/slurm-slurmd-ohpc-${SLURM_VERSION}.ohpc.${OHPC_VERSION}.x86_64.rpm          \
-  && yum clean all
+COPY ./extra_rpms/slurm $RPMS_DIR
+RUN cd ${RPMS_DIR} && yum localinstall -y                                                 \
+  ./slurm-contribs-ohpc-${SLURM_VERSION}.ohpc.${OHPC_VERSION}.x86_64.rpm        \
+  ./slurm-devel-ohpc-${SLURM_VERSION}.ohpc.${OHPC_VERSION}.x86_64.rpm           \
+  ./slurm-example-configs-ohpc-${SLURM_VERSION}.ohpc.${OHPC_VERSION}.x86_64.rpm \
+  ./slurm-libpmi-ohpc-${SLURM_VERSION}.ohpc.${OHPC_VERSION}.x86_64.rpm          \
+  ./slurm-ohpc-${SLURM_VERSION}.ohpc.${OHPC_VERSION}.x86_64.rpm                 \
+  ./slurm-pam_slurm-ohpc-${SLURM_VERSION}.ohpc.${OHPC_VERSION}.x86_64.rpm       \
+  ./slurm-perlapi-ohpc-${SLURM_VERSION}.ohpc.${OHPC_VERSION}.x86_64.rpm         \
+  ./slurm-slurmd-ohpc-${SLURM_VERSION}.ohpc.${OHPC_VERSION}.x86_64.rpm          \
+  && yum clean all && rm -r ${RPMS_DIR}
 
 # Add other packages
 
