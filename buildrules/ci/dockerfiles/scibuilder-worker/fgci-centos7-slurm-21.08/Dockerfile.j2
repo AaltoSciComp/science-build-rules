@@ -120,6 +120,6 @@ RUN yum update -y && yum install -y       \
   wget                                    \
   && yum clean all
 
-RUN echo 'buildbot ALL=(ALL) NOPASSWD:SETENV: /usr/local/bin/singularity, /bin/chown' >> /etc/sudoers
+RUN echo 'buildbot ALL=(ALL) NOPASSWD:SETENV: /usr/bin/singularity, /bin/chown' >> /etc/sudoers
 
 {% include 'common/Dockerfile.j2' %}
