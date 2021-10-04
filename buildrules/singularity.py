@@ -313,7 +313,6 @@ class SingularityBuilder(Builder):
             singularity_build_cmd.insert(1, '-d')
         if sudo:
             singularity_build_cmd.insert(0, 'sudo')
-            chown_cmd.insert(0, 'sudo')
         if fakeroot:
             singularity_build_cmd.append('--fakeroot')
 
@@ -458,13 +457,17 @@ class SingularityBuilder(Builder):
                          }),
                      ])
 
-                     debug = (image_config.get('debug', False) or
-                             self._confreader['config']['config'].get('debug', False))
-                     sudo = (image_config.get('sudo', False) or
-                             self._confreader['config']['config'].get('sudo', False))
-                     fakeroot = (image_config.get('fakeroot', False) or
-                                 self._confreader['config']['config'].get(
-                                     'fakeroot', False))
+                     debug = self._confreader['config']['config'].get('debug', False)
+                     sudo = self._confreader['config']['config'].get('sudo', False)
+                     fakeroot = self._confreader['config']['config'].get('fakeroot', False)
+
+                     if 'debug' in image_config:
+                         debug = image_config['debug']
+                     if 'sudo' in image_config:
+                         sudo = image_config['sudo']
+                     if 'fakeroot' in image_config:
+                         fakeroot = image_config['fakeroot']
+
                      rules.extend([
                          LoggingRule(
                              'Building image for %s' % install_name),
@@ -477,7 +480,7 @@ class SingularityBuilder(Builder):
                      ])
 
                      if sudo:
-                         chown_cmd = ['chown', '{0}:{0}'.format(uid)]
+                         chown_cmd = ['sudo', 'chown', '{0}:{0}'.format(uid)]
                          rules.append(
                              SubprocessRule(
                                  chown_cmd + [stage_image],
