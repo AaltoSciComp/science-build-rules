@@ -103,6 +103,10 @@ class AnacondaBuilder(Builder):
                                 'default' : {},
                                 'type': 'object',
                             },
+                            'condarc_install': {
+                                'default' : {},
+                                'type': 'object',
+                            },
                             'collections': {
                                 'type': 'array',
                                 'items': {'type': 'string'}
@@ -464,7 +468,7 @@ class AnacondaBuilder(Builder):
         installed_dict['environments'][environment_name] = environment_config
         write_yaml(self._installed_file, installed_dict)
 
-    def _update_condarc(self, conda_path, condarc, install_time=True):
+    def _update_condarc(self, conda_path, condarc, condarc_install, install_time=True):
         """ This function updates the .condarc-file located in conda_path
         based on condarc.
 
@@ -479,11 +483,14 @@ class AnacondaBuilder(Builder):
             'always_yes': True,
             'auto_update_conda': True,
         }
+
+        condarc_complete = {}
         if install_time:
-            condarc = copy.deepcopy(condarc)
-            condarc.update(condarc_defaults)
+            condarc_complete.update(condarc_defaults)
+            condarc_complete.update(condarc_install)
+        condarc_complete.update(condarc)
         condarc_file = os.path.join(conda_path, '.condarc')
-        write_yaml(condarc_file, condarc)
+        write_yaml(condarc_file, condarc_complete)
 
     def _export_conda_environment(self, conda_path):
         """ This function exports an environment.yml from an Anaconda
@@ -589,6 +596,7 @@ class AnacondaBuilder(Builder):
             pip_packages = environment_config.get('pip_packages', [])
             conda_packages = environment_config.get('conda_packages', [])
             condarc = environment_config.get('condarc', {})
+            condarc_install = environment_config.get('condarc_install', {})
             extra_module_variables = environment_config.get('extra_module_variables', {})
 
             conda_install_cmd = [environment_config['conda_cmd'], 'install', '--yes', '-n', 'base']
@@ -667,7 +675,7 @@ class AnacondaBuilder(Builder):
                     LoggingRule('Creating condarc for environment.'),
                     PythonRule(
                         self._update_condarc,
-                        [install_path, condarc],
+                        [install_path, condarc, condarc_install],
                     ),
                 ])
 
@@ -743,7 +751,7 @@ class AnacondaBuilder(Builder):
                 LoggingRule('Creating condarc for environment: %s' % environment_name),
                 PythonRule(
                     self._update_condarc,
-                    [install_path, condarc],
+                    [install_path, condarc, condarc_install],
                     {'install_time': False})
             ])
 
