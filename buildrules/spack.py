@@ -141,6 +141,12 @@ class SpackBuilder(Builder):
     def _get_spec_string(self, package_config):
         return ' '.join(self._get_spec_list(package_config))
 
+    def _get_build_environment(self):
+        build_env = {}
+        if 'build_language' in self._confreader['config'].get('config', {}):
+            build_env['LC_ALL'] = self._confreader['config']['config']['build_language']
+        return build_env if len(build_env) > 0 else None
+
     def _get_target_architecture_flags(self, package_config):
         target_architecture = {
             'platform': 'linux',
@@ -182,9 +188,10 @@ class SpackBuilder(Builder):
         spec_str = self._get_spec_string(package_config)
         spec_list = self._get_spec_list(package_config)
         extra_flags = self._get_extra_flags(package_config)
+        build_env = self._get_build_environment()
         self._logger.debug(msg='Creating package install rule for spec: {0}'.format(spec_str))
         return SubprocessRule(
-            self._spack_cmd + ['install', '-v'] + extra_flags + spec_list)
+            self._spack_cmd + ['install', '-v'] + extra_flags + spec_list, env=build_env)
 
     def _set_compiler_flags(self, spec, flags):
         if os.path.isfile(self._compilers_file):
