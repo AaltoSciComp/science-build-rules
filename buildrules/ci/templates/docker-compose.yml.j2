@@ -88,6 +88,9 @@ services:
     volumes:
       - {{ worker.name }}_home:/home/buildbot:rw
       - cache:/cache
+  {%- for nfs_mount in worker.get('nfs_mounts', {}) %}
+      - {{ worker.name }}_nfs_{{ nfs_mount.name }}:{{ nfs_mount.target_dir }}:{{ nfs_mount.get('mode', 'rw') }}
+  {%- endfor %}
   {%- for build, build_args in builds.items() %}
   {%- if build_args.enabled | default(False) %}
   {%- if build in worker %}
@@ -118,6 +121,14 @@ volumes:
       o: addr=172.28.1.1,nolock,noatime
       device: ":/exports/home/master"
   {%- for worker in target_workers %}
+  {%- for nfs_mount in worker.get('nfs_mounts', {}) %}
+  {{ worker.name }}_nfs_{{ nfs_mount.name }}:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: {{ nfs_mount.opts }}
+      device: ":{{ nfs_mount.src_dir }}"
+  {%- endfor %}
   {{ worker.name }}_home:
     driver: local
     driver_opts:

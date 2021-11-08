@@ -179,6 +179,21 @@ class CIBuilder(Builder):
                     'properties': {
                         'name': {'type': 'string'},
                         'image': {'type': 'string'},
+                        'nfs_mounts': {
+                            'type': 'array',
+                            'items': {
+                                'type': 'object',
+                                'additionalProperties': False,
+                                'properties': {
+                                    'name': {'type': 'string'},
+                                    'opts': {'type': 'string'},
+                                    'src_dir': {'type': 'string'},
+                                    'target_dir': {'type': 'string'},
+                                    'mode': {'type': 'string'}
+                                },
+                            },
+                            'required': ['name', 'opts', 'src_dir', 'target_dir'],
+                        },
                         'anaconda': {
                             'type': 'object',
                             'additionalProperties': False,
