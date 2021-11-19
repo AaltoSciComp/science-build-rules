@@ -1,4 +1,4 @@
-FROM centos:centos7
+FROM centos:centos7 as base_image
 
 RUN yum install -y epel-release           \
   && yum update -y                        \
@@ -45,6 +45,14 @@ RUN yum update -y && yum install -y       \
 
 # Add mellanox ib stack
 
+FROM centos:centos7 as mlnx
+
+COPY --from=base_image / /
+
+ENV RPMS_DIR=/rpms
+ARG KERNEL=3.10.0-1160.45.1
+ARG MLNX_VERSION=4.9-3.1.5.0-rhel7.9-x86_64
+
 RUN yum update -y && yum install -y       \
   pciutils                                \
   numactl-libs                            \
@@ -58,19 +66,14 @@ RUN yum update -y && yum install -y       \
   tk                                      \
   && yum clean all
 
-ENV RPMS_DIR=/tmp/rpms
-
-ARG MLNX_VERSION=4.9-3.1.5.0-rhel7.9-x86_64
-
-COPY ./extra_rpms/MLNX_OFED_LINUX-${MLNX_VERSION} $RPMS_DIR
-
-ARG KERNEL=3.10.0-1160.42.2
-
 RUN yum update -y && yum install -y       \
+  kernel-headers-${KERNEL}.el7.x86_64     \
   kernel-devel-${KERNEL}.el7.x86_64       \
   && yum clean all
 
-RUN cd ${RPMS_DIR} &&              \
+COPY ./extra_rpms/MLNX_OFED_LINUX-${MLNX_VERSION} $RPMS_DIR
+
+RUN cd ${RPMS_DIR} && \
   yes | ./mlnxofedinstall          \
       --force                      \
       --add-kernel-support         \
@@ -79,10 +82,18 @@ RUN cd ${RPMS_DIR} &&              \
       --kernel ${KERNEL}           \
       --kernel-sources /usr/src/kernels/${KERNEL}.el7.x86_64 \
       --without-rshim              \
+      2>&1 | tee mlnx_build.log    \
   && rm -r ${RPMS_DIR}
 
-
 # Add Open HPC slurm
+
+FROM centos:centos7 as slurm
+
+COPY --from=mlnx / /
+
+ENV RPMS_DIR=/rpms
+ARG SLURM_VERSION=21.08.0-4.1
+ARG OHPC_VERSION=1.3.8.1
 
 RUN yum install -y https://github.com/openhpc/ohpc/releases/download/v1.3.GA/ohpc-release-1.3-1.el7.x86_64.rpm
 
@@ -90,10 +101,6 @@ RUN yum update -y && yum install -y       \
   hwloc-libs                              \
   munge-ohpc                              \
   && yum clean all
-
-
-ARG SLURM_VERSION=21.08.0-4.1
-ARG OHPC_VERSION=1.3.8.1
 
 COPY ./extra_rpms/slurm $RPMS_DIR
 RUN cd ${RPMS_DIR} && yum localinstall -y                                                 \
@@ -107,7 +114,27 @@ RUN cd ${RPMS_DIR} && yum localinstall -y                                       
   ./slurm-slurmd-ohpc-${SLURM_VERSION}.ohpc.${OHPC_VERSION}.x86_64.rpm          \
   && yum clean all && rm -r ${RPMS_DIR}
 
+# Add NVIDIA CUDA driver
+
+FROM centos:centos7 as cuda
+
+COPY --from=slurm / /
+
+ENV RPMS_DIR=/rpms
+ARG CUDA_DRIVER_VERSION=470.57.02
+ENV CUDA_DRIVER_RUNFILE=NVIDIA-Linux-x86_64-${CUDA_DRIVER_VERSION}.run
+
+RUN mkdir ${RPMS_DIR}
+COPY ./extra_rpms/${CUDA_DRIVER_RUNFILE} ${RPMS_DIR}
+
+RUN bash ${RPMS_DIR}/${CUDA_DRIVER_RUNFILE} --silent --no-kernel-module && \
+  rm -rf ${RPMS_DIR}
+
 # Add other packages
+
+FROM centos:centos7
+
+COPY --from=cuda / /
 
 RUN yum update -y && yum install -y       \
   mesa-dri-drivers                        \
@@ -119,6 +146,7 @@ RUN yum update -y && yum install -y       \
   vim                                     \
   wget                                    \
   && yum clean all
+
 
 RUN echo 'buildbot ALL=(ALL) NOPASSWD:SETENV: /usr/bin/singularity, /bin/chown' >> /etc/sudoers
 
