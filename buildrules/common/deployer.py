@@ -62,15 +62,17 @@ class RsyncDeployer(Deployer):
             "working_directory": {"type" : "string"},
             "chmod_options": {"type" : "string"},
             "rsync_flags": {"type" : "string"},
+            "use_ssh": {"type" : "boolean"},
             "ssh_command": {"type" : "string"},
             "delete": {"type" : "boolean"}
         },
-        "required": ["method", "target_host", "source", "dest"]
+        "required": ["method", "source", "dest"]
     }
 
     DEFAULT_CONFIGS = {
         "rsync_flags": "-surlptDxv",
         "chmod_options": None,
+        "use_ssh": True,
         "ssh_command": "ssh",
         "delete": False,
         "working_directory": None
@@ -85,7 +87,10 @@ class RsyncDeployer(Deployer):
         cmd.extend(rsync_flags)
         if rsync_deployer_config['chmod_options']:
             cmd.append('--chmod={0}'.format(rsync_deployer_config['chmod_options']))
-        cmd.extend(['-e',rsync_deployer_config['ssh_command']])
+
+        ssh_command = rsync_deployer_config['ssh_command']
+        if rsync_deployer_config['use_ssh']:
+            cmd.extend(['-e', ssh_command])
         if rsync_deployer_config['delete']:
             cmd.append('--delete')
 
@@ -95,7 +100,11 @@ class RsyncDeployer(Deployer):
         else:
             src = rsync_deployer_config['source']
 
-        target = '{0}:"{1}"'.format(rsync_deployer_config['target_host'],rsync_deployer_config['dest'])
+        target = '"{0}"'.format(rsync_deployer_config['dest'])
+
+        target_host = rsync_deployer_config.get('target_host', None)
+        if target_host:
+            target = '{0}:{1}'.format(target_host, target)
         src = '"{0}/"'.format(src)
 
         return SubprocessRule(cmd + [src, target], shell=True, cwd=rsync_cwd)
