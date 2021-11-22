@@ -207,7 +207,6 @@ class AnacondaBuilder(Builder):
         default_config = {
             'miniconda': True,
             'mamba': True,
-            'conda_pack': False,
             'python_version': 3,
             'installer_version': 'latest',
             'pip_packages': [],
@@ -237,14 +236,12 @@ class AnacondaBuilder(Builder):
 
         # Remove freeze temporarily from configuration as that should not be included in checksum calculation
         freeze = environment_config.pop('freeze', False)
-        conda_pack = environment_config.pop('conda_pack', False) 
 
         # Calculate checksum based on the current state of the environment_config
         environment_config['checksum'] = calculate_dict_checksum(environment_config)
         environment_config['checksum_small'] = environment_config['checksum'][:8]
 
         environment_config['freeze'] = freeze
-        environment_config['conda_pack'] = conda_pack 
 
         return environment_config
 
