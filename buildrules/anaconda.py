@@ -38,6 +38,7 @@ class AnacondaBuilder(Builder):
                     'properties': {
                         'install_tree': {'type': 'string'},
                         'module_path': {'type': 'string'},
+                        'conda_pack_path': {'type': 'string'},
                         'source_cache': {'type': 'string'},
                         'tmpdir': {'type': 'string'},
                         'remove_after_update': {'type': 'boolean'},
@@ -82,6 +83,7 @@ class AnacondaBuilder(Builder):
                             'version': {'type': 'string'},
                             'miniconda': {'type': 'boolean'},
                             'mamba': {'type': 'boolean'},
+                            'conda_pack': {'type': 'boolean'},
                             'installer_version': {'type': 'string'},
                             'freeze': {'type': 'boolean'},
                             'python_version': {
@@ -205,6 +207,7 @@ class AnacondaBuilder(Builder):
         default_config = {
             'miniconda': True,
             'mamba': True,
+            'conda_pack': False,
             'python_version': 3,
             'installer_version': 'latest',
             'pip_packages': [],
@@ -234,12 +237,14 @@ class AnacondaBuilder(Builder):
 
         # Remove freeze temporarily from configuration as that should not be included in checksum calculation
         freeze = environment_config.pop('freeze', False)
+        conda_pack = environment_config.pop('conda_pack', False) 
 
         # Calculate checksum based on the current state of the environment_config
         environment_config['checksum'] = calculate_dict_checksum(environment_config)
         environment_config['checksum_small'] = environment_config['checksum'][:8]
 
         environment_config['freeze'] = freeze
+        environment_config['conda_pack'] = conda_pack 
 
         return environment_config
 
@@ -492,6 +497,7 @@ class AnacondaBuilder(Builder):
         condarc_file = os.path.join(conda_path, '.condarc')
         write_yaml(condarc_file, condarc_complete)
 
+
     def _export_conda_environment(self, conda_path):
         """ This function exports an environment.yml from an Anaconda
         environment installed in conda_path.
@@ -508,6 +514,26 @@ class AnacondaBuilder(Builder):
                                 conda_env_json, flags=re.MULTILINE)
         conda_env = json.loads(conda_env_json)
         write_yaml(self._get_environment_file_path(conda_path), conda_env)
+
+
+    def _conda_pack_environment(self, conda_path, pack_path, name, version, checksum):
+        """ This function exports an conda-pack from an Anaconda
+        environment installed in conda_path.
+
+        Args:
+            conda_path (str): Anaconda installation path.
+            pack_path (str): Path for the conda-packs.
+            name (str): Name of the environment
+            version (str): Version of the environment
+            checksum (str): Checksum for the environment
+        """
+
+        conda_cmd = sh.Command(os.path.join(conda_path, 'bin', 'conda'))
+
+        ## Remove conda packages as they break updating the installation
+        output_pack = os.path.join(pack_path, '{0}_{1}_{2}.tar.gz'.format(name, version, checksum))
+        conda_pack_output = conda_cmd('pack', '-p', conda_path, '-o', output_pack)
+
 
     def _sanitize_environment_file(self, old_environment_file, new_environment_file):
         """ This function sanitizes environment.yml created by previous
@@ -554,13 +580,16 @@ class AnacondaBuilder(Builder):
                     ('Configuration file is not from the '
                      'installation root: {0}'.format(config['config_files'])))
 
-    def _install_mamba(self, conda_path, install_mamba):
+
+    def _install_package_tools(self, conda_path, install_mamba, install_conda_pack):
         """ This installs mamba package manager if installation
-        uses mamba.
+        uses mamba and conda-pack if installation wants to use conda-pack
+        for packaging.
 
         Args:
             conda_path (str): Anaconda installation path.
             install_mamba (bool): Should mamba be installed.
+            install_conda_pack (bool): Should conda-pack be installed.
         """
 
         conda_cmd = sh.Command(os.path.join(conda_path, 'bin', 'conda'))
@@ -570,6 +599,13 @@ class AnacondaBuilder(Builder):
                      '-c', 'conda-forge',
                       '-n', 'base',
                       'mamba')
+        if install_conda_pack:
+            conda_cmd('install', '--yes',
+                     '--freeze-installed',
+                     '-c', 'conda-forge',
+                      '-n', 'base',
+                      'conda-pack')
+
 
     def _get_environment_install_rules(self):
         """ This function returns build rules that install Anaconda environments.
@@ -666,10 +702,14 @@ class AnacondaBuilder(Builder):
                         [install_path]
                     ),
                     # Install mamba if needed
-                    LoggingRule('Installing mamba if needed.'),
+                    LoggingRule('Installing mamba & conda-pack if needed.'),
                     PythonRule(
-                        self._install_mamba,
-                        [install_path, environment_config['mamba']],
+                        self._install_package_tools,
+                        [
+                            install_path,
+                            environment_config['mamba'],
+                            environment_config.get('conda_pack', False)
+                        ],
                     ),
                     # Create condarc for the installed environment
                     LoggingRule('Creating condarc for environment.'),
@@ -730,6 +770,20 @@ class AnacondaBuilder(Builder):
                     PythonRule(
                         self._export_conda_environment,
                         [install_path])
+                ])
+
+                # Pack the newly built environment
+                rules.extend([
+                    LoggingRule('Creating conda-pack from the newly built environment.'),
+                    PythonRule(
+                        self._conda_pack_environment,
+                        [
+                            install_path,
+                            environment_config.get('conda_pack_path', install_path),
+                            environment_config['name'],
+                            environment_config['version'],
+                            environment_config['checksum_small'],
+                        ])
                 ])
 
                 # Add newly created environment to installed environments
