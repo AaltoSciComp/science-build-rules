@@ -807,7 +807,7 @@ class AnacondaBuilder(Builder):
                         self._conda_pack_environment,
                         [
                             install_path,
-                            self._conda_pack_path),
+                            self._conda_pack_path,
                             environment_config['name'],
                             environment_config['version'],
                             environment_config['checksum_small'],
