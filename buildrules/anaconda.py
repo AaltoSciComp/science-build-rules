@@ -143,6 +143,7 @@ class AnacondaBuilder(Builder):
         self._tmpdir = self._get_path('tmpdir')
         self._install_path = self._get_path('install_path')
         self._module_path = self._get_path('module_path')
+        self._conda_pack_path = self._get_path('conda_pack_path')
         self._installed_file = os.path.join(self._install_path, 'installed_environments.yml')
         self.remove_after_update = self._confreader['config']['config'].get(
             'remove_after_update',
@@ -164,6 +165,7 @@ class AnacondaBuilder(Builder):
         path_config = {
             'install_path': '$conda/opt/conda/software',
             'module_path': '$conda/opt/conda/modules',
+            'conda_pack_path': '$conda/opt/conda/packs',
             'source_cache': '$conda/var/conda/cache',
             'tmpdir': '/tmp',
         }
@@ -189,6 +191,8 @@ class AnacondaBuilder(Builder):
             PythonRule(makedirs, [self._install_path, 0o755]),
             LoggingRule('Creating module directory: %s' % self._module_path),
             PythonRule(makedirs, [self._module_path, 0o755]),
+            LoggingRule('Creating conda-pack directory: %s' % self._conda_pack_path),
+            PythonRule(makedirs, [self._conda_pack_path, 0o755]),
         ])
 
         return rules
@@ -803,7 +807,7 @@ class AnacondaBuilder(Builder):
                         self._conda_pack_environment,
                         [
                             install_path,
-                            environment_config.get('conda_pack_path', install_path),
+                            self._conda_pack_path),
                             environment_config['name'],
                             environment_config['version'],
                             environment_config['checksum_small'],
