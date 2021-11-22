@@ -530,9 +530,10 @@ class AnacondaBuilder(Builder):
 
         conda_cmd = sh.Command(os.path.join(conda_path, 'bin', 'conda'))
 
-        ## Remove conda packages as they break updating the installation
         output_pack = os.path.join(pack_path, '{0}_{1}_{2}.tar.gz'.format(name, version, checksum))
-        conda_pack_output = conda_cmd('pack', '-p', conda_path, '-o', output_pack)
+
+        if not os.path.isfile(output_pack):
+            conda_pack_output = conda_cmd('pack', '-p', conda_path, '-o', output_pack)
 
 
     def _sanitize_environment_file(self, old_environment_file, new_environment_file):
@@ -772,21 +773,6 @@ class AnacondaBuilder(Builder):
                         [install_path])
                 ])
 
-                # Pack the newly built environment
-                if environment_config.get('conda_pack', False):
-                    rules.extend([
-                        LoggingRule('Creating conda-pack from the newly built environment.'),
-                        PythonRule(
-                            self._conda_pack_environment,
-                            [
-                                install_path,
-                                environment_config.get('conda_pack_path', install_path),
-                                environment_config['name'],
-                                environment_config['version'],
-                                environment_config['checksum_small'],
-                            ])
-                    ])
-
                 # Add newly created environment to installed environments
                 rules.extend([
                     LoggingRule('Updating installed_environments.yml.'),
@@ -809,6 +795,21 @@ class AnacondaBuilder(Builder):
                     [install_path, condarc, condarc_install],
                     {'install_time': False})
             ])
+
+            # Pack the environment
+            if environment_config.get('conda_pack', False):
+                rules.extend([
+                    LoggingRule('Creating conda-pack from the environment.'),
+                    PythonRule(
+                        self._conda_pack_environment,
+                        [
+                            install_path,
+                            environment_config.get('conda_pack_path', install_path),
+                            environment_config['name'],
+                            environment_config['version'],
+                            environment_config['checksum_small'],
+                        ])
+                ])
 
             # Create modulefile for the environment
             rules.extend([
