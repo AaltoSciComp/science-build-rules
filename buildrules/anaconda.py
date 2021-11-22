@@ -529,6 +529,8 @@ class AnacondaBuilder(Builder):
 
         output_pack = os.path.join(pack_path, '{0}_{1}_{2}.tar.gz'.format(name, version, checksum))
 
+        self._logger.info('Creating pack: %s', output_pack)
+
         if not os.path.isfile(output_pack):
             conda_pack_output = conda_cmd('pack', '-p', conda_path, '-o', output_pack)
 
