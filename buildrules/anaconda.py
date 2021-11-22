@@ -773,18 +773,19 @@ class AnacondaBuilder(Builder):
                 ])
 
                 # Pack the newly built environment
-                rules.extend([
-                    LoggingRule('Creating conda-pack from the newly built environment.'),
-                    PythonRule(
-                        self._conda_pack_environment,
-                        [
-                            install_path,
-                            environment_config.get('conda_pack_path', install_path),
-                            environment_config['name'],
-                            environment_config['version'],
-                            environment_config['checksum_small'],
-                        ])
-                ])
+                if environment_config.get('conda_pack', False):
+                    rules.extend([
+                        LoggingRule('Creating conda-pack from the newly built environment.'),
+                        PythonRule(
+                            self._conda_pack_environment,
+                            [
+                                install_path,
+                                environment_config.get('conda_pack_path', install_path),
+                                environment_config['name'],
+                                environment_config['version'],
+                                environment_config['checksum_small'],
+                            ])
+                    ])
 
                 # Add newly created environment to installed environments
                 rules.extend([
