@@ -82,6 +82,7 @@ class AnacondaBuilder(Builder):
                             'name': {'type': 'string'},
                             'version': {'type': 'string'},
                             'miniconda': {'type': 'boolean'},
+                            'mambaforge': {'type': 'boolean'},
                             'mamba': {'type': 'boolean'},
                             'conda_pack': {'type': 'boolean'},
                             'installer_version': {'type': 'string'},
@@ -214,6 +215,7 @@ class AnacondaBuilder(Builder):
         """
         default_config = {
             'miniconda': True,
+            'mambaforge': False,
             'mamba': True,
             'python_version': 3,
             'installer_version': 'latest',
@@ -268,6 +270,8 @@ class AnacondaBuilder(Builder):
             installer_fmt = "Miniconda{python_version}-latest-Linux-x86_64.sh"
         elif environment_config['miniconda']:
             installer_fmt = "Miniconda{python_version}-{installer_version}-Linux-x86_64.sh"
+        elif environment_config['mambaforge']:
+            installer_fmt = "Mambaforge-{installer_version}-Linux-x86_64.sh"
         else:
             installer_fmt = "Anaconda{python_version}-{installer_version}-Linux-x86_64.sh"
 
@@ -275,7 +279,7 @@ class AnacondaBuilder(Builder):
 
         return installer
 
-    def _download_installer(self, installer_path):
+    def _download_installer(self, installer_path, installer_version):
         """ This function downloads an installer and calculates its checksum
         based on an installer path.
 
@@ -287,6 +291,10 @@ class AnacondaBuilder(Builder):
 
         if 'Miniconda' in installer_path:
             installer_url = "https://repo.anaconda.com/miniconda/{0}".format(installer)
+        elif 'Mambaforge' in installer_path:
+            installer_url = "https://github.com/conda-forge/miniforge/releases/download/{0}/{1}".format(
+                installer_version,
+                installer)
         else:
             installer_url = "https://repo.anaconda.com/archive/{0}".format(installer)
 
@@ -583,7 +591,7 @@ class AnacondaBuilder(Builder):
         conda_cmd = sh.Command(os.path.join(conda_path, 'bin', 'conda'))
         config_json = conda_cmd('info', '--json').stdout.decode('utf-8')
         config = json.loads(config_json)
-        conda_rc = os.path.join(conda_path, 'condarc')
+        conda_rc = os.path.join(conda_path, '.condarc')
         if config['config_files']:
             if len(config['config_files']) > 1:
                 raise Exception(
@@ -701,7 +709,7 @@ class AnacondaBuilder(Builder):
                 # Install base environment
                 rules.extend([
                     PythonRule(self._remove_environment, [install_path]),
-                    PythonRule(self._download_installer, [installer]),
+                    PythonRule(self._download_installer, [installer, environment_config['installer_version']]),
                     PythonRule(
                         makedirs,
                         [install_path, 0o755],
