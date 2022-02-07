@@ -215,7 +215,6 @@ class AnacondaBuilder(Builder):
         """
         default_config = {
             'miniconda': True,
-            'mambaforge': False,
             'mamba': True,
             'python_version': 3,
             'installer_version': 'latest',
@@ -270,7 +269,7 @@ class AnacondaBuilder(Builder):
             installer_fmt = "Miniconda{python_version}-latest-Linux-x86_64.sh"
         elif environment_config['miniconda']:
             installer_fmt = "Miniconda{python_version}-{installer_version}-Linux-x86_64.sh"
-        elif environment_config['mambaforge']:
+        elif environment_config.get('mambaforge', None):
             installer_fmt = "Mambaforge-{installer_version}-Linux-x86_64.sh"
         else:
             installer_fmt = "Anaconda{python_version}-{installer_version}-Linux-x86_64.sh"
