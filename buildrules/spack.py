@@ -55,6 +55,12 @@ class SpackBuilder(Builder):
                         'target': {'type': 'string'},
                     },
                 },
+                'build_options': {
+                    'type': 'object',
+                    'properties': {
+                        'reuse_packages': {'type': 'boolean'},
+                    },
+                },
                 'compilers': {
                     'type': 'array',
                     'default': [],
@@ -132,6 +138,7 @@ class SpackBuilder(Builder):
         self._spack_sh = sh.spack.bake('--config-scope', conf_folder)
         self._compilers_file = os.path.expanduser('~/.spack/linux/compilers.yaml')
         super().__init__(conf_folder)
+        self._build_options = self._confreader['build_config'].get('build_options',{})
 
     def _get_reindex_rules(self):
         logging_rule = LoggingRule('Re-indexing installed packages.')
@@ -189,9 +196,10 @@ class SpackBuilder(Builder):
         spec_list = self._get_spec_list(package_config)
         extra_flags = self._get_extra_flags(package_config)
         build_env = self._get_build_environment()
+        reuse_flags = ['--reuse'] if self._build_options.get('reuse_packages', False) else []
         self._logger.debug(msg='Creating package install rule for spec: {0}'.format(spec_str))
         return SubprocessRule(
-            self._spack_cmd + ['install', '-v'] + extra_flags + spec_list, env=build_env)
+            self._spack_cmd + ['install', '-v'] + reuse_flags + extra_flags + spec_list, env=build_env)
 
     def _set_compiler_flags(self, spec, flags):
         if os.path.isfile(self._compilers_file):
