@@ -821,21 +821,22 @@ class AnacondaBuilder(Builder):
                     {'install_time': False})
             ])
 
-            # Pack the environment
-            if environment_config.get('conda_pack', False):
-                rules.extend([
-                    LoggingRule('Creating conda-pack from the environment.'),
-                    PythonRule(
-                        self._conda_pack_environment,
-                        [
-                            install_path,
-                            self._conda_pack_path,
-                            environment_config['name'],
-                            environment_config['version'],
-                            environment_config['checksum_small'],
-                            conda_env,
-                        ])
-                ])
+            if not skip_install:
+                # Pack the environment
+                if environment_config.get('conda_pack', False):
+                    rules.extend([
+                        LoggingRule('Creating conda-pack from the environment.'),
+                        PythonRule(
+                            self._conda_pack_environment,
+                            [
+                                install_path,
+                                self._conda_pack_path,
+                                environment_config['name'],
+                                environment_config['version'],
+                                environment_config['checksum_small'],
+                                conda_env,
+                            ])
+                    ])
 
             # Create modulefile for the environment
             rules.extend([
