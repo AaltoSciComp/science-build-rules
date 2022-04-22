@@ -232,13 +232,11 @@ class SpackBuilder(Builder):
         rules.append(LoggingRule('Removing old compilers.yml'))
         rules.append(PythonRule(self._remove_compilers_file))
 
-        def get_compiler_find_rule(spec_list):
+        def get_compiler_find_rule(spec_list, extra_dir=''):
             return SubprocessRule(
-                (self._spack_cmd + ['find', '-p'] +
-                 spec_list +
-                 (['|', 'tail', '-n', '1', '|', 'awk', "'{",
-                   'print', '$2', "}'", '|', 'xargs', '-r']) +
-                 self._spack_cmd + ['compiler', 'add']),
+                (self._spack_cmd + ['location', '-i'] +
+                 spec_list + ['|', 'xargs', '-r', '-I', '{}'] +
+                 self._spack_cmd + ['compiler', 'add', '{}%s' % extra_dir]),
                 shell=True,
                 check=False)
 
@@ -261,6 +259,8 @@ class SpackBuilder(Builder):
             self._logger.debug(msg='Creating compiler find rule for spec: {0}'.format(spec_str))
             rules.extend([
                 get_compiler_find_rule(spec_list),
+                get_compiler_find_rule(spec_list, extra_dir='/compiler/latest/linux/bin/intel64'),
+                get_compiler_find_rule(spec_list, extra_dir='/compiler/latest/linux/bin'),
                 get_compiler_flags_rule(spec_list, package_config)
             ])
         rules.append(LoggingRule('Installing compilers.'))
