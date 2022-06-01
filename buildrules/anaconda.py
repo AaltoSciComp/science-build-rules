@@ -83,6 +83,7 @@ class AnacondaBuilder(Builder):
                             'version': {'type': 'string'},
                             'miniconda': {'type': 'boolean'},
                             'mambaforge': {'type': 'boolean'},
+                            'miniforge': {'type': 'boolean'},
                             'mamba': {'type': 'boolean'},
                             'conda_pack': {'type': 'boolean'},
                             'installer_version': {'type': 'string'},
@@ -271,6 +272,8 @@ class AnacondaBuilder(Builder):
             installer_fmt = "Miniconda{python_version}-{installer_version}-Linux-x86_64.sh"
         elif environment_config.get('mambaforge', None):
             installer_fmt = "Mambaforge-{installer_version}-Linux-x86_64.sh"
+        elif environment_config.get('miniforge', None):
+            installer_fmt = "Miniforge{python_version}-{installer_version}-Linux-x86_64.sh"
         else:
             installer_fmt = "Anaconda{python_version}-{installer_version}-Linux-x86_64.sh"
 
@@ -291,6 +294,10 @@ class AnacondaBuilder(Builder):
         if 'Miniconda' in installer_path:
             installer_url = "https://repo.anaconda.com/miniconda/{0}".format(installer)
         elif 'Mambaforge' in installer_path:
+            installer_url = "https://github.com/conda-forge/miniforge/releases/download/{0}/{1}".format(
+                installer_version,
+                installer)
+        elif 'Miniforge' in installer_path:
             installer_url = "https://github.com/conda-forge/miniforge/releases/download/{0}/{1}".format(
                 installer_version,
                 installer)
