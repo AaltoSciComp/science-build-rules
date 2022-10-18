@@ -228,13 +228,21 @@ class AnacondaBuilder(Builder):
         environment_config.update(environment_dict)
         environment_config['environment_name'] = '{name}/{version}'.format(**environment_config)
 
+        def quote_package(x):
+            if '<' in x or '>' in x or '*' in x:
+                return f'"{x}"'
+            return x
+
         # Combining packages from all of the different collections
         for collection in environment_config.pop('collections', []):
             conda_packages = self._collections[collection].get('conda_packages', [])
             pip_packages = self._collections[collection].get('pip_packages', [])
 
-            environment_config['conda_packages'].extend(conda_packages)
-            environment_config['pip_packages'].extend(pip_packages)
+            conda_packages_quoted = [ quote_package(package) for package in conda_packages ]
+            pip_packages_quoted = [ quote_package(package) for package in pip_packages ]
+
+            environment_config['conda_packages'].extend(conda_packages_quoted)
+            environment_config['pip_packages'].extend(pip_packages_quoted)
 
         environment_config['conda_packages'].sort()
         environment_config['pip_packages'].sort()
