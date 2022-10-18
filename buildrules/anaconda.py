@@ -87,6 +87,7 @@ class AnacondaBuilder(Builder):
                             'mamba': {'type': 'boolean'},
                             'conda_pack': {'type': 'boolean'},
                             'installer_version': {'type': 'string'},
+                            'conda_override_cuda': {'type': 'string'},
                             'freeze': {'type': 'boolean'},
                             'python_version': {
                                 'type': 'integer',
@@ -712,6 +713,9 @@ class AnacondaBuilder(Builder):
                 'PATH': ':'.join([os.path.join(install_path, 'bin')] + env_path),
                 'PYTHONUNBUFFERED': '1',
             }
+
+            if 'conda_override_cuda' in environment_config:
+                conda_env['CONDA_OVERRIDE_CUDA'] = environment_config['conda_override_cuda']
 
             environment_config['install_path'] = install_path
             environment_config['module_path'] = module_path
