@@ -264,20 +264,17 @@ class AnacondaBuilder(Builder):
 
         return environment_config
 
-    def _get_installer_path(self, environment_config, update_installer=False):
+    def _get_installer_path(self, environment_config):
         """ This function returns a path to an installer file based on
         an environment_config.
 
         Args:
             environment_config (dict): Anaconda environment config.
-            update_installer (boolean): Give installer for updating an environment.
         Returns:
             str: Path to installer file.
         """
 
-        if update_installer:
-            installer_fmt = "Miniconda{python_version}-latest-Linux-x86_64.sh"
-        elif environment_config['miniconda']:
+        if environment_config['miniconda']:
             installer_fmt = "Miniconda{python_version}-{installer_version}-Linux-x86_64.sh"
         elif environment_config.get('mambaforge', None):
             installer_fmt = "Mambaforge-{installer_version}-Linux-x86_64.sh"
@@ -706,7 +703,7 @@ class AnacondaBuilder(Builder):
                 module_path = installed_environments[environment_name]['module_path']
                 skip_install = True
 
-            installer = self._get_installer_path(environment_config, update_installer=update_install)
+            installer = self._get_installer_path(environment_config)
 
             # Add new installation path to PATH
             conda_env = {
