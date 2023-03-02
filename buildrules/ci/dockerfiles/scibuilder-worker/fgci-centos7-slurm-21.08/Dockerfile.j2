@@ -71,7 +71,7 @@ RUN yum update -y && yum install -y       \
   kernel-devel-${KERNEL}.el7.x86_64       \
   && yum clean all
 
-COPY ./extra_rpms/MLNX_OFED_LINUX-${MLNX_VERSION} $RPMS_DIR
+COPY ./extras/MLNX_OFED_LINUX-${MLNX_VERSION} $RPMS_DIR
 
 RUN cd ${RPMS_DIR} && \
   yes | ./mlnxofedinstall          \
@@ -102,7 +102,7 @@ RUN yum update -y && yum install -y       \
   munge-ohpc                              \
   && yum clean all
 
-COPY ./extra_rpms/slurm $RPMS_DIR
+COPY ./extras/slurm $RPMS_DIR
 RUN cd ${RPMS_DIR} && yum localinstall -y                                                 \
   ./slurm-contribs-ohpc-${SLURM_VERSION}.ohpc.${OHPC_VERSION}.x86_64.rpm        \
   ./slurm-devel-ohpc-${SLURM_VERSION}.ohpc.${OHPC_VERSION}.x86_64.rpm           \
@@ -125,7 +125,7 @@ ARG CUDA_DRIVER_VERSION=470.57.02
 ENV CUDA_DRIVER_RUNFILE=NVIDIA-Linux-x86_64-${CUDA_DRIVER_VERSION}.run
 
 RUN mkdir ${RPMS_DIR}
-COPY ./extra_rpms/${CUDA_DRIVER_RUNFILE} ${RPMS_DIR}
+COPY ./extras/${CUDA_DRIVER_RUNFILE} ${RPMS_DIR}
 
 RUN bash ${RPMS_DIR}/${CUDA_DRIVER_RUNFILE} --silent --no-kernel-module && \
   rm -rf ${RPMS_DIR}
@@ -146,7 +146,6 @@ RUN yum update -y && yum install -y       \
   vim                                     \
   wget                                    \
   && yum clean all
-
 
 RUN echo 'buildbot ALL=(ALL) NOPASSWD:SETENV: /usr/bin/singularity, /bin/chown' >> /etc/sudoers
 
