@@ -4,9 +4,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 USER root
 
-RUN apt-get update &&                     \
-  apt-get -y upgrade &&                   \
-  apt-get -y install -q                   \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \
   apt-transport-https                     \
   bash                                    \
   bash-completion                         \
@@ -16,6 +14,7 @@ RUN apt-get update &&                     \
   curl                                    \
   git                                     \
   grep                                    \
+  locales                                 \
   libarchive-dev                          \
   libnl-3-200                             \
   libnl-3-dev                             \
@@ -43,14 +42,12 @@ RUN apt-get update &&                     \
   wget                                    \
   && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update &&                     \
-  apt-get -y install -q                   \
+RUN apt-get update && apt-get install -y \
   libgl1-mesa-dri                         \
   xbitmaps                                \
   && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update &&                     \
-  apt-get install -y                      \
+RUN apt-get update && apt-get install -y \
   build-essential                         \
   libssl-dev                              \
   uuid-dev                                \
@@ -65,14 +62,14 @@ RUN apt-get update &&                     \
 
 
 # Install Go for singularity
-ARG GO_VERSION=1.13.8
+ARG GO_VERSION=1.17.4
 
 RUN cd /tmp &&                            \
   wget https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz && \
   tar -C /opt -xzvf go${GO_VERSION}.linux-amd64.tar.gz && \
   rm go${GO_VERSION}.linux-amd64.tar.gz
 
-ARG SING_VERSION=3.5.2
+ARG SING_VERSION=3.9.1
 
 # Install singularity
 RUN export GOPATH=/opt/go-modules &&      \
@@ -99,5 +96,25 @@ RUN apt-get update &&                     \
   python3-pip                             \
   && rm -rf /var/lib/apt/lists/*
 
+# Add locale for en_US.UTF-8
+RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
+    locale-gen
+
+# Add NVIDIA CUDA driver
+
+RUN apt-get update &&                     \
+  apt-get -y install -q                   \
+  nvidia-cuda                             \
+  && rm -rf /var/lib/apt/lists/*
+
+ENV RUNFILE_DIR=/runfile
+ARG CUDA_DRIVER_VERSION=470.57.02
+ENV CUDA_DRIVER_RUNFILE=NVIDIA-Linux-x86_64-${CUDA_DRIVER_VERSION}.run
+
+RUN mkdir ${RUNFILE_DIR}
+COPY ./extras/${CUDA_DRIVER_RUNFILE} ${RUNFILE_DIR}
+
+RUN bash ${RUNFILE_DIR}/${CUDA_DRIVER_RUNFILE} --silent --no-kernel-module && \
+  rm -rf ${RUNFILE_DIR}
 
 {% include 'common/Dockerfile.j2' %}
