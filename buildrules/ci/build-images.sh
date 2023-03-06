@@ -4,6 +4,7 @@ set -e
 
 PUSH=1
 IGNORE_CACHE=''
+VERBOSE_BUILD=''
 DOCKER_SERVER=${DOCKER_SERVER:-"docker.io"}
 DOCKER_USER=${DOCKER_USER:-"aaltoscienceit"}
 
@@ -16,6 +17,10 @@ case $ARG in
   ;;
   -i|--ignore-cache)
   IGNORE_CACHE=--no-cache
+  shift
+  ;;
+  -v|--verbose)
+  VERBOSE_BUILD="--progress=plain"
   shift
   ;;
   -U|--user)
@@ -37,7 +42,7 @@ esac
 done
 
 if [ -z "$WORKERS" ]; then
-  WORKERS="fgci-centos7 aalto-ubuntu1804 aalto-ubuntu2004"
+  WORKERS="fgci-centos7-slurm-21.08 aalto-ubuntu2004"
   BUILD_SERVERS=y
 fi
 
@@ -50,7 +55,7 @@ if [ ! -z "$BUILD_SERVERS" ]; then
   # Build scibuilder-master and scibuilder-nfs-server
   for TARGET in scibuilder-master scibuilder-nfs-server ; do
     BUILD_RESULT=1
-    docker build $IGNORE_CACHE -t $DOCKER_SERVER/$DOCKER_USER/$TARGET:latest -f $TARGET/Dockerfile .
+    docker build $VERBOSE_BUILD $IGNORE_CACHE -t $DOCKER_SERVER/$DOCKER_USER/$TARGET:latest -f $TARGET/Dockerfile .
     BUILD_RESULT=$?
     if [ $BUILD_RESULT -eq 0 ]; then
       echo 'Build of "'$TARGET'" was successful.'
@@ -87,7 +92,7 @@ EOF
   j2 $TARGET/Dockerfile.j2 >> $TARGET/Dockerfile
 
   # Build target image
-  docker build --build-arg TARGET=$TARGET $IGNORE_CACHE -t $DOCKER_URL -f $TARGET/Dockerfile .
+  docker build --build-arg TARGET=$TARGET $VERBOSE_BUILD $IGNORE_CACHE -t $DOCKER_URL -f $TARGET/Dockerfile .
   BUILD_RESULT=$?
   if [ $BUILD_RESULT -eq 0 ]; then
     echo 'Build of "'$TARGET'" was successful.'
