@@ -7,7 +7,7 @@ RUN python3 -m pip install                \
   jinja2                                  \
   jsonschema                              \
   requests                                \
-  sh                                      \
+  "sh<2.0.0"                              \
   pyyaml
 
 # Installing dependencies for Swift deployer
@@ -39,7 +39,7 @@ echo "057ecd4ac1d3c3be31f82fc0848bf77b1326a975b4f8423fe31607205a0fe945  /usr/loc
 chmod 755 /usr/local/bin/dumb-init
 
 # Install more requirements
-RUN pip3 --no-cache-dir install twisted[tls] snips-nlu
+RUN pip3 --no-cache-dir install twisted[tls]
 
 # Prepare for buildbot installation
 RUN mkdir /buildbot && \

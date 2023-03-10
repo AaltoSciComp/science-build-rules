@@ -42,7 +42,7 @@ esac
 done
 
 if [ -z "$WORKERS" ]; then
-  WORKERS="fgci-centos7-slurm-21.08 aalto-ubuntu2004"
+  WORKERS="fgci-centos7-slurm-21.08 aalto-ubuntu2004 aalto-ubuntu2204"
   BUILD_SERVERS=y
 fi
 

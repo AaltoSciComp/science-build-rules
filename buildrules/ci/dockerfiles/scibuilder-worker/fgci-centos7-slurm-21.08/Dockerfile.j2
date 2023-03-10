@@ -37,10 +37,11 @@ RUN yum update -y && yum install -y       \
   which                                   \
   && yum clean all
 
-# Install singularity
+# Install apptainer
 
 RUN yum update -y && yum install -y       \
-  singularity                             \
+  apptainer                               \
+  apptainer-suid                          \
   && yum clean all
 
 # Add mellanox ib stack
@@ -50,7 +51,7 @@ FROM centos:centos7 as mlnx
 COPY --from=base_image / /
 
 ENV RPMS_DIR=/rpms
-ARG KERNEL=3.10.0-1160.45.1
+ARG KERNEL=3.10.0-1160.83.1
 ARG MLNX_VERSION=4.9-3.1.5.0-rhel7.9-x86_64
 
 RUN yum update -y && yum install -y       \
@@ -121,7 +122,7 @@ FROM centos:centos7 as cuda
 COPY --from=slurm / /
 
 ENV RPMS_DIR=/rpms
-ARG CUDA_DRIVER_VERSION=470.57.02
+ARG CUDA_DRIVER_VERSION=525.85.12
 ENV CUDA_DRIVER_RUNFILE=NVIDIA-Linux-x86_64-${CUDA_DRIVER_VERSION}.run
 
 RUN mkdir ${RPMS_DIR}
@@ -132,7 +133,7 @@ RUN bash ${RPMS_DIR}/${CUDA_DRIVER_RUNFILE} --silent --no-kernel-module && \
 
 # Add other packages
 
-FROM centos:centos7
+FROM centos:centos7 as final_image
 
 COPY --from=cuda / /
 
@@ -147,6 +148,10 @@ RUN yum update -y && yum install -y       \
   wget                                    \
   && yum clean all
 
-RUN echo 'buildbot ALL=(ALL) NOPASSWD:SETENV: /usr/bin/singularity, /bin/chown' >> /etc/sudoers
+RUN echo 'buildbot ALL=(ALL) NOPASSWD:SETENV: /usr/bin/singularity, /usr/bin/apptainer, /bin/chown' >> /etc/sudoers
+
+FROM centos:centos7
+
+COPY --from=final_image / /
 
 {% include 'common/Dockerfile.j2' %}
