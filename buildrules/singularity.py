@@ -331,7 +331,9 @@ class SingularityBuilder(Builder):
 
         default_env = {
             'SINGULARITY_CACHEDIR': self._source_cache,
-            'SINGULARITY_TMPDIR': self._tmpdir
+            'SINGULARITY_TMPDIR': self._tmpdir,
+            'APPTAINER_CACHEDIR': self._source_cache,
+            'APPTAINER_TMPDIR': self._tmpdir
         }
 
         uid = os.getuid()
@@ -407,7 +409,9 @@ class SingularityBuilder(Builder):
                         ))
                     build_env.update({
                         'SINGULARITY_DOCKER_USERNAME': auths['username'],
-                        'SINGULARITY_DOCKER_PASSWORD': auths['password']
+                        'SINGULARITY_DOCKER_PASSWORD': auths['password'],
+                        'APPTAINER_DOCKER_USERNAME': auths['username'],
+                        'APPTAINER_DOCKER_PASSWORD': auths['password']
                     })
 
                 skip_install = False
